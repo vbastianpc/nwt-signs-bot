@@ -26,7 +26,7 @@ def main() -> None:
     dispatcher = updater.dispatcher
     for handler in handlers:
         dispatcher.add_handler(handler)
-    dispatcher.add_error_handler(log_error)
+    # dispatcher.add_error_handler(log_error)
     updater.start_polling()
     updater.idle()
 

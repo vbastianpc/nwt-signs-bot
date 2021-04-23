@@ -65,15 +65,11 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
         for chapter, chapter_info in sorted(chapters.items(), key=_s) if bool(True if q_chapter is None else chapter == q_chapter)
         for verse, verse_info in sorted(chapter_info['verses'].items(), key=_s) if bool(True if not q_verses else verse in q_verses)
     ]
-
     if results:
-        print('sending results')
         update.inline_query.answer(results, auto_pagination=True, cache_time=5)
     elif q_booknum and q_chapter and q_verses:
-        print('cooking verses')
         inlineBibleCook(update, context)
     else:
-        print('no results')
         update.inline_query.answer([])
 
 
