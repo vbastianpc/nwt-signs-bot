@@ -162,6 +162,8 @@ BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?
 
 def parse_bible_pattern(text):
     match = re.match(BIBLE_PATTERN, text.lower())
+    if not match:
+        return None, None, None, None
     book_alias = match.group(1)
     booknum = str(BIBLE_BOOKALIAS_NUM[book_alias])
     chapter = str(int(match.group(2))) if match.group(2) else None
