@@ -9,6 +9,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# TODO reescribir todo orientado a objeto. Definir clases
 
 def get_jw_data(booknum: int, lang):
     url = f'https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten={lang}&txtCMSLang={lang}&pub=nwt&booknum={booknum}'
