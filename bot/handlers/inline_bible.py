@@ -32,7 +32,7 @@ from local_jw import (
     save_local_jw,
     split_video,
 )
-from utils import BIBLE_BOOKALIAS_NUM
+from utils import parse_bible_pattern
 from decorators import vip
 from users import get_user_quality, get_user_lang
 from secret import CHANNEL_ID
@@ -40,18 +40,17 @@ from secret import CHANNEL_ID
 
 logger = logging.getLogger(__name__)
 
+def _s(pair):
+    return int(pair[0])
 
 @vip
 def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     logger.info("(%s) %s", update.effective_user.name, update.inline_query.query)
     ud = context.user_data
-    book_alias, q_chapter, q_verse = context.matches[0].groups(
-    ) if context.matches else 3*[None]
-    book_alias = book_alias.lower() if isinstance(book_alias, str) else None
-    q_booknum = str(
-        BIBLE_BOOKALIAS_NUM[book_alias]) if book_alias in BIBLE_BOOKALIAS_NUM else None
-
-    ud['bible'] = [q_booknum, q_chapter, q_verse]
+    logger.info("%s", update.inline_query.query)
+    book_alias, q_booknum, q_chapter, q_verses = parse_bible_pattern(update.inline_query.query)
+    logger.info("%s   %s   %s   %s", f'{book_alias=}', f'{q_booknum=}', f'{q_chapter=}', f'{q_verses=}')
+    ud['bible'] = [q_booknum, q_chapter, q_verses]
     ud['lang'] = get_user_lang(update.inline_query.from_user.id)
     local_jw = get_local_jw()
     results = [
@@ -61,32 +60,28 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
             title=f'{verse_info["name"]} - {lang} {quality}',
         )
         for lang, booknums in local_jw.items() if lang == ud['lang']
-        for booknum, qualities in booknums.items() if bool(True if q_booknum is None else booknum == q_booknum)
+        for booknum, qualities in sorted(booknums.items(), key=_s) if bool(True if q_booknum is None else booknum == q_booknum)
         for quality, chapters in qualities.items()
-        for chapter, chapter_info in chapters.items() if bool(True if q_chapter is None else chapter == q_chapter)
-        for verse, verse_info in chapter_info['verses'].items() if bool(True if q_verse is None else verse == q_verse)
+        for chapter, chapter_info in sorted(chapters.items(), key=_s) if bool(True if q_chapter is None else chapter == q_chapter)
+        for verse, verse_info in sorted(chapter_info['verses'].items(), key=_s) if bool(True if not q_verses else verse in q_verses)
     ]
-    logg_results = [
-        f'{verse_info["name"]} - {lang} {quality}'
-        for lang, booknums in local_jw.items() if lang == ud['lang']
-        for booknum, qualities in booknums.items() if booknum == q_booknum
-        for quality, chapters in qualities.items()
-        for chapter, chapter_info in chapters.items() if bool(True if q_chapter is None else chapter == q_chapter)
-        for verse, verse_info in chapter_info['verses'].items() if bool(True if q_verse is None else verse == q_verse)
-    ]
-    logger.debug("%s", json.dumps(logg_results, ensure_ascii=False, indent=2))
+
     if results:
+        print('sending results')
         update.inline_query.answer(results, auto_pagination=True, cache_time=5)
-    elif q_booknum and q_chapter and q_verse:
+    elif q_booknum and q_chapter and q_verses:
+        print('cooking verses')
         inlineBibleCook(update, context)
     else:
+        print('no results')
         update.inline_query.answer([])
 
 
 def inlineBibleCook(update: Update, context: CallbackContext) -> None:
     logger.info('')
     ud = context.user_data
-    booknum, chapter, verse = ud['bible']
+    booknum, chapter, verses = ud['bible']
+    verse = verses[0] if verses else None
     ud['quality'] = get_user_quality(update.inline_query.from_user.id)
     ud['jw'] = get_jw_data(booknum, lang=ud['lang'])
 
@@ -134,11 +129,4 @@ def inlineBibleCook(update: Update, context: CallbackContext) -> None:
     return
 
 
-inline_handler = InlineQueryHandler(
-    inlineBibleReady,
-    pattern=re.compile(
-        fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) ?(\d+)?:?(\d+)?$",
-        re.IGNORECASE
-    )
-)
-inline_fallback_handler = InlineQueryHandler(inlineBibleReady)
+inline_handler = InlineQueryHandler(inlineBibleReady)
