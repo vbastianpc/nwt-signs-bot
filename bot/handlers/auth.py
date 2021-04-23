@@ -70,8 +70,10 @@ def permiso(update: Update, context: CallbackContext):
               f'`{update.effective_user.id}` Ha solicitado ingresar.'),
         parse_mode=ParseMode.MARKDOWN
     )
-    update.message.reply_text('Debes esperar a que tu solicitud sea aceptada')
-
+    update.message.reply_text(
+        'Debes esperar a que tu solicitud sea aceptada. '
+        'Puedes contarme cómo llegaste al bot, o por qué quieres usarlo 👋🏼'
+    )
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
