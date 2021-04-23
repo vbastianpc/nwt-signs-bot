@@ -5,8 +5,7 @@ import string
 from subprocess import run
 import shlex
 import logging
-import hashlib
-
+import time
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -21,7 +20,7 @@ LOCAL_JW_DATA = 'jw_data.json'
 os.makedirs(NWT_PATH, exist_ok=True)
 os.makedirs(VERSES_PATH, exist_ok=True)
 
-
+# TODO reescribir orientado a objetos. Definir clases
 def download_video(url):
     filename = os.path.join(NWT_PATH, os.path.basename(url))
     logger.info(f'response = requests.get({url})')
@@ -71,7 +70,7 @@ def save_local_jw(entry, booknum, bibleBookChapter, lang, label):
         json.dump(all_local, f, ensure_ascii=False, indent=2, sort_keys=True)
 
 
-def split_video(inputvideo, marker, height=None): #start, duration, title, height=None):
+def split_video(inputvideo, marker, height=None):
     start, title = marker['startTime'], marker['label']
     duration, transition = marker['duration'], marker['endTransitionDuration']
     hd, md, sd, ht, mt, st = duration.split(':') + transition.split(':')
@@ -81,10 +80,25 @@ def split_video(inputvideo, marker, height=None): #start, duration, title, heigh
     opt = f'-vf scale=-2:{height}' if height else ''
     opt += ' -map_chapters -1 -metadata title="" -metadata comment=@nwtsigns_bot'
     cmd = f'ffmpeg -v warning -hide_banner -y -ss {start} -i "{inputvideo}" -t {end} {opt} "{outdir}"'
-    logger.info(cmd)
     try:
         run(shlex.split(cmd), capture_output=True)
     except:
         return None
     else:
         return outdir
+
+
+def concatenate(inputvideos):
+    intermediates = []
+    for video in inputvideos:
+        out = '{}.ts'.format(time.time())
+        intermediates.append(out)
+        ts = 'ffmpeg -v warning -hide_banner -y -i "{}" -c copy "{}"'.format(video, out)
+        run(shlex.split(ts))
+    output = os.path.dirname(inputvideos[0]) + '/' + ' - '.join([os.path.splitext(os.path.basename(i))[0] for i in inputvideos]) + '.mp4'
+    concat = '|'.join(intermediates)
+    cmd = 'ffmpeg -v warning -hide_banner -y -i "concat:{}" -c copy "{}"'.format(concat, output)
+    run(shlex.split(cmd), capture_output=True)
+    run(shlex.split('rm ' + ' '.join(intermediates)), capture_output=True)
+    return output
+

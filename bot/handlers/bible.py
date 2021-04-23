@@ -9,6 +9,7 @@ from telegram import (
     InlineKeyboardMarkup,
     Update,
     ParseMode,
+    File,
 )
 from telegram.ext import (
     CallbackContext,
@@ -33,6 +34,8 @@ from local_jw import (
     get_entry_local_jw,
     save_local_jw,
     split_video,
+    concatenate,
+    VERSES_PATH,
 )
 from utils import (
     BIBLE_BOOKALIAS_NUM,
@@ -52,7 +55,6 @@ from secret import CHANNEL_ID
 logger = logging.getLogger(__name__)
 
 SELECTING_CHAPTERS, SELECTING_VERSES = range(2)
-
 
 @forw
 @vip
@@ -129,44 +131,81 @@ def get_verses(update: Update, context: CallbackContext):
     ud['bible'][2] = verses
     return send_video(update, context)
 
-
 def send_video(update: Update, context: CallbackContext):
     message = update.message if update.message else update.callback_query.message
     chat = update.callback_query.message.chat if update.callback_query else update.effective_chat
     ud = context.user_data
     booknum, chapter, verses = ud['bible']
     if not is_available(ud['jw'], chapter, verses, ud['lang'], ud['quality']):
+        # TODO ser más especifico
         message.reply_text('Ese video no está disponible')
         return -1
     url = get_url_file(ud['jw'], chapter, ud['lang'], ud['quality'])
+    # TODO hacer clase para db
     db = get_entry_local_jw(booknum, chapter, ud['lang'], ud['quality'])
     server_filesize = get_filesize(
         ud['jw'], chapter, ud['lang'], ud['quality'])
     local_filesize = os.stat(
         db['file']).st_size if os.path.isfile(db['file']) else 0
     logger.info('(%s) %s', update.effective_user.name, ud['bible'])
+    if server_filesize != local_filesize:
+        logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
+        context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+        nwt_video_path = download_video(url)
+        db['file'] = nwt_video_path
+        db['filesize'] = os.stat(nwt_video_path).st_size
+    to_concatenate = False if len(verses) == 1 else True
+    # si concatenate -> si no existe file_id, lo corto, sino lo descargo de telegram
+    paths_to_concatenate = []
+    new = []
     for verse in verses:
         marker = get_marker(ud['jw'], chapter, verse, ud['lang'])
-        if server_filesize == db['filesize'] and verse in db['verses']:
-            logger.info('Te lo reenvío. Easy')
-            msgverse = context.bot.send_video(chat.id, db['verses'][verse]['file_id'])
-            context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
-            continue
-        if server_filesize != local_filesize:
-            logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
+        # si ya lo he enviado anteriormente...
+        if verse in db['verses']:
+            file_id = db['verses'][verse]['file_id']
+            if to_concatenate:
+                versepath = os.path.join(VERSES_PATH, file_id + '.mp4')
+                context.bot.get_file(file_id).download(custom_path=versepath)
+                paths_to_concatenate.append(versepath)
+                print(f'{versepath} recién descargado de telegram. Guardado para concatenar')
+            else:
+                logger.info('Te lo reenvío. Easy')
+                msgverse = context.bot.send_video(chat.id, file_id)
+                context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
+        # si nunca lo he enviado
+        else:
             context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-            nwt_video_path = download_video(url)
-            db['file'] = nwt_video_path
-            db['filesize'] = os.stat(nwt_video_path).st_size
-        context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-        versepath = split_video(db['file'], marker)
-        context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
-        msgverse = context.bot.send_video(chat.id, open(versepath, 'rb'))
+            versepath = split_video(db['file'], marker)
+            logger.info("%s split video ok", versepath)
+            if to_concatenate:
+                paths_to_concatenate.append(versepath)
+                print('Recién cortado. Guardado para concatenar')
+                new.append((verse, versepath))
+            else:
+                context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
+                msgverse = context.bot.send_video(chat.id, open(versepath, 'rb'))
+                context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
+                os.remove(versepath)
+                db['verses'][verse] = {
+                    'file_id': msgverse.video.file_id,
+                    'name': marker['label'],
+                }
+    if to_concatenate:
+        print(f'{paths_to_concatenate} enviando para concatenar')
+        finalpath = concatenate(paths_to_concatenate)
+        msgverse = context.bot.send_video(chat.id, open(finalpath, 'rb'))
         context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
-        os.remove(versepath)
-        db['verses'][verse] = {
-            'file_id': msgverse.video.file_id, 'name': marker['label']}
-    logger.info('Hecho')
+        os.remove(finalpath)
+        for verse, versepath in new:
+            print('enviando nuevo', versepath)
+            msgverse = context.bot.send_video(CHANNEL_ID, open(versepath, 'rb'))
+            db['verses'][verse] = {
+                'file_id': msgverse.video.file_id,
+                'name': marker['label'],
+            }
+        for versepath in paths_to_concatenate:
+            os.remove(versepath)
+
     save_local_jw(db, booknum, chapter, ud['lang'], ud['quality'])
     return -1
 
@@ -184,5 +223,5 @@ parse_handler = ConversationHandler(
         SELECTING_VERSES: [CallbackQueryHandler(get_verses)]
     },
     allow_reentry=True,
-    fallbacks=[CommandHandler('cancel', lambda x, y: -1)],
+    fallbacks=[CommandHandler('cancel', lambda u, c: -1)],
 )
