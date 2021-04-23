@@ -158,15 +158,20 @@ BIBLE_BOOKNAMES = (
     'Apocalipsis',
 )
 
-BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?:, *| +)\d+)*)? *$"
+BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
 
 def parse_bible_pattern(text):
     match = re.match(BIBLE_PATTERN, text.lower())
     book_alias = match.group(1)
     booknum = str(BIBLE_BOOKALIAS_NUM[book_alias])
     chapter = str(int(match.group(2))) if match.group(2) else None
-    verses = [i for i in match.group(3).replace(',', ' ').split()] if match.group(3) else None
+    verses = []
+    groups = [i.split() for i in match.group(3).split(',')] if match.group(3) else []
+    groups = [i for group in groups for i in group]
+    for group in groups:
+        if '-' in group:
+            verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
+        else:
+            verses.append(group)
     return book_alias, booknum, chapter, verses
 
-# t = ''.maketrans({' ': '', 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'})
-# BIBLE_BOOKNAMES_FLAT = [name.lower().translate(t) for name in BIBLE_BOOKNAMES]
