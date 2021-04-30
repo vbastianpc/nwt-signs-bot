@@ -10,6 +10,7 @@ states/
 SECRETS.json
 jw_data.json
 users.json
+*.bk
 
 .DS_Store
 .vscode/
