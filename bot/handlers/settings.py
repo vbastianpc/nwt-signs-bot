@@ -14,15 +14,10 @@ from telegram.ext import (
     Filters,
 )
 
-from jw_pubmedia import (
-    get_jw_data,
-    get_labels,
-    get_signs_languages,
-)
+from models import JWPubMedia, UserController
 
 from utils import list_of_lists
-from decorators import vip, forw
-from users import set_user_lang, set_user_quality, get_user_lang, get_user_quality
+from utils.decorators import vip, forw
 
 
 logger = logging.getLogger(__name__)
@@ -36,17 +31,17 @@ def get_lang(update: Update, context: CallbackContext) -> int:
     args = update.message.text.split()[1:]
     lang = args[0] if args else update.message.text
     ud = context.user_data
-    ud['all_langs'] = get_signs_languages()
-    if lang in ud['all_langs']:
-        set_user_lang(update.message.from_user.id, lang)
+    langs = JWPubMedia.get_signs_languages()
+    if lang in langs:
+        UserController.set_user(update.message.from_user.id, lang)
         update.message.reply_markdown_v2(
-            f'Lengua cambiada a\n```\n{lang} - {ud["all_langs"][lang]}\n```')
+            f'Lengua cambiada a\n```\n{lang} - {langs[lang]}\n```')
         return -1
     elif lang == '/lang':
-        langs = '\n'.join([f'{code} - {lang}' for code,
-                        lang in sorted(ud['all_langs'].items(), key=lambda x: x[1])])
-        update.message.reply_markdown_v2(f'```\n{langs}\n```')
-        update.message.reply_text('Dime el código de la lengua señas.')
+        pretty_langs = '\n'.join([f'{code} - {lang}' for code,
+                        lang in sorted(langs.items(), key=lambda x: x[1])])
+        update.message.reply_markdown_v2(f'```\n{pretty_langs}\n```')
+        update.message.reply_text('Dime el código de tu lengua señas.')
         return SETTING_LANG
     else:
         update.message.reply_text('No he reconocido ese idioma.')
@@ -55,21 +50,19 @@ def get_lang(update: Update, context: CallbackContext) -> int:
 @forw
 @vip
 def get_quality(update: Update, context: CallbackContext) -> int:
-    lang = get_user_lang(update.effective_user.id)
-    jw_data = get_jw_data(1, lang)  # genesis
+    lang = UserController.get_user(update.effective_user.id)['lang']
+    jw = JWPubMedia(lang, booknum='1')
+    qualities = jw.get_qualities()
     args = update.message.text.split()[1:]
     quality = args[0] if args else update.message.text
-    ud = context.user_data
-    ud['all_labels'] = get_labels(jw_data, lang)
-    if quality in ud['all_labels']:
+    if quality in qualities:
         context.user_data['quality'] = quality
-        set_user_quality(update.message.from_user.id, quality)
+        UserController.set_user(update.message.from_user.id, quality=quality)
         update.message.reply_markdown_v2(
             f'Calidad configurada a\n```\n{quality}\n```', reply_markup=ReplyKeyboardRemove())
     elif quality == '/quality':
-        context.user_data['all_labels'] = get_labels(jw_data, lang)
         buttons = list_of_lists(
-            [KeyboardButton(q) for q in context.user_data['all_labels']],
+            [KeyboardButton(q) for q in qualities],
             columns=2,
         )
         text = f'Elige la calidad para los videos'
