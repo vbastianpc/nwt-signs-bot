@@ -19,8 +19,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-NWT_PATH = Path('video/download')
-VERSES_PATH = Path('video/verses')
+NWT_PATH = Path('../video/download')
+VERSES_PATH = Path('../video/verses')
 
 NWT_PATH.mkdir(parents=True, exist_ok=True)
 VERSES_PATH.mkdir(parents=True, exist_ok=True)
