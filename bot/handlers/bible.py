@@ -19,7 +19,7 @@ from telegram.ext import (
     Filters,
 )
 
-from models import UserController as uc
+from models import UserController
 from models import JWPubMedia, LocalData, Video
 from utils import (
     BIBLE_BOOKALIAS_NUM,
@@ -56,12 +56,13 @@ def forward_to_channel(bot, from_chat_id, message_id):
 @vip
 def parse_bible(update: Update, context: CallbackContext):
     _, booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
+    uc = UserController(update.effective_user.id)
     context.user_data['jw'] = JWPubMedia(
-        lang=uc.lang(update.effective_user.id),
+        lang=uc.lang(),
         booknum=booknum,
         chapter=chapter,
         verses=verses,
-        quality=uc.quality(update.effective_user.id),
+        quality=uc.quality(),
     )
     if verses:
         return manage_verses(update, context)
@@ -149,7 +150,7 @@ def manage_verses(update: Update, context: CallbackContext):
         db.discard_verses()
         db.save()
 
-    verse = jw.verse[0] if len(jw.verses) == 1 else ' '.join(jw.verses)
+    verse = jw.verses[0] if len(jw.verses) == 1 else ' '.join(jw.verses)
     if verse in db.existing_verses:
         logger.info('Sending by file_id')
         msgverse = context.bot.send_video(
