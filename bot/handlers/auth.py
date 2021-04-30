@@ -7,9 +7,9 @@ from telegram.error import BadRequest, Unauthorized
 from telegram.utils.helpers import mention_markdown
 from telegram.constants import MAX_MESSAGE_LENGTH
 
-from secret import ADMIN
-from decorators import vip, admin, forw
-from users import add_user, remove_user, get_users
+from utils.secret import ADMIN
+from utils.decorators import vip, admin, forw
+from models import UserController as uc
  
 
 logger = logging.getLogger(__name__)
@@ -41,10 +41,10 @@ def autorizacion(update: Update, context: CallbackContext):
             chat_id=new_member_id,
             text='Has sido aceptado. Ya puedes usar este bot.',
         )
-        add_user(new_member_id, msg.chat.full_name)
+        uc.add_user(new_member_id, msg.chat.full_name)
         start(
             update,
-            context, 
+            context,
             chat_id=new_member_id,
             first_name=msg.chat.first_name
         )
@@ -83,7 +83,7 @@ def delete_user(update: Update, context: CallbackContext):
         update.message.reply_text('Usa /delete [user_id]')
         return
     else:
-        state = remove_user(context.args[0])
+        state = uc.remove_user(context.args[0])
     if state:
         update.message.reply_text('Usuario eliminado')
     else:
@@ -92,8 +92,7 @@ def delete_user(update: Update, context: CallbackContext):
 
 @admin
 def sending_users(update: Update, context: CallbackContext):
-    users = [f'{mention_markdown(user_id, data["name"])} `{user_id}` {data["lang"]} {data["quality"]}'
-             for user_id, data in get_users().items()]
+    users = uc.pretty_users()
     text = ''
     for user in users:
         if len(text+user) + 1 <= MAX_MESSAGE_LENGTH:
@@ -101,7 +100,8 @@ def sending_users(update: Update, context: CallbackContext):
         else:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
             text = ''
-    if text: update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    if text:
+        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
 @admin

@@ -1,5 +1,5 @@
 
-import os
+from pathlib import Path
 import logging
 import re
 
@@ -9,7 +9,6 @@ from telegram import (
     InlineKeyboardMarkup,
     Update,
     ParseMode,
-    File,
 )
 from telegram.ext import (
     CallbackContext,
@@ -19,76 +18,70 @@ from telegram.ext import (
     ConversationHandler,
     Filters,
 )
-from jw_pubmedia import (
-    get_bibleBookChapters,
-    get_filesize,
-    get_jw_data,
-    get_marker,
-    get_url_file,
-    get_verseNumbers,
-    is_available,
-    get_title,
-)
-from local_jw import (
-    download_video,
-    get_entry_local_jw,
-    save_local_jw,
-    split_video,
-    concatenate,
-    VERSES_PATH,
-)
+
+from models import UserController as uc
+from models import JWPubMedia, LocalData, Video
 from utils import (
     BIBLE_BOOKALIAS_NUM,
-    BIBLE_NUM_BOOKALIAS,
     list_of_lists,
     BIBLE_PATTERN,
     parse_bible_pattern,
+    safechars,
 )
-from decorators import vip, forw
-from users import get_user_quality, get_user_lang
-from secret import CHANNEL_ID
+from utils.decorators import vip, forw
+from utils.secret import CHANNEL_ID
 
-# logging.basicConfig(
-#     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s', level=logging.INFO
-# )
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+)
 
 logger = logging.getLogger(__name__)
 
 SELECTING_CHAPTERS, SELECTING_VERSES = range(2)
+FORWARD_TO_CHANNEL = True
+
+
+def forward_to_channel(bot, from_chat_id, message_id):
+    if FORWARD_TO_CHANNEL:
+        bot.forward_message(
+            CHANNEL_ID,
+            from_chat_id=from_chat_id,
+            message_id=message_id,
+        )
+
 
 @forw
 @vip
 def parse_bible(update: Update, context: CallbackContext):
-    book_alias, booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
-    ud = context.user_data
-    ud['quality'] = get_user_quality(update.message.from_user.id)
-    ud['lang'] = get_user_lang(update.message.from_user.id)
-    ud['bible'] = [booknum, chapter, verses]
-    logger.info("(%s) %s %s", update.effective_user.name, book_alias, ud['bible'])
-    ud['jw'] = get_jw_data(booknum, lang=ud['lang'])
-
+    _, booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
+    context.user_data['jw'] = JWPubMedia(
+        lang=uc.lang(update.effective_user.id),
+        booknum=booknum,
+        chapter=chapter,
+        verses=verses,
+        quality=uc.quality(update.effective_user.id),
+    )
     if verses:
-        return send_video(update, context)
-    if chapter:
+        return manage_verses(update, context)
+    elif chapter:
         return show_verses(update, context)
-    if not chapter:
+    else:
         return show_chapters(update, context)
 
+
 def show_chapters(update: Update, context: CallbackContext):
-    context.bot.send_chat_action(update.message.chat.id, ChatAction.TYPING)
-    ud = context.user_data
-    chapters = get_bibleBookChapters(
-        context.user_data['jw'],
-        lang=ud['lang'],
-        label=ud['quality']
-    )
+    context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
+    jw = context.user_data['jw']
+    chapters = jw.available_chapters()
     buttons = list_of_lists(
         [InlineKeyboardButton(chapter, callback_data=chapter)
          for chapter in chapters],
         columns=8
     )
     update.message.reply_text(
-        f'*{ud["jw"]["pubName"]}*\nElige un capítulo',
+        f'*{jw.data["pubName"]}*\nElige un capítulo',
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -97,26 +90,23 @@ def show_chapters(update: Update, context: CallbackContext):
 
 def get_chapters(update: Update, context: CallbackContext):
     update.callback_query.answer()
-    ud = context.user_data
     update.callback_query.message.delete()
-    chapter = update.callback_query.data
-    ud['bible'][1] = chapter
+    context.user_data['jw'].chapter = update.callback_query.data
     return show_verses(update, context)
 
 
 def show_verses(update: Update, context: CallbackContext):
     message = update.message if update.message else update.callback_query.message
     context.bot.send_chat_action(message.chat.id, ChatAction.TYPING)
-    ud = context.user_data
-    chapter = ud['bible'][1]
-    verses = get_verseNumbers(ud['jw'], chapter, lang=ud['lang'])
+    jw = context.user_data['jw']
+    verses = jw.available_verses()
     buttons = list_of_lists(
         [InlineKeyboardButton(verse, callback_data=verse) for verse in verses],
         columns=8
     )
     context.bot.send_message(
         chat_id=message.chat.id,
-        text=f'*{ud["jw"]["pubName"]} {get_title(ud["jw"], chapter, ud["lang"])}*\nElige un versículo',
+        text=f'*{jw.data["pubName"]} {jw.title}*\nElige un versículo',
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -125,88 +115,154 @@ def show_verses(update: Update, context: CallbackContext):
 
 def get_verses(update: Update, context: CallbackContext):
     update.callback_query.answer('Espera unos momentos')
-    ud = context.user_data
     update.callback_query.message.delete()
-    verses = [update.callback_query.data]
-    ud['bible'][2] = verses
-    return send_video(update, context)
+    context.user_data['jw'].verses = [update.callback_query.data]
+    return manage_verses(update, context)
 
-def send_video(update: Update, context: CallbackContext):
+
+def manage_verses(update: Update, context: CallbackContext):
     message = update.message if update.message else update.callback_query.message
     chat = update.callback_query.message.chat if update.callback_query else update.effective_chat
-    ud = context.user_data
-    booknum, chapter, verses = ud['bible']
-    if not is_available(ud['jw'], chapter, verses, ud['lang'], ud['quality']):
-        # TODO ser más especifico
-        message.reply_text('Ese video no está disponible')
+    jw = context.user_data['jw']
+    db = LocalData(
+        booknum=jw.booknum,
+        chapter=jw.chapter,
+        lang=jw.lang,
+        quality=jw.quality,
+    )
+    context.user_data['db'] = db
+    if jw.not_available_verses():
+        na = jw.not_available_verses()
+        message.reply_text(
+            ('El siguiente versículo no está disponible:\n' if len(na) == 1 else
+            'Los siguientes versículos no están disponibles:\n') +
+            ' '.join(na)
+        )
         return -1
-    url = get_url_file(ud['jw'], chapter, ud['lang'], ud['quality'])
-    # TODO hacer clase para db
-    db = get_entry_local_jw(booknum, chapter, ud['lang'], ud['quality'])
-    server_filesize = get_filesize(
-        ud['jw'], chapter, ud['lang'], ud['quality'])
-    local_filesize = os.stat(
-        db['file']).st_size if os.path.isfile(db['file']) else 0
-    logger.info('(%s) %s', update.effective_user.name, ud['bible'])
-    if server_filesize != local_filesize:
+
+    logger.info('(%s) %s', update.effective_user.name, f'{jw.booknum=} {jw.chapter=} {jw.verses}')
+    logger.info('%s', f'{jw.filesize=} {db.filesize=}')
+    if jw.filesize != db.filesize:
         logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-        nwt_video_path = download_video(url)
-        db['file'] = nwt_video_path
-        db['filesize'] = os.stat(nwt_video_path).st_size
-    to_concatenate = False if len(verses) == 1 else True
-    # si concatenate -> si no existe file_id, lo corto, sino lo descargo de telegram
+        db.path = Video.download(jw.video_url)
+        db.discard_verses()
+        db.save()
+
+    verse = jw.verse[0] if len(jw.verses) == 1 else ' '.join(jw.verses)
+    if verse in db.existing_verses:
+        logger.info('Sending by file_id')
+        msgverse = context.bot.send_video(
+            chat_id=chat.id,
+            video=db.get_fileid(verse),
+            caption=db.get_versename(verse),
+        )
+        forward_to_channel(context.bot, chat.id, msgverse.message_id)
+    elif len(jw.verses) == 1:
+        send_single_verse(update, context)
+    else:
+        send_concatenate_verses(update, context)
+    logger.info('Success!')
+    return -1
+    
+def send_single_verse(update: Update, context: CallbackContext):
+    chat = update.callback_query.message.chat if update.callback_query else update.effective_chat
+    jw = context.user_data['jw']
+    db = context.user_data['db']
+    verse = jw.verses[0]
+ 
+    logger.info("Splitting verse %s from %s", verse, db.path)
+    context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+    versepath = Video.split(db.path, jw.match_marker(verse))
+    stream = Video.show_streams(versepath)
+    context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
+    msgverse = context.bot.send_video(
+        chat_id=chat.id,
+        video=versepath.read_bytes(),
+        filename=versepath.name,
+        caption=jw.verse_name(verse),
+        width=stream['width'],
+        height=stream['height'],
+        duration=round(float(stream['duration'])),
+        timeout=120,
+    )
+    forward_to_channel(context.bot, chat.id, msgverse.message_id)
+    versepath.unlink()
+    db.add_verse(verse, jw.verse_name(verse), msgverse.video.file_id)
+    db.save()
+    return -1
+
+
+def send_concatenate_verses(update: Update, context: CallbackContext):
+    chat = update.callback_query.message.chat if update.callback_query else update.effective_chat
+    jw = context.user_data['jw']
+    db = context.user_data['db']
+    versenums = ' '.join(jw.verses)
+
     paths_to_concatenate = []
     new = []
-    for verse in verses:
-        marker = get_marker(ud['jw'], chapter, verse, ud['lang'])
-        # si ya lo he enviado anteriormente...
-        if verse in db['verses']:
-            file_id = db['verses'][verse]['file_id']
-            if to_concatenate:
-                versepath = os.path.join(VERSES_PATH, file_id + '.mp4')
-                context.bot.get_file(file_id).download(custom_path=versepath)
-                paths_to_concatenate.append(versepath)
-                print(f'{versepath} recién descargado de telegram. Guardado para concatenar')
-            else:
-                logger.info('Te lo reenvío. Easy')
-                msgverse = context.bot.send_video(chat.id, file_id)
-                context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
-        # si nunca lo he enviado
+    for verse in jw.verses:
+        context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+        if verse in db.existing_verses:
+            logger.info('Downloading verse %s from telgram servers', verse)
+            file_id = db.get_fileid(verse)
+            filename = db.get_versename(verse) + '.mp4'
+            versepath = Path(filename)
+            context.bot.get_file(file_id).download(custom_path=versepath)
+            paths_to_concatenate.append(versepath)
         else:
-            context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-            versepath = split_video(db['file'], marker)
-            logger.info("%s split video ok", versepath)
-            if to_concatenate:
-                paths_to_concatenate.append(versepath)
-                print('Recién cortado. Guardado para concatenar')
-                new.append((verse, versepath))
-            else:
-                context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
-                msgverse = context.bot.send_video(chat.id, open(versepath, 'rb'))
-                context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
-                os.remove(versepath)
-                db['verses'][verse] = {
-                    'file_id': msgverse.video.file_id,
-                    'name': marker['label'],
-                }
-    if to_concatenate:
-        print(f'{paths_to_concatenate} enviando para concatenar')
-        finalpath = concatenate(paths_to_concatenate)
-        msgverse = context.bot.send_video(chat.id, open(finalpath, 'rb'))
-        context.bot.forward_message(CHANNEL_ID, chat.id, msgverse.message_id)
-        os.remove(finalpath)
-        for verse, versepath in new:
-            print('enviando nuevo', versepath)
-            msgverse = context.bot.send_video(CHANNEL_ID, open(versepath, 'rb'))
-            db['verses'][verse] = {
-                'file_id': msgverse.video.file_id,
-                'name': marker['label'],
-            }
-        for versepath in paths_to_concatenate:
-            os.remove(versepath)
-
-    save_local_jw(db, booknum, chapter, ud['lang'], ud['quality'])
+            logger.info("Splitting verse %s from %s", verse, db.path)
+            marker = jw.match_marker(verse)
+            versepath = Video.split(db.path, marker)
+            paths_to_concatenate.append(versepath)
+            new.append((verse, versepath))
+    logger.info('Concatenating video %s', jw.pretty_name)
+    finalpath = Video.concatenate(
+        inputvideos=paths_to_concatenate,
+        outname=safechars(jw.pretty_name),
+        title_chapters=list(map(jw.verse_name, jw.verses)),
+        title=jw.pretty_name,
+    )
+    logger.info('Sending concatenated video %s', finalpath)
+    context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
+    stream = Video.show_streams(finalpath)
+    msgverse = context.bot.send_video(
+        chat_id=chat.id,
+        video=finalpath.read_bytes(),
+        filename=finalpath.name,
+        caption=jw.pretty_name,
+        width=stream['width'],
+        height=stream['height'],
+        duration=round(float(stream['duration'])),
+        timeout=120,
+    )
+    forward_to_channel(context.bot, chat.id, msgverse.message_id)
+    db.add_verse(
+        verse=versenums,
+        versename=jw.pretty_name,
+        file_id=msgverse.video.file_id,
+    )
+    logger.info('Sending backup single verse %s', [verse for verse, _ in new])
+    for verse, versepath in new:
+        stream = Video.show_streams(versepath)
+        msgverse = context.bot.send_video(
+            chat_id=CHANNEL_ID,
+            video=versepath.read_bytes(),
+            filename=versepath.name,
+            caption=jw.verse_name(verse),
+            width=stream['width'],
+            height=stream['height'],
+            duration=round(float(stream['duration'])),
+            timeout=120,
+        )
+        db.add_verse(
+            verse=verse,
+            versename=jw.verse_name(verse),
+            file_id=msgverse.video.file_id,
+        )
+    for versepath in paths_to_concatenate + [finalpath]:
+        versepath.unlink()
+    db.save()
     return -1
 
 
