@@ -3,15 +3,12 @@ import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters
-from telegram.error import BadRequest, Unauthorized
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.utils.helpers import mention_markdown
 
-from secret import ADMIN
-from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS
-from decorators import vip, admin, forw
-from users import add_user, remove_user
-from utils import BIBLE_BOOKALIAS_NUM
+from models import UserController as uc
+from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS, BIBLE_BOOKALIAS_NUM
+from utils.decorators import vip, admin, forw
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +24,18 @@ def test_data(update: Update, context: CallbackContext) -> None:
 def info_inline(update: Update, context: CallbackContext) -> None:
     context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=('Puedes usar este bot directamente en el chat de un amigo. '
+        text=('Busca y envía pasajes de la Biblia directamente en el chat de un amigo. '
               'Ve a un chat de tus contactos y escribe el nombre del bot seguido de un '
-              'libro de la biblia. Por ejemplo:\n\n'
-              f'@{context.bot.get_me().username} Mat'),
+              'texto de la biblia. Por ejemplo:\n\n'
+              f'@{context.bot.get_me().username} Mat 24:14'),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
-                text='Probar modo inline',
-                switch_inline_query='Mat ',
+                text='Probar modo inline en chat de un amigo',
+                switch_inline_query='',
+            )],
+            [InlineKeyboardButton(
+                text='Probar modo inline aquí mismo',
+                switch_inline_query_current_chat=''
             )]
         ]),
     )
