@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Updater, CallbackContext
 
 from handlers import handlers
-from secret import TOKEN
+from utils.secret import TOKEN
 
 
 logging.basicConfig(
