@@ -30,7 +30,6 @@ SETTING_LANG, SETTING_QUALITY = range(2)
 def get_lang(update: Update, context: CallbackContext) -> int:
     args = update.message.text.split()[1:]
     lang = args[0] if args else update.message.text
-    ud = context.user_data
     langs = JWPubMedia.get_signs_languages()
     if lang in langs:
         UserController.set_user(update.message.from_user.id, lang)
