@@ -145,8 +145,8 @@ def manage_verses(update: Update, context: CallbackContext):
         )
         return -1
 
-    logger.info('(%s) %s', update.effective_user.name, f'{jw.booknum=} {jw.chapter=} {jw.verses}')
-    logger.info('%s', f'{jw.filesize=} {db.filesize=}')
+    logger.info('(%s) %s', update.effective_user.name, f'{jw.booknum} {jw.chapter} {jw.verses}')
+    logger.info('%s', f'{jw.filesize} {db.filesize}')
     if jw.filesize != db.filesize:
         logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)

@@ -50,7 +50,7 @@ class UserController:
         for user in cls.read_users():
             if user['telegram_id'] == telegram_id:
                 return user
-        raise Exception(f'No user {telegram_id=} found.')
+        raise Exception(f'No user {telegram_id} found.')
 
     @classmethod
     def get_users_id(cls) -> List[int]:

@@ -30,7 +30,7 @@ class Video:
     def download(cls, url) -> PathLike:
         path = NWT_PATH / Path(url).name
         logger.info(f'response = requests.get({url})')
-        logger.info(f'{path=}')
+        logger.info(f'{path}')
         with open(path, "wb") as f:
             response = requests.get(url)
             f.write(response.content)
