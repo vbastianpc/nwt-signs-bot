@@ -54,7 +54,7 @@ def forw(func):
     @wraps(func)
     def forward_log_function(update: Update, context: CallbackContext, **kwargs):
         user = update.effective_user
-        if user.id != ADMIN:
+        if user and user.id != ADMIN:
             context.bot.forward_message(CHANNEL_ID, user.id, update.message.message_id)
         return func(update, context, **kwargs)
     return forward_log_function
