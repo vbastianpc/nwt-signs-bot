@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @vip
 def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
-    _, booknum, chapter, verses = parse_bible_pattern(update.inline_query.query)
+    booknum, chapter, verses = parse_bible_pattern(update.inline_query.query)
     uc = UserController(update.effective_user.id)
     db = LocalData(
         lang=uc.lang(),
