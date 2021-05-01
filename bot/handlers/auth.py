@@ -15,21 +15,25 @@ from models import UserController as uc
 logger = logging.getLogger(__name__)
 
 
+@forw
 @vip
 def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
     text = (
-        f'Hola {first_name if first_name else update.effective_user.first_name}. '
+        f'Hola {first_name if first_name else update.effective_user.first_name}, bienvenido. '
         'Escribe el versículo que necesites y te lo enviaré. Por ejemplo\n\n'
-        '`Mat 24:14`\n\n'
-        "Usa las abreviaciones de los libros de la Biblia. Escribe o presiona el símbolo slash '`/`' para conocerlas.\n\n"
-        'Para cambiar la lengua de señas, usa el comando /lang'
+        '`Mateo 24:14`\n'
+        '`Apocalipsis 21:3, 4`\n'
+        '`2 Timoteo 3:1-5`\n\n'        
+        'También puedes usar las abreviaciones de los libros. Escribe o presiona el símbolo slash '
+        '`/` para ver el listado completo.\n\n'
+        'Usa /lang para cambiar tu lengua de señas.\n'
+        'Usa /quality para cambiar la calidad de tus videos.'
     )
     context.bot.send_message(
         chat_id=chat_id if chat_id else update.effective_chat.id,
         text=text,
         parse_mode=ParseMode.MARKDOWN,
     )
-
 
 @admin
 def autorizacion(update: Update, context: CallbackContext):
@@ -64,16 +68,15 @@ def autorizacion(update: Update, context: CallbackContext):
 
 
 def permiso(update: Update, context: CallbackContext):
-    context.bot.send_message(
-        chat_id=ADMIN,
-        text=(f'{mention_markdown(update.effective_user.id, update.effective_user.name)} '
-              f'`{update.effective_user.id}` Ha solicitado ingresar.'),
-        parse_mode=ParseMode.MARKDOWN
-    )
-    update.message.reply_text(
-        'Debes esperar a que tu solicitud sea aceptada. '
-        'Puedes contarme cómo llegaste al bot, o por qué quieres usarlo 👋🏼'
-    )
+    user = update.effective_user
+    if user.id not in uc.get_users_id():
+        context.bot.send_message(
+            chat_id=ADMIN,
+            text=(f'{mention_markdown(user.id, user.name)} '
+                f'`{user.id}` Ha solicitado ingresar.'),
+            parse_mode=ParseMode.MARKDOWN
+        )
+        update.message.reply_text('Ya solo esperar hasta tener autorización.')
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
