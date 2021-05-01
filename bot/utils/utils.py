@@ -1,6 +1,8 @@
 import re
 from typing import Any, List
 
+from unidecode import unidecode
+
 
 BIBLE_BOOKALIAS_NUM = {
     'gen': 1,
@@ -157,18 +159,24 @@ BIBLE_BOOKNAMES = (
     'Judas',
     'Apocalipsis',
 )
-
+dict_booknames = {
+    **BIBLE_BOOKALIAS_NUM,
+    **{bookname.lower(): booknum for booknum, bookname in enumerate(BIBLE_BOOKNAMES, 1)},
+    **{unidecode(bookname.lower()): booknum for booknum, bookname in enumerate(BIBLE_BOOKNAMES, 1)
+        if bookname != unidecode(bookname)},
+}
 def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-﹕,() ") else '_' for x in text.replace(':', '﹕')])
 
-BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
+#BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
+BIBLE_PATTERN = fr"^({'|'.join(dict_booknames)}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
 
 def parse_bible_pattern(text):
     match = re.match(BIBLE_PATTERN, text.lower())
     if not match:
-        return None, None, None, None
-    book_alias = match.group(1)
-    booknum = str(BIBLE_BOOKALIAS_NUM[book_alias])
+        return None, None, None
+    match_book = match.group(1)
+    booknum = str(dict_booknames[match_book])
     chapter = str(int(match.group(2))) if match.group(2) else None
     verses = []
     groups = [i.split() for i in match.group(3).split(',')] if match.group(3) else []
@@ -178,5 +186,5 @@ def parse_bible_pattern(text):
             verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
         else:
             verses.append(group)
-    return book_alias, booknum, chapter, verses
+    return booknum, chapter, verses
 
