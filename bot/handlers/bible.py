@@ -55,7 +55,7 @@ def forward_to_channel(bot, from_chat_id, message_id):
 @forw
 @vip
 def parse_bible(update: Update, context: CallbackContext):
-    _, booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
+    booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
     uc = UserController(update.effective_user.id)
     context.user_data['jw'] = JWPubMedia(
         lang=uc.lang(),
@@ -82,7 +82,7 @@ def show_chapters(update: Update, context: CallbackContext):
         columns=8
     )
     update.message.reply_text(
-        f'*{jw.data["pubName"]}*\nElige un capítulo',
+        f'*{jw.bookname}*\nElige un capítulo',
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -107,7 +107,7 @@ def show_verses(update: Update, context: CallbackContext):
     )
     context.bot.send_message(
         chat_id=message.chat.id,
-        text=f'*{jw.data["pubName"]} {jw.title}*\nElige un versículo',
+        text=f'*{jw.bookname} {jw.title_booknum}*\nElige un versículo',
         reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode=ParseMode.MARKDOWN,
     )
@@ -132,12 +132,16 @@ def manage_verses(update: Update, context: CallbackContext):
         quality=jw.quality,
     )
     context.user_data['db'] = db
-    if jw.not_available_verses():
+
+    if jw.chapter not in jw.available_chapters():
+        message.reply_text(f'El capítulo {jw.chapter} no está disponible.')
+        return -1
+    elif jw.not_available_verses():
         na = jw.not_available_verses()
         message.reply_text(
-            ('El siguiente versículo no está disponible:\n' if len(na) == 1 else
-            'Los siguientes versículos no están disponibles:\n') +
-            ' '.join(na)
+            (f'El versículo {na[0]} no está disponible.' if len(na) == 1
+            else f'Los versículos {na[0]} y {na[1]} no están disponibles.' if len(na) == 2
+            else f'Los versículos {", ".join(na[:-1])} y {na[-1]} no están disponibles.')
         )
         return -1
 
@@ -205,7 +209,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     for verse in jw.verses:
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
         if verse in db.existing_verses:
-            logger.info('Downloading verse %s from telgram servers', verse)
+            logger.info('Downloading verse %s from telegram servers', verse)
             file_id = db.get_fileid(verse)
             filename = db.get_versename(verse) + '.mp4'
             versepath = Path(filename)
