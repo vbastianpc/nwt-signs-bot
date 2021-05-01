@@ -27,7 +27,9 @@ def info_inline(update: Update, context: CallbackContext) -> None:
         text=('Busca y envía pasajes de la Biblia directamente en el chat de un amigo. '
               'Ve a un chat de tus contactos y escribe el nombre del bot seguido de un '
               'texto de la biblia. Por ejemplo:\n\n'
-              f'@{context.bot.get_me().username} Mat 24:14'),
+              f'@{context.bot.get_me().username} Mat 24:14\n\n'
+              'Te mostraré los versículos que ya hayan sido utilizados antes.'
+        ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
                 text='Probar modo inline en chat de un amigo',
@@ -59,16 +61,19 @@ def paraBotFather(update: Update, context: CallbackContext):
 
 @forw
 def text_fallback(update: Update, context: CallbackContext) -> None:
-    fail = update.message.text[0].lower()
-    maybe = ['/' + bookalias for bookalias in BIBLE_BOOKALIAS_NUM if bookalias.startswith(fail)]
+    fail = update.message.text[0].lower() if update.message.text else None
+    if fail is None:
+        logger.warning('%s', update.message)
+    maybe = [
+        f'/{bookalias} - {BIBLE_BOOKNAMES[booknum - 1]}'
+        for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items() if bookalias.startswith(fail)
+    ]
     if maybe:
-        text = 'Usa las abreviaciones de la Biblia para pedirme un versículo.\n\n' \
+        text = 'Puedes usar las abreviaciones de la Biblia para pedirme un versículo. ' \
+            'Puedes ver el listado completo escribiendo o presionando el símbolo slash `/`\n\n' \
             '¿Quizá quieres decir... 🤔?\n' \
             + '\n'.join(maybe)
-    else:
-        text = 'Usa las abreviaciones de la Biblia para pedirme un versículo. '\
-            'Presiona o escribe el símbolo slash `/` para conocerlas.'
-    update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
 @forw
