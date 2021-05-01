@@ -2,7 +2,7 @@ from pathlib import Path
 import requests
 import logging
 import re
-from typing import List
+from typing import List, Dict
 
 
 logging.basicConfig(
@@ -65,6 +65,10 @@ class JWPubMedia:
     @property
     def filesize(self):
         return self._match()['filesize']
+    
+    @property
+    def title_booknum(self):
+        return self._match()['title']
 
     def chapter_from_url(self, url):
         " returns '1' if url= '/.../nwt_40_Mt_SCH_01_r240P.mp4'"
@@ -97,12 +101,13 @@ class JWPubMedia:
     def bookname(self):
         return self.data['pubName']
     
-    def markers(self, chapter=None):
+    def markers(self, chapter=None) -> List[Dict]:
         chapter = chapter or self.chapter
         for item in self._items():
             if (item['markers'] and
                 self.chapter_from_url(item['file']['url']) == chapter):
                 return item['markers']['markers']
+        return []
     
     def not_available_verses(self):
         return [
