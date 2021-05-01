@@ -11,6 +11,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 PATH_DATA = Path('jw_data.json')
+PATH_DATA.touch()
 
 # TODO 
 class LocalData:
@@ -27,7 +28,8 @@ class LocalData:
         self.chapter = chapter
         self.verses = verses
         self.new_verses = {}
-        self.data = self._read_all().get(lang, {}).get(quality) or {}
+        self._all = self._read_all()
+        self.data = self._all.get(lang, {}).get(quality) or {}
         self.existing_verses = self.get_entry().get('verses') or {}
         self._path = None
     
@@ -53,15 +55,17 @@ class LocalData:
         return verse_info.get('name')
 
     def save(self) -> None:
-        self.data \
-            .setdefault(self.lang, {self.quality: {}}) \
-            .setdefault(self.quality, {self.booknum: {}}) \
-            .setdefault(self.booknum, {self.chapter: {}})[self.chapter] = {
+        self._all \
+            .setdefault(self.lang, {}) \
+            .setdefault(self.quality, {}) \
+            .setdefault(self.booknum, {})[self.chapter] = {
                 'file': str(self.path),
                 'verses': {**self.new_verses, **self.existing_verses},
             }
+        
         with open(PATH_DATA, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, ensure_ascii=False, indent=2, sort_keys=True)
+            json.dump(self._all, f, ensure_ascii=False, indent=2, sort_keys=True)
+        self.data = self._all.get(self.lang, {}).get(self.quality) or {}
 
     @staticmethod
     def _read_all() -> dict:
