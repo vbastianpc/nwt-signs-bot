@@ -35,8 +35,10 @@ class UserController:
     
     @classmethod
     def remove_user(cls, telegram_id: int):
-        users = [user for user in cls.read_users() if user['telegram_id'] != telegram_id]
-        cls._save(users)
+        if telegram_id in cls.get_users_id():
+            users = [user for user in cls.read_users() if user['telegram_id'] != telegram_id]
+            cls._save(users)
+            return True
 
     @staticmethod
     def read_users() -> List[Optional[Dict]]:

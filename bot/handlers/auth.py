@@ -86,7 +86,7 @@ def delete_user(update: Update, context: CallbackContext):
         update.message.reply_text('Usa /delete [user_id]')
         return
     else:
-        state = uc.remove_user(context.args[0])
+        state = uc.remove_user(int(context.args[0]))
     if state:
         update.message.reply_text('Usuario eliminado')
     else:
