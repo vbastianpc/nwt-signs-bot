@@ -2,9 +2,8 @@ import json
 import logging
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters, ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
-from telegram.utils.helpers import mention_markdown
 
 from models import UserController as uc
 from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS, BIBLE_BOOKALIAS_NUM
@@ -13,7 +12,7 @@ from utils.decorators import vip, admin, forw
 logger = logging.getLogger(__name__)
 
 
-
+@admin
 def test_data(update: Update, context: CallbackContext) -> None:
     data = context.user_data.get(context.args[0]) if context.args else sorted(context.user_data.keys())
     js = json.dumps(data, indent=2)[:MAX_MESSAGE_LENGTH - 10]
@@ -60,6 +59,7 @@ def paraBotFather(update: Update, context: CallbackContext):
 
 
 @forw
+@vip
 def text_fallback(update: Update, context: CallbackContext) -> None:
     fail = update.message.text[0].lower() if update.message.text else None
     if fail is None:
@@ -81,9 +81,51 @@ def all_fallback(update: Update, context: CallbackContext) -> None:
     return
 
 
+@admin
+def notice(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        'Envíame los mensajes que quieres que reenvíe a todos los usuarios. '
+        'Pueden ser stickers, gifs, videos, imágenes, lo que sea. '
+        'Cuando estés listo, escribe /ok. Para cancelar usa /cancel'
+    )
+    context.user_data['notices'] = []
+    return 1
+
+
+def get_notice(update: Update, context: CallbackContext):
+    context.user_data['notices'].append(update.message)
+    return 1
+
+def send_notice(update: Update, context: CallbackContext):
+    for msg in context.user_data['notices']:
+        for user_id in uc.get_users_id():
+            context.bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=update.effective_user.id,
+                message_id=msg.message_id,
+            )
+    update.message.reply_text('Mensajes enviados')
+    del context.user_data['notices']
+    return -1
+
+def cancel(update: Update, context: CallbackContext):
+    update.message.reply_text('No enviaré nada.')
+    del context.user_data['notices']
+    return -1
+
+
 botfather_handler = CommandHandler('commands', paraBotFather)
 test_handler = CommandHandler('test', test_data)
 info_inline_handler = CommandHandler('inline', info_inline)
 
 text_fallback_handler = MessageHandler(Filters.text, text_fallback)
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)
+
+notice_handler = ConversationHandler(
+    entry_points=[CommandHandler('notice', notice)],
+    states={
+        1: [CommandHandler('ok', send_notice),
+            MessageHandler(Filters.all, get_notice)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+)
