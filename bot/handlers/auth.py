@@ -115,7 +115,8 @@ def help_admin(update: Update, context: CallbackContext):
             '/delete [user_id] - Elimina un usuario\n'
             '/users - Muestra un listado de los usuarios\n'
             '/test [key] - Muestra diccionarios user_data\n'
-            '/commands - Setea los comandos para BotFather'
+            '/commands - Setea los comandos para BotFather\n'
+            '/notice - Enviar mensajes a todos los usuarios'
         )
     )
 
