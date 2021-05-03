@@ -4,8 +4,7 @@
 # exclude patterns (uncomment them if you want to use them):
 # *.[oa]
 # *~
-*.mp4
-*.m4v
+video/
 states/
 SECRETS.json
 jw_data.json
