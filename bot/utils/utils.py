@@ -169,7 +169,7 @@ def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-﹕,() ") else '_' for x in text.replace(':', '﹕')])
 
 #BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
-BIBLE_PATTERN = fr"^({'|'.join(dict_booknames)}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
+BIBLE_PATTERN = fr"^/?({'|'.join(dict_booknames)}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
 
 def parse_bible_pattern(text):
     match = re.match(BIBLE_PATTERN, text.lower())
