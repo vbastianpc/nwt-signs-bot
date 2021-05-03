@@ -67,7 +67,7 @@ class JWPubMedia:
         return self._match()['filesize']
     
     @property
-    def title_booknum(self):
+    def title_chapter(self):
         return self._match()['title']
 
     def chapter_from_url(self, url):
