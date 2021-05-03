@@ -1,4 +1,4 @@
-from .bible import parse_bible_handler, chapter_handler, verse_handler
+from .bible import parse_bible_handler, chapter_handler, verse_handler, ffmpeg_handler
 from .settings import lang_handler, quality_handler
 from .inline_bible import inline_handler
 from .misc import (botfather_handler, test_handler, info_inline_handler,
@@ -8,6 +8,7 @@ from .auth import (start_handler, auth_handler, permiso_handler,
 
 # Order matters
 handlers = [
+    ffmpeg_handler,
     parse_bible_handler,
     chapter_handler,
     verse_handler,

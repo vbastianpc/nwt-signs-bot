@@ -2,6 +2,7 @@
 from pathlib import Path
 import logging
 import re
+import time
 
 from telegram import (
     ChatAction,
@@ -28,8 +29,8 @@ from utils import (
     parse_bible_pattern,
     safechars,
 )
-from utils.decorators import vip, forw
-from utils.secret import CHANNEL_ID
+from utils.decorators import admin, vip, forw
+from utils.secret import CHANNEL_ID, ADMIN
 
 
 logging.basicConfig(
@@ -173,6 +174,7 @@ def manage_verses(update: Update, context: CallbackContext):
     logger.info('%s', f'{jw.filesize} {db.filesize}')
 
     verse = jw.verses[0] if len(jw.verses) == 1 else ' '.join(jw.verses)
+    context.user_data['t0'] = 0 # TODO remove this testing line
     if verse in db.existing_verses:
         logger.info('Sending by file_id')
         msgverse = context.bot.send_video(
@@ -188,7 +190,9 @@ def manage_verses(update: Update, context: CallbackContext):
         context.user_data['msg'] = message.reply_text(
             f'📥 Descargando {jw.bookname} {jw.title_chapter}',
             disable_notification=True)
+        ti = time.time() # TODO remove this testing line
         db.path = Video.download(jw.video_url)
+        context.user_data['t0'] = time.time() - ti
         db.discard_verses()
         db.save()
     if len(jw.verses) == 1:
@@ -245,6 +249,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
 
     paths_to_concatenate = []
     new = []
+    ti = time.time() # TODO remove this testing line
     for verse in jw.verses:
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
         if verse in db.existing_verses:
@@ -257,7 +262,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             file_id = db.get_fileid(verse)
             filename = db.get_versename(verse) + '.mp4'
             versepath = Path(filename)
-            context.bot.get_file(file_id).download(custom_path=versepath)
+            context.bot.get_file(file_id, timeout=120).download(custom_path=versepath)
             paths_to_concatenate.append(versepath)
         else:
             logger.info("Splitting verse %s from %s", verse, db.path)
@@ -270,18 +275,22 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             versepath = Video.split(db.path, marker)
             paths_to_concatenate.append(versepath)
             new.append((verse, versepath))
+    context.user_data['t1'] = time.time() - ti # TODO remove this testing line
     logger.info('Concatenating video %s', jw.pretty_name)
     msg.edit_text(f'🎥 Uniendo versículos...')
+    ti = time.time()
     finalpath = Video.concatenate(
         inputvideos=paths_to_concatenate,
         outname=safechars(jw.pretty_name),
         title_chapters=list(map(jw.verse_name, jw.verses)),
         title=jw.pretty_name,
     )
+    context.user_data['t2'] = time.time() - ti # TODO remove this testing line
     logger.info('Sending concatenated video %s', finalpath)
     msg.edit_text(f'📦 Enviando {jw.pretty_name}')
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
     stream = Video.show_streams(finalpath)
+    ti = time.time() # TODO remove this testing line
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=finalpath.read_bytes(),
@@ -292,6 +301,15 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         duration=round(float(stream['duration'])),
         timeout=120,
     )
+    context.user_data['t3'] = time.time() - ti # TODO remove this testing line
+    if chat.id == ADMIN:
+        message.reply_text(
+            f'Descargar capitulo completo: {context.user_data["t0"]:.2f}\n'
+            f'Descargar + cortar versiculos individuales: {context.user_data["t1"]:.2f}\n'
+            f'Concatenar: {context.user_data["t2"]:.2f}\n'
+            f'Enviar: {context.user_data["t3"]:.2f}\n'
+            f'TOTAL: {context.user_data["t0"] + context.user_data["t1"] + context.user_data["t2"] + context.user_data["t3"]:.2f}'
+        )
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
     db.add_verse(
@@ -322,9 +340,70 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     db.save()
 
 
+
+
 parse_bible_handler = MessageHandler(
     Filters.regex(re.compile(BIBLE_PATTERN, re.IGNORECASE)),
     parse_bible,
 )
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
+
+
+
+
+
+
+def ffmpeg(update: Update, context: CallbackContext):
+    from subprocess import run
+    import shlex
+    import time
+    logger.info(' '.join(context.args))
+    chat = update.effective_chat
+    message = update.effective_message
+    booknum, chapter, verses = parse_bible_pattern(' '.join(context.args))
+    uc = UserController(update.effective_user.id)
+    jw = JWPubMedia(
+        booknum=booknum,
+        chapter=chapter,
+        verses=verses,
+        lang=uc.lang(),
+        quality=uc.quality(),
+    )
+    def suma_time(start, end):
+        hs, ms, ss, he, me, se = start.split(':') + end.split(':')
+        return int(he)*60*60 + int(me)*60 + float(se) + (int(hs)*60*60 + int(ms)*60 + float(ss))
+    def time_to_seconds(start):
+        hs, md, ss = start.split(':')
+        return int(hs)*60*60 + int(md)*60 + float(ss)
+
+    markers = jw.match_markers
+    end = suma_time(markers[-1]['startTime'], markers[-1]['duration'])
+    to = end - time_to_seconds(markers[0]['startTime'])
+    output = Path('testing.mp4')
+    cmd = (
+        f'ffmpeg -y -ss {markers[0]["startTime"]} -i {jw.video_url} '
+        f'-t {to} "{output}"'
+    )
+    t0 = time.time()
+    run(shlex.split(cmd))
+    tf = time.time()
+    stream = Video.show_streams('testing.mp4')
+    t00 = time.time()
+    context.bot.send_video(
+        chat_id=chat.id,
+        video=output.read_bytes(),
+        filename=output.name,
+        caption=jw.pretty_name,
+        width=stream['width'],
+        height=stream['height'],
+        duration=round(float(stream['duration'])),
+        timeout=120,
+    )
+    tff = time.time()
+    message.reply_text(
+        f'{tf - t0:.2f}s en descargar + cortar\n'
+        f'{tff - t00:.2f}s en enviar\n'
+        f'Total: {tff - t00 + tf - t0:.2f}')
+
+ffmpeg_handler = CommandHandler('ffmpeg', ffmpeg)
