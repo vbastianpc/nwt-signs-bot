@@ -1,17 +1,14 @@
-from .bible import parse_bible_handler, chapter_handler, verse_handler, ffmpeg_handler
+from .bible import (parse_bible_re_handler, parse_bible_cmd_handler,
+                    chapter_handler, verse_handler)
 from .settings import lang_handler, quality_handler
 from .inline_bible import inline_handler
 from .misc import (botfather_handler, test_handler, info_inline_handler,
-                   text_fallback_handler, all_fallback_handler, notice_handler)
+                   all_fallback_handler, notice_handler)
 from .auth import (start_handler, auth_handler, permiso_handler,
                    delete_user_handler, getting_user_handler, helper_admin_handler)
 
 # Order matters
 handlers = [
-    ffmpeg_handler,
-    parse_bible_handler,
-    chapter_handler,
-    verse_handler,
     inline_handler,
     start_handler,
     test_handler,
@@ -25,6 +22,9 @@ handlers = [
     botfather_handler,
     getting_user_handler,
     helper_admin_handler,
-    text_fallback_handler,
+    parse_bible_re_handler,
+    parse_bible_cmd_handler,
+    chapter_handler,
+    verse_handler,
     all_fallback_handler,
 ]

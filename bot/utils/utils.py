@@ -4,6 +4,14 @@ from typing import Any, List
 from unidecode import unidecode
 
 
+class BooknumNotFound(Exception):
+    pass
+
+class MultipleBooknumsFound(Exception):
+    def __init__(self, maybe_booknums):
+        self.booknums = maybe_booknums
+
+
 BIBLE_BOOKALIAS_NUM = {
     'gen': 1,
     'ex': 2,
@@ -169,22 +177,82 @@ def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-﹕,() ") else '_' for x in text.replace(':', '﹕')])
 
 #BIBLE_PATTERN = fr"^({'|'.join(BIBLE_BOOKALIAS_NUM.keys())}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
-BIBLE_PATTERN = fr"^/?({'|'.join(dict_booknames)}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
+#BIBLE_PATTERN = fr"^/?({'|'.join(dict_booknames)}) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)? *$"
+#BIBLE_PATTERN = fr"^/?(.*?) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)?$"
+BIBLE_PATTERN = fr"^/?(.*?) *(\d+) *:? *(\d+(?:(?: *, *| +|-)\d+)*)?$"
+
 
 def parse_bible_pattern(text):
-    match = re.match(BIBLE_PATTERN, text.lower())
-    if not match:
-        return None, None, None
-    match_book = match.group(1)
-    booknum = str(dict_booknames[match_book])
-    chapter = str(int(match.group(2))) if match.group(2) else None
-    verses = []
-    groups = [i.split() for i in match.group(3).split(',')] if match.group(3) else []
-    groups = [i for group in groups for i in group]
-    for group in groups:
-        if '-' in group:
-            verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
-        else:
-            verses.append(group)
-    return booknum, chapter, verses
+    return parse_bookname(text), parse_chapter(text), parse_verses(text)
 
+
+def parse_bookname(text) -> str:
+    if isinstance(text, str):
+        text = text.lower()
+        match = re.match(BIBLE_PATTERN, text)
+    elif isinstance(text, re.Match):
+        match = text
+    elif text is None:
+        raise BooknumNotFound('No hay')
+
+    maybe_bookname = match.group(1) if match else text
+    if not maybe_bookname:
+        raise BooknumNotFound
+    booknum = dict_booknames.get(maybe_bookname)
+    if booknum:
+        return str(booknum)
+    else:
+        maybe_booknum = (
+            {booknum for bookname, booknum in dict_booknames.items() if bookname.startswith(maybe_bookname)}
+            or {booknum for bookname, booknum in dict_booknames.items() if maybe_bookname in bookname}
+        )
+        if len(maybe_booknum) == 1:
+            return str(list(maybe_booknum)[0])
+        elif len(maybe_booknum) > 1:
+            raise MultipleBooknumsFound([str(bkn) for bkn in sorted(maybe_booknum)])
+        else:
+            raise BooknumNotFound('No hay')
+
+
+def parse_chapter(text) -> str:
+    if isinstance(text, str):
+        match = re.match(BIBLE_PATTERN, text.lower())
+    elif isinstance(text, re.Match):
+        match = text
+    elif text is None:
+        return ''
+    if match:
+        return str(int(match.group(2))) if match.group(2) else ''
+    else:
+        return ''
+
+
+def parse_verses(text) -> List[str]:
+    if isinstance(text, str):
+        match = re.match(BIBLE_PATTERN, text.lower())
+    elif isinstance(text, re.Match):
+        match = text
+    elif text is None:
+        return []
+    verses = []
+    if match:
+        groups = [i.split() for i in match.group(3).split(',')] if match.group(3) else []
+        groups = [i for group in groups for i in group]
+        for group in groups:
+            if '-' in group:
+                verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
+            else:
+                verses.append(group)
+    return verses
+
+
+def seems_bible(text):
+    match = re.match(BIBLE_PATTERN, text.lower())
+    try:
+        booknum = parse_bookname(match)
+    except (MultipleBooknumsFound, BooknumNotFound):
+        booknum = None
+    finally:
+        chapter = parse_chapter(match)
+        verses = parse_verses(match)
+    return any([booknum, chapter, verses])

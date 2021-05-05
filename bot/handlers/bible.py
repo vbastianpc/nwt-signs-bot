@@ -16,7 +16,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
-    ConversationHandler,
     Filters,
 )
 
@@ -24,12 +23,15 @@ from models import UserController
 from models import JWPubMedia, LocalData, Video
 from utils import (
     BIBLE_BOOKALIAS_NUM,
+    BIBLE_BOOKNAMES,
     list_of_lists,
-    BIBLE_PATTERN,
-    parse_bible_pattern,
     safechars,
+    parse_bible_pattern,
+    seems_bible,
+    BooknumNotFound,
+    MultipleBooknumsFound,
 )
-from utils.decorators import admin, vip, forw
+from utils.decorators import vip, forw
 from utils.secret import CHANNEL_ID, ADMIN
 
 
@@ -45,26 +47,56 @@ SELECTING_CHAPTERS, SELECTING_VERSES = 'SELECTING_CHAPTERS', 'SELECTING_VERSES'
 
 
 def forward_to_channel(bot, from_chat_id, message_id):
-    if FORWARD_TO_CHANNEL:
+    if FORWARD_TO_CHANNEL and from_chat_id != ADMIN:
         bot.forward_message(
             CHANNEL_ID,
             from_chat_id=from_chat_id,
             message_id=message_id,
         )
 
+def fallback_text(update: Update, context: CallbackContext):
+    pass
 
 @forw
 @vip
 def parse_bible(update: Update, context: CallbackContext):
-    booknum, chapter, verses = parse_bible_pattern(update.message.text.strip('/'))
+    logger.info(update.message.text)
+    text = update.message.text.strip('/')
+    try:
+        booknum, chapter, verses = parse_bible_pattern(text)
+    except BooknumNotFound:
+        logger.info('BooknumNotFound')
+        if seems_bible(text):
+            update.message.reply_text('No conozco ese libro de la Biblia 🧐')
+        else:
+            fallback_text(update, context)
+        return
+    except MultipleBooknumsFound as e:
+        logger.info('MultipleBooknumsFound')
+        maybe = [
+            f'{BIBLE_BOOKNAMES[booknum - 1]} - /{bookalias}'
+            for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items()
+            if str(booknum) in e.booknums
+        ]
+        update.message.reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
+        return
+    logger.info(f'{booknum=} {chapter=} {verses=}')
     uc = UserController(update.effective_user.id)
-    context.user_data['jw'] = JWPubMedia(
+    jw = JWPubMedia(
         lang=uc.lang(),
         booknum=booknum,
         chapter=chapter,
         verses=verses,
         quality=uc.quality(),
     )
+    if not jw.check_quality():
+        update.message.reply_text(
+            f'{jw.bookname} no está disponible en {jw.quality}.\n\nUsa /quality '
+            'y elige una de las siguientes calidades disponibles:\n\n' + 
+            '\n'.join(jw.get_qualities())
+        )
+        return
+    context.user_data['jw'] = jw
     if verses:
         return manage_verses(update, context)
     elif chapter:
@@ -188,7 +220,7 @@ def manage_verses(update: Update, context: CallbackContext):
         logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
         context.user_data['msg'] = message.reply_text(
-            f'📥 Descargando {jw.bookname} {jw.title_chapter}',
+            f'📥 Descargando {jw.bookname} {jw.chapter}',
             disable_notification=True)
         ti = time.time() # TODO remove this testing line
         db.path = Video.download(jw.video_url)
@@ -254,7 +286,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
         if verse in db.existing_verses:
             logger.info('Downloading verse %s from telegram servers', verse)
-            text = f'📥 Descargando {jw.bookname} {jw.chapter}:{verse}'
+            text = f'📥 Obteniendo {jw.bookname} {jw.chapter}:{verse}'
             if msg:
                 msg.edit_text(text)
             else:
@@ -277,7 +309,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             new.append((verse, versepath))
     context.user_data['t1'] = time.time() - ti # TODO remove this testing line
     logger.info('Concatenating video %s', jw.pretty_name)
-    msg.edit_text(f'🎥 Uniendo versículos...')
+    msg.edit_text(f'🎥 Uniendo versículos')
     ti = time.time()
     finalpath = Video.concatenate(
         inputvideos=paths_to_concatenate,
@@ -301,7 +333,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         duration=round(float(stream['duration'])),
         timeout=120,
     )
-    context.user_data['t3'] = time.time() - ti # TODO remove this testing line
+    context.user_data['t3'] = time.time() - ti # TODO remove test lines below
     if chat.id == ADMIN:
         message.reply_text(
             f'Descargar capitulo completo: {context.user_data["t0"]:.2f}\n'
@@ -310,6 +342,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             f'Enviar: {context.user_data["t3"]:.2f}\n'
             f'TOTAL: {context.user_data["t0"] + context.user_data["t1"] + context.user_data["t2"] + context.user_data["t3"]:.2f}'
         )
+    # TODO end test lines
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
     db.add_verse(
@@ -342,18 +375,13 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
 
 
 
-parse_bible_handler = MessageHandler(
-    Filters.regex(re.compile(BIBLE_PATTERN, re.IGNORECASE)),
-    parse_bible,
-)
+parse_bible_re_handler = MessageHandler(Filters.text, parse_bible)
+parse_bible_cmd_handler = CommandHandler([*BIBLE_BOOKALIAS_NUM], parse_bible)
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
 
 
-
-
-
-
+"""
 def ffmpeg(update: Update, context: CallbackContext):
     from subprocess import run
     import shlex
@@ -407,3 +435,4 @@ def ffmpeg(update: Update, context: CallbackContext):
         f'Total: {tff - t00 + tf - t0:.2f}')
 
 ffmpeg_handler = CommandHandler('ffmpeg', ffmpeg)
+"""

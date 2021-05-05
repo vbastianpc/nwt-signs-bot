@@ -4,6 +4,11 @@ from .utils import (
     list_of_lists,
     BIBLE_BOOKNAMES,
     safechars,
-    BIBLE_PATTERN,
     parse_bible_pattern,
+    parse_bookname,
+    parse_chapter,
+    parse_verses,
+    seems_bible,
+    BooknumNotFound,
+    MultipleBooknumsFound,
 )
