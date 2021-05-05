@@ -141,6 +141,9 @@ class JWPubMedia:
         for item in self._items():
             qualities.update([item['label']])
         return sorted(qualities)
+
+    def check_quality(self):
+        return self.quality in self.get_qualities()
     
     @property
     def pretty_name(self):
