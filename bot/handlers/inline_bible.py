@@ -52,8 +52,6 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
             )
             for name, file_id in db.iter_smart()
         ]
-        names = [name for name, file_id in db.iter_smart()]
-        logger.info(f'{booknum=} {names=}')
     update.inline_query.answer(results, auto_pagination=True, cache_time=5)
 
 inline_handler = InlineQueryHandler(inlineBibleReady)
