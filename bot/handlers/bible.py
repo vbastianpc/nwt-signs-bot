@@ -80,7 +80,6 @@ def parse_bible(update: Update, context: CallbackContext):
         ]
         update.message.reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
-    logger.info(f'{booknum=} {chapter=} {verses=}')
     uc = UserController(update.effective_user.id)
     jw = JWPubMedia(
         lang=uc.lang(),
