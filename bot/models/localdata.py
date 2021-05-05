@@ -97,11 +97,13 @@ class LocalData:
 
     def iter_smart(self):
         for booknum, dchapters in isorted(self.data):
-            if bool(True if not self.booknum else booknum == self.booknum):
+            if (True if not self.booknum else booknum == self.booknum):
                 for chapter, dfile in isorted(dchapters):
-                    if bool(True if not self.chapter else chapter == self.chapter):
+                    if (True if not self.chapter else chapter == self.chapter):
                         for verse, info in isorted(dfile['verses']):
-                            if bool(True if not self.verses else verse in self.verses):
+                            # concatenated verse in self.verses
+                            vinv = any([v if v in self.verses  else None for v in verse.split()])
+                            if (True if not self.verses else vinv):
                                 yield info['name'], info['file_id']
 
     @property
