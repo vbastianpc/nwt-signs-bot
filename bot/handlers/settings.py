@@ -40,7 +40,10 @@ def get_lang(update: Update, context: CallbackContext) -> int:
         pretty_langs = '\n'.join([f'{code} - {lang}' for code,
                         lang in sorted(langs.items(), key=lambda x: x[1])])
         update.message.reply_markdown_v2(f'```\n{pretty_langs}\n```')
-        update.message.reply_text('Dime el código de tu lengua señas.')
+        uc = UserController(update.message.from_user.id)
+        update.message.reply_text(
+            f'Tu lengua actual es {uc.lang()}\n'
+            'Dime el código de tu lengua señas.')
         return SETTING_LANG
     else:
         update.message.reply_text('No he reconocido ese idioma.')
@@ -50,7 +53,7 @@ def get_lang(update: Update, context: CallbackContext) -> int:
 @vip
 def get_quality(update: Update, context: CallbackContext) -> int:
     lang = UserController.get_user(update.effective_user.id)['lang']
-    jw = JWPubMedia(lang, booknum='1')
+    jw = JWPubMedia(lang, booknum='49')
     qualities = jw.get_qualities()
     args = update.message.text.split()[1:]
     quality = args[0] if args else update.message.text
@@ -59,12 +62,15 @@ def get_quality(update: Update, context: CallbackContext) -> int:
         UserController.set_user(update.message.from_user.id, quality=quality)
         update.message.reply_markdown_v2(
             f'Calidad configurada a\n```\n{quality}\n```', reply_markup=ReplyKeyboardRemove())
+        return -1
     elif quality == '/quality':
         buttons = list_of_lists(
             [KeyboardButton(q) for q in qualities],
             columns=2,
         )
-        text = f'Elige la calidad para los videos'
+        uc = UserController(update.message.from_user.id)
+        text = (f'Tu calidad actual es {uc.quality()}\n'
+                'Elige una calidad para los videos')
         update.message.reply_text(text, reply_markup=ReplyKeyboardMarkup(buttons))
         return SETTING_QUALITY
     else:
