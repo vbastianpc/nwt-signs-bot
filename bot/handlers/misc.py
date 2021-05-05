@@ -59,24 +59,6 @@ def paraBotFather(update: Update, context: CallbackContext):
 
 
 @forw
-@vip
-def text_fallback(update: Update, context: CallbackContext) -> None:
-    fail = update.message.text[0].lower() if update.message.text else None
-    if fail is None:
-        logger.warning('%s', update.message)
-    maybe = [
-        f'/{bookalias} - {BIBLE_BOOKNAMES[booknum - 1]}'
-        for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items() if bookalias.startswith(fail)
-    ]
-    if maybe:
-        text = 'Puedes usar las abreviaciones de la Biblia para pedirme un versículo. ' \
-            'Puedes ver el listado completo escribiendo o presionando el símbolo slash `/`\n\n' \
-            '¿Quizá quieres decir... 🤔?\n' \
-            + '\n'.join(maybe)
-        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-
-
-@forw
 def all_fallback(update: Update, context: CallbackContext) -> None:
     return
 
@@ -118,7 +100,6 @@ botfather_handler = CommandHandler('commands', paraBotFather)
 test_handler = CommandHandler('test', test_data)
 info_inline_handler = CommandHandler('inline', info_inline)
 
-text_fallback_handler = MessageHandler(Filters.text, text_fallback)
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)
 
 notice_handler = ConversationHandler(
