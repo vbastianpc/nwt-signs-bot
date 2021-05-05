@@ -21,11 +21,9 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, first_n
     text = (
         f'Hola {first_name if first_name else update.effective_user.first_name}, bienvenido. '
         'Escribe el versículo que necesites y te lo enviaré. Por ejemplo\n\n'
-        '`Mateo 24:14`\n'
-        '`Apocalipsis 21:3, 4`\n'
-        '`2 Timoteo 3:1-5`\n\n'        
-        'También puedes usar las abreviaciones de los libros. Escribe o presiona el símbolo slash '
-        '`/` para ver el listado completo.\n\n'
+        'Mateo 24:14\n'
+        'Apocalipsis 21:3, 4\n'
+        '2 Timoteo 3:1-5\n\n'        
         'Usa /lang para cambiar tu lengua de señas.\n'
         'Usa /quality para cambiar la calidad de tus videos.'
     )
@@ -76,7 +74,7 @@ def permiso(update: Update, context: CallbackContext):
                 f'`{user.id}` Ha solicitado ingresar.'),
             parse_mode=ParseMode.MARKDOWN
         )
-        update.message.reply_text('Ya solo esperar hasta tener autorización.')
+        update.message.reply_text('Espera hasta tener autorización.')
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
