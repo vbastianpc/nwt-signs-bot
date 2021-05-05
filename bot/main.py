@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 
-"""
-TODO
-[x] Funcion para mandar mensaje a todos. Para novedades
-[x] bible.py cambiar a Handlers individuales. Eliminar ConversationHandler.
-Falta manejar mejor menu de botones. Borrar o editar.
-Si manda botones con capitulos o versiculos, cada boton debe tener la informacion de booknum, chapter y verse
-
-[ ] Agregar emojis a los mensajes informativos
-[ ] Aprender a documentar en python
-[ ] Hacer REadme.md
-
-"""
 import logging
 
 from telegram import Update
