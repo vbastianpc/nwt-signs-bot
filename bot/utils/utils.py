@@ -153,7 +153,7 @@ BIBLE_BOOKNAMES = (
     'Colosenses',
     '1 Tesalonicenses',
     '2 Tesalonicenses',
-    '1 Timioteo',
+    '1 Timoteo',
     '2 Timoteo',
     'Tito',
     'Filemón',
