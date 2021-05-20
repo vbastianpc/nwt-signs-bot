@@ -38,9 +38,7 @@ class Video:
 
     @classmethod
     def split(cls, inputvideo, marker, height=None) -> PathLike:
-        duration, transition = marker['duration'], marker['endTransitionDuration']
-        hd, md, sd, ht, mt, st = duration.split(':') + transition.split(':')
-        end = int(hd)*60*60 + int(md)*60 + float(sd) - int(ht)*60*60 - int(mt)*60 - float(st)
+        end = parse_time(marker['duration']) - parse_time(marker['endTransitionDuration'])
         output = VERSES_PATH / (safechars(marker["label"]) + ".mp4")
         cmd = (
             'ffmpeg -v warning -hide_banner -y '
@@ -102,3 +100,13 @@ class Video:
         )
         streams = json.loads(console.stdout.decode())['streams']
         return streams[0]
+
+
+def parse_time(stamptime):
+    """Expects stamptime = "01:02:03.4567" or float or int """
+    try:
+        return float(stamptime)
+    except ValueError:
+        hours, minutes, seconds = stamptime.split(':')
+        return int(hours)*60*60 + int(minutes)*60 + float(seconds)
+    
