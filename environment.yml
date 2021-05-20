@@ -5,3 +5,4 @@ dependencies:
     - python-telegram-bot=13.4.1
     - requests
     - Unidecode
+    - mechanicalsoup
