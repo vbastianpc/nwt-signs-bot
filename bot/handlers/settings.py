@@ -82,7 +82,7 @@ def get_quality(update: Update, context: CallbackContext) -> int:
 
 lang_handler = ConversationHandler(
     entry_points=[CommandHandler('lang', get_lang)],
-    states={SETTING_LANG: [MessageHandler(Filters.text, get_lang)]},
+    states={SETTING_LANG: [MessageHandler(Filters.text & (~Filters.command), get_lang)]},
     fallbacks=[CommandHandler('cancel', lambda x, y: -1)],
 )
 
