@@ -71,6 +71,7 @@ def notice(update: Update, context: CallbackContext):
         'Cuando estés listo, escribe /ok. Para cancelar usa /cancel'
     )
     context.user_data['notices'] = []
+    context.user_data['target_user'] = context.args or None
     return 1
 
 
@@ -79,8 +80,9 @@ def get_notice(update: Update, context: CallbackContext):
     return 1
 
 def send_notice(update: Update, context: CallbackContext):
+    users = context.user_data['target_user'] or uc.get_users_id()
     for msg in context.user_data['notices']:
-        for user_id in uc.get_users_id():
+        for user_id in users:
             context.bot.copy_message(
                 chat_id=user_id,
                 from_chat_id=update.effective_user.id,
