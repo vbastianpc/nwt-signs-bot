@@ -114,9 +114,23 @@ def help_admin(update: Update, context: CallbackContext):
             '/users - Muestra un listado de los usuarios\n'
             '/test [key] - Muestra diccionarios user_data\n'
             '/commands - Setea los comandos para BotFather\n'
-            '/notice - Enviar mensajes a todos los usuarios'
+            '/notice - Enviar mensajes a todos los usuarios\n',
+            '/backup - Realizar copia de seguridad'
         )
     )
+
+@admin
+def backup(update: Update, context: CallbackContext):
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open('./jw_data.json', 'rb'),
+    )
+    context.bot.send_document(
+        chat_id=update.effective_chat.id,
+        document=open('./users.json', 'rb'),
+    )
+
+
 
 start_handler = CommandHandler('start', start)
 
@@ -125,3 +139,4 @@ permiso_handler = CommandHandler('permiso', permiso)
 delete_user_handler = CommandHandler('delete', delete_user)
 getting_user_handler = CommandHandler('users', sending_users)
 helper_admin_handler = CommandHandler('admin', help_admin)
+backup_handler = CommandHandler('backup', backup)
