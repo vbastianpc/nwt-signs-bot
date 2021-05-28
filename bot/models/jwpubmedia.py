@@ -106,6 +106,9 @@ class JWPubMedia:
         return self.data['pubName']
     
     def markers(self) -> List[Dict]:
+        return self.alternate_markers
+        """
+        # pubmedia.jw-api.org/GETPUBMEDIALINKS presenta errores ocasionales
         mks = []
         for item in self._items():
             if (item['markers'] and
@@ -115,6 +118,7 @@ class JWPubMedia:
         verses = [m['verseNumber'] for m in mks]
         missings_markers = [marker for marker in self.alternate_markers if marker['verseNumber'] not in verses]
         return sorted(mks + missings_markers, key=lambda x: x['verseNumber'])
+        """
 
     @LazyProperty
     def alternate_markers(self) -> List[Dict]:
