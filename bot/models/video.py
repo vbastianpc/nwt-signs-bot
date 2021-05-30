@@ -82,7 +82,7 @@ class Video:
             f'-i "concat:{concat}"  '
             f'-i "{metapath}" -map_metadata 1 '
             f'-metadata title="{title if title else output.stem}" '
-            '-metadata comment=@nwtsigns_bot '
+            '-metadata comment=t.me/nwtsigns_bot '
             f'-c copy "{output}"' 
         )
         print(cmd)
