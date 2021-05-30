@@ -46,7 +46,7 @@ class Video:
             f'-i "{inputvideo}" '
             f'-t {end} ' + 
             ( f'-vf scale=-2:{height}' if height else '' ) + 
-            f' -map_chapters -1 -metadata title="{marker["label"]}" -metadata comment=@nwtsigns_bot '
+            f' -map_chapters -1 -metadata title="{marker["label"]}" -metadata comment=t.me/nwtsigns_bot '
             f'"{output}"'
         )
         run(shlex.split(cmd), capture_output=True)
@@ -54,7 +54,6 @@ class Video:
 
     @classmethod
     def concatenate(cls, inputvideos, outname=None, title_chapters=None, title=None) -> PathLike:
-        # TODO agregar marcadores de tiempo en concatenados
         intermediates = []
         metadata = ';FFMETADATA1\n'
         offset = 0
