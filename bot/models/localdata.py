@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 PATH_DATA = Path('jw_data.json')
 PATH_DATA.touch()
 
-# TODO 
+
 class LocalData:
     def __init__(self,
                  lang: str,
