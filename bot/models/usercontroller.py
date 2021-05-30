@@ -21,7 +21,7 @@ class UserController:
         return user['lang']
 
     @classmethod
-    def add_user(cls, telegram_id: int, name: str, lang='SCH', quality='480p'):
+    def add_user(cls, telegram_id: int, name: str, lang='SCH', quality='720p'):
         users = [user for user in cls.read_users() if user['telegram_id'] != telegram_id] # avoid duplicate users
         users.append(
             {
