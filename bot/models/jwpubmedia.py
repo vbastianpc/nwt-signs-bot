@@ -106,8 +106,6 @@ class JWPubMedia:
         return self.data['pubName']
     
     def markers(self) -> List[Dict]:
-        return self.alternate_markers
-        """
         # pubmedia.jw-api.org/GETPUBMEDIALINKS presenta errores ocasionales
         mks = []
         for item in self._items():
@@ -115,13 +113,22 @@ class JWPubMedia:
                 self.chapter_from_url(item['file']['url']) == self.chapter):
                 mks = item['markers']['markers']
                 break
-        verses = [m['verseNumber'] for m in mks]
-        missings_markers = [marker for marker in self.alternate_markers if marker['verseNumber'] not in verses]
+        return [
+            {**marker, 
+            'endTransitionDuration':
+            next((m['endTransitionDuration'] for m in mks if m['verseNumber'] == marker['verseNumber']), 0)
+            }
+            for marker in self.alternative_markers
+        ]
+        """
+        for marker in mks:
+            if marker['verseNumber'] in self.alternative_markers:
+        missings_markers = [marker for marker in self.alternative_markers if marker['verseNumber'] not in verses]
         return sorted(mks + missings_markers, key=lambda x: x['verseNumber'])
         """
 
     @LazyProperty
-    def alternate_markers(self) -> List[Dict]:
+    def alternative_markers(self) -> List[Dict]:
         return scrap_wol_markers(self.lang, self.booknum, self.chapter, self.bookname)
 
     def not_available_verses(self):
