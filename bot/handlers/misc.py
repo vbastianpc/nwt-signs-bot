@@ -66,7 +66,7 @@ def all_fallback(update: Update, context: CallbackContext) -> None:
 @admin
 def notice(update: Update, context: CallbackContext):
     update.message.reply_text(
-        'Envíame los mensajes que quieres que reenvíe a todos los usuarios. '
+        'Envíame los mensajes que quieres que reenvíe. '
         'Pueden ser stickers, gifs, videos, imágenes, lo que sea. '
         'Cuando estés listo, escribe /ok. Para cancelar usa /cancel'
     )
@@ -108,6 +108,7 @@ notice_handler = ConversationHandler(
     entry_points=[CommandHandler('notice', notice)],
     states={
         1: [CommandHandler('ok', send_notice),
+            CommandHandler('cancel', cancel),
             MessageHandler(Filters.all, get_notice)],
     },
     fallbacks=[CommandHandler('cancel', cancel)],
