@@ -47,6 +47,7 @@ class Video:
             f'-t {end} ' + 
             ( f'-vf scale=-2:{height}' if height else '' ) + 
             f' -map_chapters -1 -metadata title="{marker["label"]}" -metadata comment=t.me/nwtsigns_bot '
+            '-preset veryfast '
             f'"{output}"'
         )
         run(shlex.split(cmd), capture_output=True)
