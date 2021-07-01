@@ -28,15 +28,12 @@ SETTING_LANG, SETTING_QUALITY = range(2)
 @forw
 @vip
 def get_lang(update: Update, context: CallbackContext) -> int:
-    args = update.message.text.split()[1:]
-    lang = args[0] if args else update.message.text
-    langs = JWPubMedia.get_signs_languages()
-    if lang in langs:
-        UserController.set_user(update.message.from_user.id, lang)
-        update.message.reply_markdown_v2(
-            f'Lengua cambiada a\n```\n{lang} - {langs[lang]}\n```')
-        return -1
-    elif lang == '/lang':
+    context.user_data['langs'] = JWPubMedia.get_signs_languages()
+    langs = context.user_data['langs']
+
+    if context.args:
+        return set_lang(update, context)
+    else:
         pretty_langs = '\n'.join([f'{code} - {lang}' for code,
                         lang in sorted(langs.items(), key=lambda x: x[1])])
         update.message.reply_markdown_v2(f'```\n{pretty_langs}\n```')
@@ -45,9 +42,21 @@ def get_lang(update: Update, context: CallbackContext) -> int:
             f'Tu lengua actual es {uc.lang()}\n'
             'Dime el código de tu lengua señas.')
         return SETTING_LANG
+
+
+def set_lang(update: Update, context: CallbackContext) -> int:
+    langs = context.user_data['langs']
+    lang = context.args[0] if context.args else update.message.text
+    if lang.upper() in langs:
+        lang = lang.upper()
+    if lang in langs:
+        UserController.set_user(update.message.from_user.id, lang)
+        update.message.reply_markdown_v2(
+            f'Lengua cambiada a\n```\n{lang} - {langs[lang]}\n```')
     else:
-        update.message.reply_text('No he reconocido ese idioma.')
-        return -1
+        update.message.reply_text('No he reconocido ese idioma')
+    return -1
+
 
 @forw
 @vip
@@ -82,7 +91,7 @@ def get_quality(update: Update, context: CallbackContext) -> int:
 
 lang_handler = ConversationHandler(
     entry_points=[CommandHandler('lang', get_lang)],
-    states={SETTING_LANG: [MessageHandler(Filters.text & (~Filters.command), get_lang)]},
+    states={SETTING_LANG: [MessageHandler(Filters.text & (~Filters.command), set_lang)]},
     fallbacks=[CommandHandler('cancel', lambda x, y: -1)],
 )
 
