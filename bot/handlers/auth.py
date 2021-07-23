@@ -115,7 +115,9 @@ def help_admin(update: Update, context: CallbackContext):
             '/test [key] - Muestra diccionarios user_data\n'
             '/commands - Setea los comandos para BotFather\n'
             '/notice [user_id1 user_id2] - Enviar mensajes\n'
-            '/backup - Realizar copia de seguridad'
+            '/backup - Realizar copia de seguridad\n'
+            '/logs - Muestra últimos logs\n'
+            '/logfile - Envía el archivo completo de logs'
         )
     )
 
