@@ -98,6 +98,29 @@ def cancel(update: Update, context: CallbackContext):
     return -1
 
 
+@admin
+def logs(update: Update, context: CallbackContext):
+    try:
+        with open('./log.log', 'r', encoding='utf-8') as f:
+            data = f.read()
+    except FileNotFoundError:
+        update.message.reply_text('No hay archivo log')
+    else:
+        update.message.reply_text(data[-MAX_MESSAGE_LENGTH::])
+    return
+
+
+@admin
+def logfile(update: Update, context: CallbackContext):
+    try:
+        context.bot.send_document(
+            chat_id=update.effective_chat.id,
+            document=open('./log.log', 'rb'),
+        )
+    except FileNotFoundError:
+        update.message.reply_text('No hay archivo log')
+
+
 botfather_handler = CommandHandler('commands', paraBotFather)
 test_handler = CommandHandler('test', test_data)
 info_inline_handler = CommandHandler('inline', info_inline)
@@ -113,3 +136,6 @@ notice_handler = ConversationHandler(
     },
     fallbacks=[CommandHandler('cancel', cancel)],
 )
+
+logs_handler = CommandHandler('logs', logs)
+logfile_handler = CommandHandler('logfile', logfile)
