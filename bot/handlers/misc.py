@@ -6,17 +6,30 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filter
 from telegram.constants import MAX_MESSAGE_LENGTH
 
 from models import UserController as uc
-from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS, BIBLE_BOOKALIAS_NUM
-from utils.decorators import vip, admin, forw
+from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS
+from utils.decorators import admin, forw
+
 
 logger = logging.getLogger(__name__)
 
 
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
-    data = context.user_data.get(context.args[0]) if context.args else sorted(context.user_data.keys())
-    js = json.dumps(data, indent=2)[:MAX_MESSAGE_LENGTH - 10]
-    update.message.reply_markdown_v2(f'```\n{js}\n```')
+    if not context.args:
+        data = sorted(context.user_data.keys())
+    else:
+        varname = context.args[0].split('.')[0]
+        attr_keys = '.'.join(context.args[0].split('.')[1:])
+        e = f'context.user_data.get("{varname}")' + (('.' + attr_keys) if attr_keys else '')
+        data = eval(e)
+
+    try:
+        json_data = json.dumps(data, indent=2, ensure_ascii=False)
+    except TypeError:
+        json_data = str(data)
+    except:
+        json_data = json.dumps(data, indent=2, ensure_ascii=False, default=lambda x: x.__dict__)
+    update.message.reply_markdown_v2(f'```\n{json_data[:MAX_MESSAGE_LENGTH]}```')
 
 
 @forw
@@ -106,7 +119,7 @@ def logs(update: Update, context: CallbackContext):
     except FileNotFoundError:
         update.message.reply_text('No hay archivo log')
     else:
-        update.message.reply_text(data[-MAX_MESSAGE_LENGTH::])
+        update.message.reply_markdown_v2(f'```{data[-MAX_MESSAGE_LENGTH::]}```')
     return
 
 
