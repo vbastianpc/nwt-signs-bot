@@ -74,7 +74,7 @@ def permiso(update: Update, context: CallbackContext):
                 f'`{user.id}` Ha solicitado ingresar.'),
             parse_mode=ParseMode.MARKDOWN
         )
-        update.message.reply_text('Espera hasta tener autorización.')
+        update.message.reply_text('Espera hasta tener autorización. Puedes contarme quién eres y por qué necesitas usar este bot.')
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
