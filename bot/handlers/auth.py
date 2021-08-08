@@ -18,10 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 @forw
-def start(update: Update, context: CallbackContext, chat_id: int = None, user: User = None) -> None:
-    user = user or update.effective_user
-    text = f'Hola {user.first_name}. '
-    if update.effective_user.id in uc.get_users_id():
+def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
+    user = update.effective_user
+    first_name = first_name or user.first_name
+    text = f'Hola {first_name}. '
+    if user.id in uc.get_users_id():
         text += (
             '\n\nEscribe el pasaje de la Biblia que necesites, por ejemplo\n\n'
             'Mateo 24:14\n'
@@ -46,7 +47,7 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, user: U
         text=text,
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not update.effective_user.id in uc.get_users_id():
+    if not user.id in uc.get_users_id():
         return 1
 
 
@@ -81,7 +82,7 @@ def autorizacion(update: Update, context: CallbackContext):
             update,
             context,
             chat_id=new_member_id,
-            user=msg.from_user
+            first_name=msg.chat.first_name
         )
     except BadRequest:
         update.message.reply_text('Parece que el id no es correcto')
