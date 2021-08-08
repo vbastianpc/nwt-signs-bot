@@ -2,7 +2,6 @@
 from pathlib import Path
 import logging
 import re
-import time
 
 from telegram import (
     ChatAction,
@@ -57,8 +56,8 @@ def forward_to_channel(bot, from_chat_id, message_id):
 def fallback_text(update: Update, context: CallbackContext):
     pass
 
-@forw
 @vip
+@forw
 def parse_bible(update: Update, context: CallbackContext):
     logger.info(update.message.text)
     text = update.message.text.strip('/')
@@ -304,7 +303,6 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             new.append((verse, versepath))
     logger.info('Concatenating video %s', jw.pretty_name)
     msg.edit_text(f'🎥 Uniendo versículos')
-    ti = time.time()
     finalpath = Video.concatenate(
         inputvideos=paths_to_concatenate,
         outname=safechars(jw.pretty_name),

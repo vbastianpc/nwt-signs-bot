@@ -1,14 +1,16 @@
 import json
 import logging
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters
+from telegram import Update, ParseMode, User, chat
+from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
+                          MessageHandler, Filters)
 from telegram.error import BadRequest, Unauthorized
+from telegram.ext.messagehandler import MessageHandler
 from telegram.utils.helpers import mention_markdown
 from telegram.constants import MAX_MESSAGE_LENGTH
 
 from utils.secret import ADMIN
-from utils.decorators import vip, admin, forw
+from utils.decorators import admin, forw
 from models import UserController as uc
  
 
@@ -16,22 +18,53 @@ logger = logging.getLogger(__name__)
 
 
 @forw
-@vip
-def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
-    text = (
-        f'Hola {first_name if first_name else update.effective_user.first_name}, bienvenido. '
-        'Escribe el versículo que necesites y te lo enviaré. Por ejemplo\n\n'
-        'Mateo 24:14\n'
-        'Apocalipsis 21:3, 4\n'
-        '2 Timoteo 3:1-5\n\n'        
-        'Usa /lang para cambiar tu lengua de señas.\n'
-        'Usa /quality para cambiar la calidad de tus videos.'
-    )
+def start(update: Update, context: CallbackContext, chat_id: int = None, user: User = None) -> None:
+    user = user or update.effective_user
+    text = f'Hola {user.first_name}. '
+    if update.effective_user.id in uc.get_users_id():
+        text += (
+            '\n\nEscribe el pasaje de la Biblia que necesites, por ejemplo\n\n'
+            'Mateo 24:14\n'
+            'Apocalipsis 21:3, 4\n'
+            '2 Timoteo 3:1-5\n'
+            'Rom 14:3-5, 23\n'
+            'Sal 83\n'
+            'Deut\n\n'
+            'Usa /lang para cambiar tu lengua de señas.\n'
+            'Usa /quality para cambiar la calidad de tus videos.'
+        )
+    else:
+        text += 'Este es un bot privado 🔐👤\n\nCuéntame quién eres y por qué quieres usar este bot'
+        context.bot.send_message(
+            chat_id=ADMIN,
+            text=f'{mention_markdown(user.id, user.first_name)} ha sido bloqueado.',
+            parse_mode=ParseMode.MARKDOWN
+        )
+
     context.bot.send_message(
         chat_id=chat_id if chat_id else update.effective_chat.id,
         text=text,
         parse_mode=ParseMode.MARKDOWN,
     )
+    if not update.effective_user.id in uc.get_users_id():
+        return 1
+
+
+def whois(update: Update, context: CallbackContext):
+    update.message.reply_text('Bien. Espera a que el administrador te acepte.')
+    user = update.effective_user
+    context.bot.send_message(
+        chat_id=ADMIN,
+        text=f'{user.id} {mention_markdown(user.id, user.first_name)} ha dejado una nota.',
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    context.bot.forward_message(
+        ADMIN,
+        update.effective_user.id,
+        update.message.message_id
+    )
+    return ConversationHandler.END
+
 
 @admin
 def autorizacion(update: Update, context: CallbackContext):
@@ -41,14 +74,14 @@ def autorizacion(update: Update, context: CallbackContext):
         new_member_id = int(context.args[0])
         msg = context.bot.send_message(
             chat_id=new_member_id,
-            text='Has sido aceptado. Ya puedes usar este bot.',
+            text=f'Has sido aceptado.',
         )
         uc.add_user(new_member_id, msg.chat.full_name)
         start(
             update,
             context,
             chat_id=new_member_id,
-            first_name=msg.chat.first_name
+            user=msg.from_user
         )
     except BadRequest:
         update.message.reply_text('Parece que el id no es correcto')
@@ -64,17 +97,6 @@ def autorizacion(update: Update, context: CallbackContext):
             parse_mode=ParseMode.MARKDOWN,
         )
 
-
-def permiso(update: Update, context: CallbackContext):
-    user = update.effective_user
-    if user.id not in uc.get_users_id():
-        context.bot.send_message(
-            chat_id=ADMIN,
-            text=(f'{mention_markdown(user.id, user.name)} '
-                f'`{user.id}` Ha solicitado ingresar.'),
-            parse_mode=ParseMode.MARKDOWN
-        )
-        update.message.reply_text('Espera hasta tener autorización. Puedes contarme quién eres y por qué necesitas usar este bot.')
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
@@ -133,11 +155,12 @@ def backup(update: Update, context: CallbackContext):
     )
 
 
-
-start_handler = CommandHandler('start', start)
-
+start_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start)],
+    states={1: [MessageHandler(Filters.text, whois)]},
+    fallbacks=[CommandHandler('cancel', lambda x, y: -1)]
+)
 auth_handler = CommandHandler('auth', autorizacion)
-permiso_handler = CommandHandler('permiso', permiso)
 delete_user_handler = CommandHandler('delete', delete_user)
 getting_user_handler = CommandHandler('users', sending_users)
 helper_admin_handler = CommandHandler('admin', help_admin)

@@ -17,12 +17,7 @@ def vip(func):
         elif not update.inline_query:
             context.bot.send_message(
                 chat_id=user.id,
-                text='Primero pide /permiso para ingresar al bot'
-            )
-            context.bot.send_message(
-                chat_id=ADMIN,
-                text=f'{mention_markdown(user.id, user.name)} `{user.id}` ha sido bloqueado',
-                parse_mode=ParseMode.MARKDOWN,
+                text='Presiona /start para comenzar'
             )
             context.bot.forward_message(
                 CHANNEL_ID,
@@ -40,12 +35,13 @@ def admin(func):
             return func(update, context, **kwargs)
         else:
             context.bot.send_message(
-                chat_id=ADMIN,
-                text=f'{user.name} {user.id} Ha intentado entrar pero no es admin',
-            )
-            context.bot.send_message(
                 chat_id=user.id,
                 text=f'No tienes autorización para esta función',
+            )
+            context.bot.forward_message(
+                CHANNEL_ID,
+                user.id,
+                update.message.message_id,
             )
     return restricted_func
 
