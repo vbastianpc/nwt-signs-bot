@@ -1,7 +1,7 @@
 import json
 import logging
 
-from telegram import Update, ParseMode, User, chat
+from telegram import Update, ParseMode, User, chat, parsemode
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           MessageHandler, Filters)
 from telegram.error import BadRequest, Unauthorized
@@ -22,6 +22,13 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, first_n
     user = update.effective_user
     first_name = first_name or user.first_name
     text = f'Hola {first_name}. '
+    if context.args:
+        print(f'{context.args=}')
+        context.bot.send_message(
+            chat_id=ADMIN,
+            text=f'{mention_markdown(user.id, user.first_name)} entró desde {context.args[0]}',
+            parse_mode=ParseMode.MARKDOWN
+        )
     if user.id in uc.get_users_id():
         text += (
             '\n\nEscribe el pasaje de la Biblia que necesites, por ejemplo\n\n'
