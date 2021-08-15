@@ -1,9 +1,12 @@
 from pathlib import Path
+from mechanicalsoup import browser
 import requests
 import logging
 import re
 from typing import List, Dict
 import json
+from subprocess import run
+import shlex
 
 import mechanicalsoup
 
@@ -38,21 +41,29 @@ class LazyProperty:
 class JWPubMedia:
     def __init__(self,
                  lang: str,
+                 quality: str = None,
                  booknum: str = None,
                  chapter: str = None,
                  verses: List[str] = [],
-                 quality: str = None,
+                 videopath: str = None,
                  ):
         self.lang = lang
         self.booknum = booknum
         self.chapter = chapter
         self.verses = verses
         self.quality = quality
+        self.videopath = videopath
     
     @LazyProperty
     def data(self):
         url = URL_PUBMEDIA.format(lang=self.lang, booknum=self.booknum)
-        return requests.get(url).json()
+        print(url)
+        r = requests.get(url)
+        if r.status_code == 200:
+            return r.json()
+    
+    def book_exists(self):
+        return bool(self.data)
     
     def _match(self):
         "match self.booknum self.chapter self.quality"
@@ -81,19 +92,8 @@ class JWPubMedia:
         except (IndexError, ValueError):
             return None
     
-    @property
-    def match_markers(self):
-        # Los marcadores no están guardados en todas las calidades.
-        for item in self._items():
-            if (item['markers'] and
-                self.chapter_from_url(item['file']['url']) == self.chapter):
-                return [
-                    marker for verse in self.verses for marker in item['markers']['markers']
-                    if int(verse) == marker['verseNumber']
-                ] # Se guardan en el mismo orden que self.verses
-
     def match_marker(self, verseNumber):
-        for marker in self.markers():
+        for marker in self.markers:
             if marker['verseNumber'] == int(verseNumber):
                 return marker
         raise Exception('Verse number not found')
@@ -103,33 +103,35 @@ class JWPubMedia:
 
     @property
     def bookname(self):
-        return self.data['pubName']
+        return self.data['pubName']        
     
+    @LazyProperty
     def markers(self) -> List[Dict]:
-        # pubmedia.jw-api.org/GETPUBMEDIALINKS presenta errores ocasionales
-        mks = []
+        mks = self.wol_markers or self.jw_api_markers or self.ffprobe_markers
+        logger.info('Getting endTransitionDuration from JW-API markers!')
+        for marker in mks:
+            marker['endTransitionDuration'] = next(
+                (jam['endTransitionDuration'] for jam in self.jw_api_markers if jam['verseNumber'] == marker['verseNumber']),
+                marker['endTransitionDuration'],
+            )
+        return mks
+
+    @LazyProperty
+    def wol_markers(self) -> List[Dict]:
+        return scrap_wol_markers(self.lang, self.booknum, self.chapter)
+    
+    @LazyProperty
+    def ffprobe_markers(self):
+        return ffprobe_markers(self.videopath)
+
+    @LazyProperty
+    def jw_api_markers(self):
         for item in self._items():
             if (item['markers'] and
                 self.chapter_from_url(item['file']['url']) == self.chapter):
-                mks = item['markers']['markers']
-                break
-        return [
-            {**marker, 
-            'endTransitionDuration':
-            next((m['endTransitionDuration'] for m in mks if m['verseNumber'] == marker['verseNumber']), 0)
-            }
-            for marker in self.alternative_markers
-        ]
-        """
-        for marker in mks:
-            if marker['verseNumber'] in self.alternative_markers:
-        missings_markers = [marker for marker in self.alternative_markers if marker['verseNumber'] not in verses]
-        return sorted(mks + missings_markers, key=lambda x: x['verseNumber'])
-        """
-
-    @LazyProperty
-    def alternative_markers(self) -> List[Dict]:
-        return scrap_wol_markers(self.lang, self.booknum, self.chapter, self.bookname)
+                return item['markers']['markers']
+        logger.info('JW-API markers not found :(')
+        return []
 
     def not_available_verses(self):
         return [
@@ -149,14 +151,34 @@ class JWPubMedia:
         return sorted(filter(None, chapters), key=lambda x: int(x))
 
     def available_verses(self, chapter=None):
-        return [str(marker['verseNumber']) for marker in self.markers()]
+        return [str(marker['verseNumber']) for marker in self.markers]
 
     @staticmethod
     def get_signs_languages():
+        """Deprecated. Only shows WOL availables languages. JW.ORG signs languages are missing. Example Vietnamese SLV"""
         url = 'https://data.jw-api.org/mediator/v1/languages/S/web'
         data = requests.get(url).json()
         return {lang['code']: remove_html_tags(
             lang['name']) for lang in data['languages'] if lang['isSignLanguage']}
+
+    @staticmethod
+    def signs_languages():
+        browser = custom_browser()
+        browser.open('https://www.jw.org/es/choose-language?onlySL=1')
+        langs = []
+        def find_code(item):
+            for c in item.find('div', class_='optionLabel').attrs['class']:
+                if c.startswith('ml-'):
+                    return c.split('-')[1]
+            raise Exception
+        for item in browser.page.find_all('li', class_='signLanguage'):
+            langs.append({
+                'code': find_code(item),
+                'label': item.find('div', class_='altLabel').text,
+                'vernacular': item.find('div', class_='optionLabel').text,
+                'href': item.find('a').get('href')
+            })
+        return langs
 
     def get_qualities(self):
         qualities = set()
@@ -199,27 +221,84 @@ class JWPubMedia:
         return f'{self.bookname} {self.chapter}:{pv}'
 
 
-def scrap_wol_markers(lang, booknum, chapter, bookname):
-    url = f'https://wol.jw.org/wol/finder?wtlocale={lang}'
-    agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
-    browser = mechanicalsoup.StatefulBrowser(user_agent=agent)
-    browser.open(url)
+def scrap_wol_markers(lang, booknum, chapter):
+    logger.info('Scrapping WOL markers!')
+    browser = custom_browser()
+    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={lang}')
     locale, _, _, rsconf, lib = browser.get_url().split('/')[-5:]
-    browser.open(f'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}')
-    bare_markers = json.loads(browser.page.find("input", id='videoMarkers').get('data-json-markers'))
+    url = f'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}'
+    print(url)
+    browser.open(url)
+    try:
+        bare_markers = json.loads(browser.page.find("input", id='videoMarkers').get('data-json-markers'))
+    except AttributeError:
+        logger.info('WOL markers not found :(')
+        return []
+    bookname = browser.page.find('h1').text
+    if isinstance(bare_markers, dict):
+        # some languages is type list (asl), others type dict (sch)
+        bare_markers = [marker for _, marker in sorted(bare_markers.items(), key=lambda x: int(x[0]))]
     return [{
         'duration': marker['duration'],
-        "verseNumber": int(verse),
+        "verseNumber": int(marker['verse']),
         "startTime": marker['startTime'],
-        "label": f"{bookname} {chapter}:{verse}",
+        "label": f"{bookname} {chapter}:{marker['verse']}",
         "endTransitionDuration": 0,
         }
-        for verse, marker in sorted(bare_markers.items(), key=lambda x: int(x[0]))
+        for marker in bare_markers
     ]
+
+def ffprobe_markers(videopath):
+    logger.info('Getting ffprobe markers!')
+    logger.info(videopath)
+    assert videopath
+    console = run(
+        shlex.split(f'ffprobe -v quiet -show_chapters -print_format json "{videopath}"'),
+        capture_output=True,
+    )
+    raw_chapters = json.loads(console.stdout.decode())['chapters']
+    markers = [{
+        'duration': float(rc['end_time']) - float(rc['start_time']),
+        'verseNumber': int(re.findall(r'\d+', rc['tags']['title'])[-1]),
+        'startTime': rc['start_time'],
+        'label': rc['tags']['title'].strip(),
+        'endTransitionDuration': 0,
+
+    } for rc in raw_chapters]
+    return markers
+
+
+def custom_browser():
+    agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
+    return mechanicalsoup.StatefulBrowser(user_agent=agent)
 
 
 def remove_html_tags(text): return re.compile(r'<[^>]+>').sub('', text).strip()
 
 if __name__ == '__main__':
-    jw = JWPubMedia('SCH', booknum='1')
-    print(jw.get_qualities())
+    # jw = JWPubMedia('SLV', booknum='1', chapter='1')
+    # jw = JWPubMedia('SLV', booknum='40', chapter='5', videopath='/Users/bastianpalavecino/Downloads/nwt_40_Mt_SLV_05_r720P.mp4')
+    # print(
+    #     json.dumps(jw.markers, indent=2, ensure_ascii=False)
+    # )
+    # print(jw.available_chapters())
+    # print(jw.available_verses())
+    # s = scrap_wol_markers('SLV', 40, 1, 'libro')
+    # markers = jw.markers
+    # print(
+    #     json.dumps(
+    #         ffprobe_markers('/Users/bastianpalavecino/Downloads/nwt_01_Ge_SLV_02_r720P.mp4'),
+    #         indent=2,
+    #         ensure_ascii=False,
+    #     )
+    # )
+    # print(
+    #     json.dumps(
+    #         scrap_wol_markers('SCH', 1, 1),
+    #         indent=2,
+    #         ensure_ascii=False,
+    #     )
+    # )
+    print(
+        json.dumps(JWPubMedia.signs_languages(), indent=2, ensure_ascii=False)
+    )

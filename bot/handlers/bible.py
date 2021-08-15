@@ -42,7 +42,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FORWARD_TO_CHANNEL = True
-SELECTING_CHAPTERS, SELECTING_VERSES = 'SELECTING_CHAPTERS', 'SELECTING_VERSES'
+SELECTING_CHAPTERS, SELECTING_VERSES = 'CHAPTER', 'VERSE'
 
 
 def forward_to_channel(bot, from_chat_id, message_id):
@@ -80,13 +80,13 @@ def parse_bible(update: Update, context: CallbackContext):
         update.message.reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
     uc = UserController(update.effective_user.id)
-    jw = JWPubMedia(
-        lang=uc.lang(),
-        booknum=booknum,
-        chapter=chapter,
-        verses=verses,
-        quality=uc.quality(),
-    )
+    db = context.user_data['db'] = LocalData(uc.lang(), uc.quality(), booknum, chapter)
+    jw = context.user_data['jw'] = JWPubMedia(uc.lang(), uc.quality(), booknum, chapter, verses, db.path)
+    if not jw.book_exists():
+        update.message.reply_text(
+            f'Ese libro no está disponible en la lengua {uc.lang()}. Prueba con otro libro, o cambia la lengua con /lang'
+        )
+        return
     if not jw.check_quality():
         update.message.reply_text(
             f'{jw.bookname} no está disponible en {jw.quality}.\n\nUsa /quality '
@@ -94,13 +94,18 @@ def parse_bible(update: Update, context: CallbackContext):
             '\n'.join(jw.get_qualities())
         )
         return
-    context.user_data['jw'] = jw
-    if verses:
-        return manage_verses(update, context)
-    elif chapter:
-        return show_verses(update, context)
+    if chapter and jw.filesize != db.filesize:
+        msg = update.message.reply_text(f'📥 Descargando {jw.bookname} {jw.chapter}', disable_notification=True)
+        download_chapter(update, context)
     else:
-        return show_chapters(update, context)
+        msg = None
+    context.user_data['msg'] = msg
+    if verses:
+        manage_verses(update, context)
+    elif chapter:
+        show_verses(update, context)
+    else:
+        show_chapters(update, context)
 
 
 def show_chapters(update: Update, context: CallbackContext):
@@ -128,12 +133,18 @@ def get_chapter(update: Update, context: CallbackContext):
     update.callback_query.answer()
     _, booknum, chapter, _ = update.callback_query.data.split('||')
     uc = UserController(update.effective_user.id)
-    context.user_data['jw'] = JWPubMedia(
-        lang=uc.lang(),
-        booknum=booknum,
-        chapter=chapter,
-        quality=uc.quality(),
-    )
+    db = context.user_data['db'] = LocalData(uc.lang(), uc.quality(), booknum, chapter)
+    jw = context.user_data['jw'] = JWPubMedia(uc.lang(), uc.quality(), booknum, chapter, videopath=db.path)
+    logger.info(f'{db.path=}\t{jw.videopath=}')
+
+    if jw.filesize != db.filesize:
+        context.bot.edit_message_text(
+            message_id=update.callback_query.message.message_id,
+            chat_id=update.effective_chat.id,
+            text=f'📥 Descargando {jw.bookname} {jw.chapter}'
+        )
+        download_chapter(update, context)
+    logger.info(f'{db.path=}\t{jw.videopath=}')
     show_verses(update, context)
 
 
@@ -157,6 +168,12 @@ def show_verses(update: Update, context: CallbackContext):
             message_id=update.callback_query.message.message_id,
             **kwargs,
         )
+        return
+    if context.user_data['msg']:
+        context.bot.edit_message_text(
+            message_id=context.user_data['msg'].message_id,
+            **kwargs,
+        )
     else:
         context.bot.send_message(**kwargs)
 
@@ -165,14 +182,10 @@ def get_verse(update: Update, context: CallbackContext):
     update.callback_query.answer('Espera unos momentos')
     _, booknum, chapter, verse = update.callback_query.data.split('||')
     uc = UserController(update.effective_user.id)
-    context.user_data['jw'] = JWPubMedia(
-        lang=uc.lang(),
-        booknum=booknum,
-        chapter=chapter,
-        verses=[verse],
-        quality=uc.quality(),
-    )
+    db = context.user_data['db'] = LocalData(uc.lang(), uc.quality(), booknum, chapter)
+    context.user_data['jw'] = JWPubMedia(uc.lang(), uc.quality(), booknum, chapter, [verse], db.path)
     update.callback_query.message.delete()
+    context.user_data['msg'] = None
     return manage_verses(update, context)
 
 
@@ -180,14 +193,7 @@ def manage_verses(update: Update, context: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
     jw = context.user_data['jw']
-    db = LocalData(
-        booknum=jw.booknum,
-        chapter=jw.chapter,
-        lang=jw.lang,
-        quality=jw.quality,
-    )
-    context.user_data['db'] = db
-    context.user_data['msg'] = None
+    db = context.user_data['db']
 
     if jw.chapter not in jw.available_chapters():
         message.reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️')
@@ -213,20 +219,35 @@ def manage_verses(update: Update, context: CallbackContext):
         )
         forward_to_channel(context.bot, chat.id, msgverse.message_id)
         return
-    elif jw.filesize != db.filesize:
-        logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
-        context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-        context.user_data['msg'] = message.reply_text(
-            f'📥 Descargando {jw.bookname} {jw.chapter}',
-            disable_notification=True)
-        db.path = Video.download(jw.video_url)
-        db.discard_verses()
-        db.save()
+
     if len(jw.verses) == 1:
         send_single_verse(update, context)
     else:
         send_concatenate_verses(update, context)
     logger.info('Success!')
+
+
+def download_chapter(update: Update, context: CallbackContext):
+    """
+    - Al pulsar el botón de capítulo para mostrar los versiculos -> get_chapter | show_verses
+        - Editar mensaje y no borrar
+        - Action
+    - Libro capítulo -> parse_bible | show_verses
+        - Nuevo mensaje y luego editar para mostrar versiculos
+        - Action
+    - Libro capítulo:versículo(s) -> parse_bible | manage_verses
+        - Nuevo mensaje y luego editar para siguientes estados
+        - Action
+    """
+    logger.info('Lo descargo porque no lo tengo, o no coinciden filesize')
+    # chat = update.effective_chat
+    jw = context.user_data['jw']
+    db = context.user_data['db']
+    # context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+    db.path = Video.download(jw.video_url)
+    db.discard_verses()
+    jw.videopath = db.path
+    db.save()
 
 
 def send_single_verse(update: Update, context: CallbackContext):

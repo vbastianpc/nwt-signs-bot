@@ -74,10 +74,11 @@ class UserController:
         return users
 
     @classmethod
-    def set_user(cls, telegram_id: int, lang='', quality='') -> None:
+    def set_user(cls, telegram_id: int, lang='', quality='', vernacular='') -> None:
         user = cls.get_user(telegram_id)
-        user['lang'] = lang or user['lang']
-        user['quality'] = quality or user['quality']
+        user['lang'] = lang or user.get('lang')
+        user['quality'] = quality or user.get('quality')
+        user['vernacular'] = vernacular or user.get('vernacular')
         users = [user if u['telegram_id'] == telegram_id else u for u in cls.read_users()]
         cls._save(users)
 
