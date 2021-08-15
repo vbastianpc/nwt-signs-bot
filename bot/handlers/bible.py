@@ -135,7 +135,6 @@ def get_chapter(update: Update, context: CallbackContext):
     uc = UserController(update.effective_user.id)
     db = context.user_data['db'] = LocalData(uc.lang(), uc.quality(), booknum, chapter)
     jw = context.user_data['jw'] = JWPubMedia(uc.lang(), uc.quality(), booknum, chapter, videopath=db.path)
-    logger.info(f'{db.path=}\t{jw.videopath=}')
 
     if jw.filesize != db.filesize:
         context.bot.edit_message_text(
@@ -144,7 +143,6 @@ def get_chapter(update: Update, context: CallbackContext):
             text=f'📥 Descargando {jw.bookname} {jw.chapter}'
         )
         download_chapter(update, context)
-    logger.info(f'{db.path=}\t{jw.videopath=}')
     show_verses(update, context)
 
 

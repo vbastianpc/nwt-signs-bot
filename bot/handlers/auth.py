@@ -23,7 +23,6 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, first_n
     first_name = first_name or user.first_name
     text = f'Hola {first_name}. '
     if context.args:
-        print(f'{context.args=}')
         context.bot.send_message(
             chat_id=ADMIN,
             text=f'{mention_markdown(user.id, user.first_name)} entró desde {context.args[0]}',
