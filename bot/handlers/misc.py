@@ -61,6 +61,7 @@ def paraBotFather(update: Update, context: CallbackContext):
         ('lang', 'Cambia la lengua de señas'),
         ('quality', 'Cambia la calidad de los videos'),
         ('inline', 'Aprende a usar el modo inline'),
+        ('feedback', 'Send me your feedback'),
     ] + [
         (cmd, BIBLE_BOOKNAMES[num - 1]) for num, cmd in sorted(BIBLE_NUM_BOOKALIAS.items())
     ]
