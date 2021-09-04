@@ -10,15 +10,11 @@ class UserController:
     def __init__(self, telegram_id):
         self.telegram_id = telegram_id
 
-    def quality(self, telegram_id: int = None):
-        telegram_id = telegram_id or self.telegram_id
-        user = self.get_user(telegram_id)
-        return user['quality']
+    def get_quality(self, telegram_id: int = None):
+        return self.get_user(telegram_id or self.telegram_id).get('quality')
 
-    def lang(self, telegram_id: int = None):
-        telegram_id = telegram_id or self.telegram_id
-        user = self.get_user(telegram_id)
-        return user['lang']
+    def get_lang(self, telegram_id: int = None):
+        return self.get_user(telegram_id or self.telegram_id).get('lang')
 
     @classmethod
     def add_user(cls, telegram_id: int, name: str, lang='SCH', quality='720p'):
@@ -74,11 +70,10 @@ class UserController:
         return users
 
     @classmethod
-    def set_user(cls, telegram_id: int, lang='', quality='', vernacular='') -> None:
+    def set_user(cls, telegram_id: int, lang='', quality='') -> None:
         user = cls.get_user(telegram_id)
         user['lang'] = lang or user.get('lang')
         user['quality'] = quality or user.get('quality')
-        user['vernacular'] = vernacular or user.get('vernacular')
         users = [user if u['telegram_id'] == telegram_id else u for u in cls.read_users()]
         cls._save(users)
 
