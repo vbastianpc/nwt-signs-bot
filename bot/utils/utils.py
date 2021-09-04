@@ -1,5 +1,5 @@
 import re
-from typing import Any, List
+from typing import Any, List, Optional
 
 from unidecode import unidecode
 
@@ -172,6 +172,7 @@ dict_booknames = {
     **{bookname.lower(): booknum for booknum, bookname in enumerate(BIBLE_BOOKNAMES, 1)},
     **{unidecode(bookname.lower()): booknum for booknum, bookname in enumerate(BIBLE_BOOKNAMES, 1)
         if bookname != unidecode(bookname)},
+    **{bookname.lower().replace(' ', ''): booknum for booknum, bookname in enumerate(BIBLE_BOOKNAMES, 1)},
 }
 def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-﹕,() ") else '_' for x in text.replace(':', '﹕')])
@@ -183,10 +184,10 @@ BIBLE_PATTERN = fr"^/?(.*?) *(\d+) *:? *(\d+(?:(?: *, *| +|-)\d+)*)?$"
 
 
 def parse_bible_pattern(text):
-    return parse_bookname(text), parse_chapter(text), parse_verses(text)
+    return parse_booknum(text), parse_chapter(text), parse_verses(text)
 
 
-def parse_bookname(text) -> str:
+def parse_booknum(text) -> Optional[int]:
     if isinstance(text, str):
         text = text.lower()
         match = re.match(BIBLE_PATTERN, text)
@@ -200,59 +201,74 @@ def parse_bookname(text) -> str:
         raise BooknumNotFound
     booknum = dict_booknames.get(maybe_bookname)
     if booknum:
-        return str(booknum)
+        return int(booknum)
     else:
         maybe_booknum = (
             {booknum for bookname, booknum in dict_booknames.items() if bookname.startswith(maybe_bookname)}
             or {booknum for bookname, booknum in dict_booknames.items() if maybe_bookname in bookname}
         )
         if len(maybe_booknum) == 1:
-            return str(list(maybe_booknum)[0])
+            return int(list(maybe_booknum)[0])
         elif len(maybe_booknum) > 1:
             raise MultipleBooknumsFound([str(bkn) for bkn in sorted(maybe_booknum)])
         else:
             raise BooknumNotFound('No hay')
 
 
-def parse_chapter(text) -> str:
+def parse_chapter(text) -> Optional[int]:
     if isinstance(text, str):
         match = re.match(BIBLE_PATTERN, text.lower())
     elif isinstance(text, re.Match):
         match = text
     elif text is None:
-        return ''
+        return None
     if match:
-        return str(int(match.group(2))) if match.group(2) else ''
+        return int(match.group(2)) if match.group(2) else None
     else:
-        return ''
+        return None
 
 
-def parse_verses(text) -> List[str]:
+def parse_verses(text) -> Optional[List[int]]:
     if isinstance(text, str):
         match = re.match(BIBLE_PATTERN, text.lower())
     elif isinstance(text, re.Match):
         match = text
     elif text is None:
-        return []
+        return None
     verses = []
     if match:
         groups = [i.split() for i in match.group(3).split(',')] if match.group(3) else []
         groups = [i for group in groups for i in group]
         for group in groups:
             if '-' in group:
-                verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
+                verses += [verse for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
             else:
-                verses.append(group)
+                verses.append(int(group))
     return verses
 
 
-def seems_bible(text):
+def seems_bible(text) -> bool:
     match = re.match(BIBLE_PATTERN, text.lower())
     try:
-        booknum = parse_bookname(match)
+        booknum = parse_booknum(match)
     except (MultipleBooknumsFound, BooknumNotFound):
         booknum = None
     finally:
         chapter = parse_chapter(match)
         verses = parse_verses(match)
     return any([booknum, chapter, verses])
+
+
+if __name__ == '__main__':
+    texts = ['mat 24:14', '', 'jua 17:3-5', 'ma 10:10', '1jua', '1corint', '1 corint', '2cro', '2cró', '2 cró', '2 cro 5']
+    for text in texts:
+        print(text, end='\t--->\t')
+        try:
+            print(parse_bible_pattern(text))
+        except MultipleBooknumsFound as e:
+            print(type(e).__name__, e.booknums)
+        except BooknumNotFound as e:
+            print(type(e).__name__, e)
+    # print(*sorted(dict_booknames.items(), key=lambda x: x[1]), sep='\n')
+    # print(len(dict_booknames))
+    
