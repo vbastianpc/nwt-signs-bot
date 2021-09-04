@@ -151,15 +151,15 @@ def show_verses(update: Update, context: CallbackContext):
     jw = JWBible(**context.user_data['kwargs'])
     msg = context.user_data.get('msg')
 
-    if not jw.is_wol_available() and jw.checksum != db.checksum:
+    if not jw.is_wol_available() and (jw.checksum != db.checksum or not db.path.exists()):
+        text = f'📥 Descargando {jw.bookname} {jw.chapter}'
+        msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
+        download_chapter(jw, db)
         if db.checksum:
             context.bot.send_message(
                 chat_id=CHANNEL_ID,
                 text=f'Se ha actualizado {jw.bookname} {jw.chapter} con fecha {jw.modifiedDatetime}',
             )
-        text = f'📥 Descargando {jw.bookname} {jw.chapter}'
-        msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
-        download_chapter(jw, db)
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(verse),
@@ -208,22 +208,12 @@ def manage_verses(update: Update, context: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
     db = context.user_data['db'] = LocalData(**context.user_data['kwargs'])
-    context.user_data['kwargs'].update({'videopath': db.path})
+    context.user_data['kwargs'].update({'videopath': str(db.path)})
     jw = context.user_data['jw'] = JWBible(**context.user_data['kwargs'])
     msg = context.user_data.get('msg')
     logger.info('(%s) %s', update.effective_user.name, f'{jw.booknum} {jw.chapter} {jw.verses}')
 
     verse = str(jw.verses[0]) if len(jw.verses) == 1 else ' '.join([str(v) for v in jw.verses])
-
-    if jw.checksum != db.checksum:
-        if db.checksum:
-            context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=f'Se ha actualizado {jw.bookname} {jw.chapter} con fecha {jw.modifiedDatetime}',
-            )
-        text = f'📥 Descargando {jw.bookname} {jw.chapter}'
-        msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
-        download_chapter(jw, db)
 
     if verse in db.existing_verses:
         if msg:
@@ -236,6 +226,17 @@ def manage_verses(update: Update, context: CallbackContext):
         )
         forward_to_channel(context.bot, chat.id, msgverse.message_id)
         return
+    else:
+        if jw.checksum != db.checksum or not db.path.exists():
+            text = f'📥 Descargando {jw.bookname} {jw.chapter}'
+            msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
+            download_chapter(jw, db)
+            if db.checksum:
+                context.bot.send_message(
+                    chat_id=CHANNEL_ID,
+                    text=f'Se ha actualizado {jw.bookname} {jw.chapter} con fecha {jw.modifiedDatetime}',
+                )
+
 
     if jw.not_available_verses:
         na = jw.not_available_verses
