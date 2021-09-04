@@ -38,8 +38,10 @@ class LocalData:
     @property
     def path(self):
         ps = self._path or self.get_entry().get('file')
-        if ps and Path(ps).exists():
+        if ps:
             return Path(ps)
+        else:
+            return Path("Dummy text because this path doesn't exists")
     
     @path.setter
     def path(self, value):
