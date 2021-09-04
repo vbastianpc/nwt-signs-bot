@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 import logging
-from typing import List
-
+from typing import List, Union
+from datetime import datetime
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
@@ -13,23 +13,25 @@ logger = logging.getLogger(__name__)
 PATH_DATA = Path('jw_data.json')
 PATH_DATA.touch()
 
+# TODO Reescribir en base de datos en sql. Mantener nombres de metodos
 
 class LocalData:
     def __init__(self,
-                 lang: str,
-                 quality: str,
-                 booknum: str = None,
-                 chapter: str = None,
+                 code_lang: str = None,
+                 quality: str = None,
+                 booknum: Union[str, int] = None,
+                 chapter: Union[str, int] = None,
                  verses: List[str] = [],
+                 **kwargs,
                  ):
-        self.lang = lang
+        self.code_lang = code_lang
         self.quality = quality
-        self.booknum = booknum
-        self.chapter = chapter
-        self.verses = verses
+        self.booknum = str(booknum) if booknum else booknum
+        self.chapter = str(chapter) if chapter else chapter
+        self.verses = [str(verse) for verse in verses]
         self.new_verses = {}
         self._all = self._read_all()
-        self.data = self._all.get(lang, {}).get(quality) or {}
+        self.data = self._all.get(code_lang, {}).get(quality) or {}
         self.existing_verses = self.get_entry().get('verses') or {}
         self._path = None
     
@@ -44,28 +46,35 @@ class LocalData:
         self._path = value
 
     def add_verse(self, verse, versename, file_id):
-        self.new_verses[verse] = {'name': versename, 'file_id': file_id}
+        self.new_verses[str(verse)] = dict(
+            name=versename,
+            file_id=file_id,
+            addedDatetime=datetime.now().isoformat(sep=' ', timespec='seconds'),
+        )
     
     def get_fileid(self, verse):
-        verse_info = self.existing_verses.get(verse) or {}
+        verse_info = self.existing_verses.get(str(verse)) or {}
         return verse_info.get('file_id')
 
     def get_versename(self, verse):
-        verse_info = self.existing_verses.get(verse) or {}
+        verse_info = self.existing_verses.get(str(verse)) or {}
         return verse_info.get('name')
 
-    def save(self) -> None:
+    def save(self, checksum: str, modifiedDatetime: str, filesize: int) -> None:
         self._all \
-            .setdefault(self.lang, {}) \
+            .setdefault(self.code_lang, {}) \
             .setdefault(self.quality, {}) \
-            .setdefault(self.booknum, {})[self.chapter] = {
-                'file': str(self.path),
-                'verses': {**self.new_verses, **self.existing_verses},
-            }
+            .setdefault(self.booknum, {})[self.chapter] = dict(
+                file=str(self.path),
+                verses={**self.new_verses, **self.existing_verses},
+                checksum=checksum,
+                modifiedDatetime=modifiedDatetime,
+                filesize=filesize,
+            )
         
         with open(PATH_DATA, 'w', encoding='utf-8') as f:
             json.dump(self._all, f, ensure_ascii=False, indent=2, sort_keys=True)
-        self.data = self._all.get(self.lang, {}).get(self.quality) or {}
+        self.data = self._all.get(self.code_lang, {}).get(self.quality) or {}
 
     @staticmethod
     def _read_all() -> dict:
@@ -77,10 +86,9 @@ class LocalData:
 
     def get_entry(self):
         try:            
-            entry = self.data[self.booknum][self.chapter]
+            return self.data[self.booknum][self.chapter]
         except KeyError:
-            entry = {}
-        return entry
+            return {}
     
     def iter_match_verses(self):
         "Iterar versículos coincidentes"
@@ -108,10 +116,20 @@ class LocalData:
 
     @property
     def filesize(self):
-        try:
-            return self.path.stat().st_size
-        except (FileNotFoundError, AttributeError):
-            return 0
+        # TODO entry filesize. nuevos metodos checksum modified date etc
+        return self.get_entry().get('filesize')
+
+    @property
+    def checksum(self):
+        return self.get_entry().get('checksum')
+    
+    @property
+    def modifiedDatetime(self):
+        return self.get_entry().get('modifiedDatetime')
+    
+    @property
+    def addedDatetime(self):
+        return self.get_entry().get('addedDatetime')
     
     def discard_verses(self):
         self.existing_verses = {}
@@ -120,7 +138,7 @@ class LocalData:
     def __str__(self):
         return '<LocalData object>\n' + json.dumps({
             'file': str(self.path),
-            'verses': {**self.new_verses, **self.existing_verses()},
+            'verses': {**self.new_verses, **self.existing_verses},
         }, indent=2, ensure_ascii=False)
 
 def isorted(dictionary):
