@@ -8,7 +8,6 @@ from telegram.ext import Updater, CallbackContext
 from handlers import handlers
 from utils.secret import TOKEN
 
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -21,7 +20,8 @@ def log_error(_: Update, context: CallbackContext) -> None:
     logger.error(context.error)
 
 
-def main() -> None:
+
+if __name__ == '__main__':
     updater = Updater(TOKEN)
     dispatcher = updater.dispatcher
     for handler in handlers:
@@ -29,7 +29,3 @@ def main() -> None:
     # dispatcher.add_error_handler(log_error)
     updater.start_polling()
     updater.idle()
-
-
-if __name__ == '__main__':
-    main()
