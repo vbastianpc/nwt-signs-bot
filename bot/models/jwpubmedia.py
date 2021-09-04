@@ -412,8 +412,8 @@ def remove_html_tags(text): return re.compile(r'<[^>]+>').sub('', text).strip()
 
 if __name__ == '__main__':
     jw = JWBible('SCH', '', 40, 24, 14)
-    print(f'{jw.booknum=} {jw.bookname=}')
+    print(f'{jw.booknum} {jw.bookname}')
     jw.booknum = 40
-    print(f'{jw.booknum=} {jw.bookname=}')
+    print(f'{jw.booknum} {jw.bookname}')
     jw.booknum = 10
-    print(f'{jw.booknum=} {jw.bookname=}')
+    print(f'{jw.booknum} {jw.bookname}')
