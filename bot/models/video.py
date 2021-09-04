@@ -102,7 +102,7 @@ class Video:
         return streams[0]
 
 
-def parse_time(stamptime):
+def parse_time(stamptime) -> float:
     """Expects stamptime = "01:02:03.4567" or float or int """
     try:
         return float(stamptime)

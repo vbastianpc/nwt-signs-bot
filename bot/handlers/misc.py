@@ -58,7 +58,7 @@ def info_inline(update: Update, context: CallbackContext) -> None:
 def paraBotFather(update: Update, context: CallbackContext):
     commands = [
         ('start', 'Mensaje de bienvenida'),
-        ('lang', 'Cambia la lengua de señas'),
+        ('lang', '[código] Cambia la lengua de señas'),
         ('quality', 'Cambia la calidad de los videos'),
         ('inline', 'Aprende a usar el modo inline'),
         ('feedback', 'Send me your feedback'),

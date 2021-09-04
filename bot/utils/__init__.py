@@ -5,7 +5,7 @@ from .utils import (
     BIBLE_BOOKNAMES,
     safechars,
     parse_bible_pattern,
-    parse_bookname,
+    parse_booknum,
     parse_chapter,
     parse_verses,
     seems_bible,

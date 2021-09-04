@@ -1,7 +1,7 @@
 import json
 import logging
 
-from telegram import Update, ParseMode, User, chat, parsemode
+from telegram import Update, ParseMode
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           MessageHandler, Filters)
 from telegram.error import BadRequest, Unauthorized
@@ -12,6 +12,7 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from utils.secret import ADMIN
 from utils.decorators import admin, forw
 from models import UserController as uc
+from models import JWBible
  
 
 logger = logging.getLogger(__name__)
@@ -83,7 +84,12 @@ def autorizacion(update: Update, context: CallbackContext):
             chat_id=new_member_id,
             text=f'Has sido aceptado.',
         )
-        uc.add_user(new_member_id, msg.chat.full_name)
+        uc.add_user(
+            telegram_id=new_member_id,
+            name=msg.chat.full_name,
+            lang='SCH',
+            quality='720p'
+        )
         start(
             update,
             context,
