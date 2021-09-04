@@ -10,14 +10,12 @@ from telegram.ext import (
     CallbackContext,
     InlineQueryHandler,
 )
-from telegram.constants import MAX_INLINE_QUERY_RESULTS
 
 from models import LocalData
 from models import UserController
-from utils import parse_bible_pattern, parse_chapter, BooknumNotFound, MultipleBooknumsFound
+from utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
 from utils.decorators import vip
-from utils.secret import CHANNEL_ID
-from utils.utils import parse_bookname, parse_verses
+from utils.utils import parse_booknum, parse_verses
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ logger = logging.getLogger(__name__)
 def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
     try:
-        booknums = [parse_bookname(update.inline_query.query)]
+        booknums = [parse_booknum(update.inline_query.query)]
     except BooknumNotFound:
         booknums = [None]
     except MultipleBooknumsFound as e:
@@ -36,19 +34,20 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
         verses = parse_verses(update.inline_query.query)
     uc = UserController(update.effective_user.id)
     results = []
+    logger.info(f'{booknums} {chapter} {verses}')
     for booknum in booknums:
         db = LocalData(
-            lang=uc.lang(),
+            code_lang=uc.get_lang(),
             booknum=booknum,
             chapter=chapter,
             verses=verses,
-            quality=uc.quality(),
+            quality=uc.get_quality(),
         )
         results += [
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
                 video_file_id=file_id,
-                title=f'{name} - {uc.lang()} {uc.quality()}',
+                title=f'{name} - {uc.get_lang()} {uc.get_quality()}',
             )
             for name, file_id in db.iter_smart()
         ]
