@@ -88,15 +88,22 @@ VALUES ("SCH", 1, 3, "720p", "skjdflsdkfdslfkdfkl", "https://jw.org");
 DELETE FROM Chapters WHERE Booknum=1;
 
 """
-from sqlalchemy import Column, Integer, Float, String, ForeignKey, delete, create_engine
-from sqlalchemy.orm import session, sessionmaker, backref, relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.sqltypes import Float
 from datetime import datetime
 
-engine = create_engine(f'sqlite:///{datetime.now().isoformat(timespec="seconds")}.db', echo=True)
+from sqlalchemy.engine import Engine
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, ForeignKeyConstraint, event
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
+
+
+PATH_DB = 'database.db'
 Base = declarative_base()
 
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 class SignLanguages(Base):
     __tablename__ = 'SignLanguages'
@@ -116,59 +123,91 @@ class Booknames(Base):
 
 
 class Chapters(Base):
-    # parent
     __tablename__ = 'Chapters'
-    code_lang = Column('CodeLang', String, ForeignKey('Booknames.CodeLang'), primary_key=True)
-    booknum = Column('Booknum', Integer, ForeignKey('Booknames.Booknum'), primary_key=True)
+    code_lang = Column('CodeLang', String, primary_key=True)
+    booknum = Column('Booknum', Integer, primary_key=True)
     chapter = Column('Chapter', Integer, primary_key=True)
     files = relationship(
         "Files",
         cascade="all,delete",
-        # backref='Chapters',
+        back_populates='parent',
         passive_deletes=True,
-        primaryjoin="and_(Chapters.code_lang==Files.code_lang, Chapters.booknum==Files.booknum, Chapters.chapter==Files.chapter)",
-        # foreign_keys="[Files.code_lang, Files.booknum, Files.chapter]",
+    )
+    markers = relationship(
+        'Markers',
+        cascade="all,delete",
+        back_populates='parent',
+        passive_deletes=True,
+    )
+    sent_verses = relationship(
+        'SentVerses',
+        cascade="all,delete",
+        back_populates='parent',
+        passive_deletes=True,
+    )
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CodeLang', 'Booknum'],
+            ['Booknames.CodeLang', 'Booknames.Booknum']
+        ),
     )
 
 class Files(Base):
-    # child
     __tablename__ = 'Files'
-    code_lang = Column('CodeLang', String, ForeignKey('Chapters.CodeLang', ondelete="CASCADE"), primary_key=True)
-    booknum = Column('Booknum', Integer, ForeignKey('Chapters.Booknum', ondelete="CASCADE"), primary_key=True)
-    chapter = Column('Chapter', Integer, ForeignKey('Chapters.Chapter', ondelete="CASCADE"), primary_key=True)
+    code_lang = Column('CodeLang', String, primary_key=True)
+    booknum = Column('Booknum', Integer, primary_key=True)
+    chapter = Column('Chapter', Integer, primary_key=True)
     quality = Column('Quality', String, primary_key=True)
     url = Column('URL', String)
     checksum = Column('Checksum', String)
     filesize = Column('Filesize', Integer)
     modified_datetime = Column('ModifiedDatetime', String)
-    # parent = relationship("Chapters", backref=backref('Files', cascade="all,delete"))
-    # parent = relationship(
-    #     "Chapters",
-    #     # backref=backref('Files', cascade="all,delete"),
-    #     foreign_keys="[Chapters.code_lang, Chapters.booknum, Chapters.chapter]",
-    # )
+    parent = relationship('Chapters', back_populates='files')
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CodeLang', 'Booknum', 'Chapter'],
+            ['Chapters.CodeLang', 'Chapters.Booknum', 'Chapters.Chapter'],
+            ondelete="CASCADE"
+        ),
+    )
 
 
 class Markers(Base):
     __tablename__ = 'Markers'
-    code_lang = Column('CodeLang', String, ForeignKey('Chapters.CodeLang'), primary_key=True)
-    booknum = Column('Booknum', Integer, ForeignKey('Chapters.Booknum'), primary_key=True)
-    chapter = Column('Chapter', Integer, ForeignKey('Chapters.Chapter'), primary_key=True)
+    code_lang = Column('CodeLang', String, primary_key=True)
+    booknum = Column('Booknum', Integer, primary_key=True)
+    chapter = Column('Chapter', Integer, primary_key=True)
     versenum = Column('VerseNumber', Integer, primary_key=True)
     start_time = Column('StartTime', Float)
     duration = Column('Duration', Float)
     end_transition_duration = Column('EndTransitionDuration', Float)
+    parent = relationship('Chapters', back_populates='markers')
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CodeLang', 'Booknum', 'Chapter'],
+            ['Chapters.CodeLang', 'Chapters.Booknum', 'Chapters.Chapter'],
+            ondelete="CASCADE"
+        ),
+    )
 
 
 class SentVerses(Base):
     __tablename__ = 'SentVerses'
-    code_lang = Column('CodeLang', String, ForeignKey('Chapters.CodeLang'), primary_key=True)
-    booknum = Column('Booknum', Integer, ForeignKey('Chapters.Booknum'), primary_key=True)
-    chapter = Column('Chapter', Integer, ForeignKey('Chapters.Chapter'), primary_key=True)
+    code_lang = Column('CodeLang', String, primary_key=True)
+    booknum = Column('Booknum', Integer, primary_key=True)
+    chapter = Column('Chapter', Integer, primary_key=True)
     versenums = Column('VerseNumbers', String, primary_key=True)
     quality = Column('Quality', String, primary_key=True)
     file_id = Column('FileID', String)
     added_datetime = Column('AddedDatetime', String)
+    parent = relationship('Chapters', back_populates='sent_verses')
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['CodeLang', 'Booknum', 'Chapter'],
+            ['Chapters.CodeLang', 'Chapters.Booknum', 'Chapters.Chapter'],
+            ondelete="CASCADE"
+        ),
+    )
 
 
 class Users(Base):
@@ -181,22 +220,31 @@ class Users(Base):
 
 
 if __name__ == '__main__':
+    from sqlalchemy.orm import session, sessionmaker
+    from sqlalchemy import Column, Integer, Float, String, ForeignKey, create_engine, ForeignKeyConstraint, event
+
+
+    engine = create_engine(f'sqlite:///{datetime.now().isoformat(timespec="seconds")}.db', echo=True)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    print('Dummy')
     session = Session()
 
     session.add(SignLanguages(code_lang='SCH', locale='csg'))
+    session.flush()
+
     session.add(Booknames(booknum=1, code_lang='SCH', bookname='Génesis'))
-    session.add(Chapters(code_lang='SCH', booknum=1, chapter=3))
+    session.add(Booknames(booknum=40, code_lang='SCH', bookname='Mateo'))
+    session.add(Booknames(booknum=43, code_lang='SCH', bookname='Juan'))
+    session.flush()
+
     session.add(Chapters(code_lang='SCH', booknum=1, chapter=4))
-    session.add(Chapters(code_lang='SCH', booknum=7, chapter=4))
-    session.add(Files(code_lang='SCH', booknum=1, chapter=4, quality='720p', checksum='sdkjfhs', url='https://fg'))
+    session.add(Chapters(code_lang='SCH', booknum=40, chapter=14))
+    session.add(Files(code_lang='SCH', booknum=1, chapter=4, quality='720p', checksum='sdkjfhs', url='https://GENESIS'))
+    session.add(Files(code_lang='SCH', booknum=40, chapter=14, quality='720p', checksum='dgdfgsfghgf', url='https://MATEO'))
     session.commit()
-    print('Finalizado')
-    # session.execute(
-    #     delete(Chapters).where(Chapters.booknum == 1)
-    # )
+
+    session.add(Markers(code_lang='SCH', booknum=40, chapter=14, versenum=10, start_time=10.5))
+
+    # session.delete(session.query(Chapters).filter(Chapters.booknum == 40)[0])
     session.query(Chapters).filter(Chapters.booknum == 1).delete()
     session.commit()
-    # print('borrado')
