@@ -49,7 +49,7 @@ def get_all_users() -> List[User]:
     return SESSION.query(User).filter(User.status == 1).all()
 
 def set_user(
-        user_id,
+        telegram_user_id,
         lang_code=None,
         full_name=None,
         bot_lang=None,
@@ -58,7 +58,9 @@ def set_user(
         brother=False,
     ) -> User:
     assert [waiting, blocked, brother].count(True) <= 1, 'waiting, blocked and brother are mutually exclusive arguments' 
-    user = get_user(user_id)
+    user = get_user(telegram_user_id)
+    if not user:
+        user = User(telegram_user_id=telegram_user_id)
     user.sign_language_id = query_sign_language(lang_code).id if lang_code else user.sign_language_id
     user.full_name = full_name or user.full_name
     user.bot_lang = bot_lang or user.bot_lang
