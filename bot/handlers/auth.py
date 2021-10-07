@@ -90,15 +90,11 @@ def autorizacion(update: Update, context: CallbackContext):
     except Exception as e:
         logger.error(e)
         return
-    else:
-        context.bot.send_message(
-            chat_id=new_member_id,
-            text=f'🔐',
-        )
     update.message.reply_text(
         text=f'{mention_markdown(new_member_id, db_user.full_name)} ha sido aceptado',
         parse_mode=ParseMode.MARKDOWN,
     )
+    context.bot.send_message(chat_id=new_member_id, text=f'🔐')
     start(
         update,
         context,
@@ -123,13 +119,11 @@ def delete_user(update: Update, context: CallbackContext):
 def sending_users(update: Update, context: CallbackContext):
     users = db.get_all_users()
     text = ''
-    for i, user in enumerate(users):
-        format_user = f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.lang_code} `{user.telegram_user_id}`\n'
+    for i, user in enumerate(users, 1):
+        text += f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.lang_code} `{user.telegram_user_id}`\n'
         if i % 10 == 0:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
             text = ''
-        else:
-            text += format_user
     if text:
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
