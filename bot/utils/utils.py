@@ -228,7 +228,7 @@ def parse_chapter(text) -> Optional[int]:
         return None
 
 
-def parse_verses(text) -> Optional[List[int]]:
+def parse_verses(text) -> Optional[List[str]]:
     if isinstance(text, str):
         match = re.match(BIBLE_PATTERN, text.lower())
     elif isinstance(text, re.Match):
@@ -241,9 +241,9 @@ def parse_verses(text) -> Optional[List[int]]:
         groups = [i for group in groups for i in group]
         for group in groups:
             if '-' in group:
-                verses += [verse for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
+                verses += [str(verse) for verse in range(int(group.split('-')[0]), int(group.split('-')[1]) + 1)]
             else:
-                verses.append(int(group))
+                verses.append(group)
     return verses
 
 

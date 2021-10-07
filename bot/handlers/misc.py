@@ -1,13 +1,18 @@
 import json
 import logging
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram import Update
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram.ext import CallbackContext
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import Filters
+from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 
-from models import UserController as uc
-from utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS
-from utils.decorators import admin, forw
+from bot.utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS
+from bot.utils.decorators import admin, forw
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +64,6 @@ def paraBotFather(update: Update, context: CallbackContext):
     commands = [
         ('start', 'Mensaje de bienvenida'),
         ('lang', '[código] Cambia la lengua de señas'),
-        ('quality', 'Cambia la calidad de los videos'),
         ('inline', 'Aprende a usar el modo inline'),
         ('feedback', 'Send me your feedback'),
     ] + [
@@ -85,7 +89,7 @@ def notice(update: Update, context: CallbackContext):
         'Cuando estés listo, escribe /ok. Para cancelar usa /cancel'
     )
     context.user_data['notices'] = []
-    context.user_data['target_user'] = context.args or None
+    context.user_data['user_ids'] = context.args or []
     return 1
 
 
@@ -94,9 +98,9 @@ def get_notice(update: Update, context: CallbackContext):
     return 1
 
 def send_notice(update: Update, context: CallbackContext):
-    users = context.user_data['target_user'] or uc.get_users_id()
+    user_ids = context.user_data['user_ids']
     for msg in context.user_data['notices']:
-        for user_id in users:
+        for user_id in user_ids:
             context.bot.copy_message(
                 chat_id=user_id,
                 from_chat_id=update.effective_user.id,
@@ -104,6 +108,7 @@ def send_notice(update: Update, context: CallbackContext):
             )
     update.message.reply_text('Mensajes enviados')
     del context.user_data['notices']
+    del context.user_data['user_ids']
     return -1
 
 def cancel(update: Update, context: CallbackContext):

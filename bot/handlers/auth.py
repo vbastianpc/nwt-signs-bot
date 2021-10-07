@@ -1,35 +1,49 @@
-import json
 import logging
 
 from telegram import Update, ParseMode
 from telegram.ext import (CallbackContext, CommandHandler, ConversationHandler,
                           MessageHandler, Filters)
-from telegram.error import BadRequest, Unauthorized
 from telegram.ext.messagehandler import MessageHandler
 from telegram.utils.helpers import mention_markdown
 from telegram.constants import MAX_MESSAGE_LENGTH
 
-from utils.secret import ADMIN
-from utils.decorators import admin, forw
-from models import UserController as uc
-from models import JWBible
+from bot.utils.secret import ADMIN, CHANNEL_ID
+from bot.utils.decorators import admin, forw
+from bot.database import localdatabase as db
  
 
 logger = logging.getLogger(__name__)
-
+TAG_AUTH = '#auth'
 
 @forw
-def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
+def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
     user = update.effective_user
-    first_name = first_name or user.first_name
-    text = f'Hola {first_name}. '
+    full_name = full_name or user.first_name
+    text = f'Hola {full_name}. '
     if context.args:
         context.bot.send_message(
             chat_id=ADMIN,
-            text=f'{mention_markdown(user.id, user.first_name)} entró desde {context.args[0]}',
+            text=f'{mention_markdown(user.id, user.full_name)} entró desde {context.args[0]}',
             parse_mode=ParseMode.MARKDOWN
         )
-    if user.id in uc.get_users_id():
+    logger.info(f'{update.effective_user=} {chat_id=}')
+    
+    db_user = db.get_user(chat_id or update.effective_user.id)
+    if db_user is None or not db_user.is_brother():
+        db.add_waiting_user(update.effective_user.id, update.effective_user.full_name)
+        text += 'Este es un bot privado 🔐👤\n\nCuéntame quién eres y por qué quieres usar este bot'
+        context.bot.send_message(
+            chat_id=ADMIN,
+            text=f'{TAG_AUTH} {mention_markdown(user.id, user.first_name)} `{user.id}` ha sido bloqueado.',
+            parse_mode=ParseMode.MARKDOWN
+        )
+        context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=text,
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return 1
+    else:
         text += (
             '\n\nEscribe el pasaje de la Biblia que necesites, por ejemplo\n\n'
             'Mateo 24:14\n'
@@ -38,24 +52,14 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, first_n
             'Rom 14:3-5, 23\n'
             'Sal 83\n'
             'Deut\n\n'
-            'Usa /lang para cambiar tu lengua de señas.\n'
-            'Usa /quality para cambiar la calidad de tus videos.'
-        )
-    else:
-        text += 'Este es un bot privado 🔐👤\n\nCuéntame quién eres y por qué quieres usar este bot'
-        context.bot.send_message(
-            chat_id=ADMIN,
-            text=f'{mention_markdown(user.id, user.first_name)} ha sido bloqueado.',
-            parse_mode=ParseMode.MARKDOWN
+            'Presiona /lang para elegir una lengua de señas.\n'
         )
 
     context.bot.send_message(
-        chat_id=chat_id if chat_id else update.effective_chat.id,
+        chat_id=chat_id if chat_id else update.effective_user.id,
         text=text,
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not user.id in uc.get_users_id():
-        return 1
 
 
 def whois(update: Update, context: CallbackContext):
@@ -63,11 +67,11 @@ def whois(update: Update, context: CallbackContext):
     user = update.effective_user
     context.bot.send_message(
         chat_id=ADMIN,
-        text=f'{user.id} {mention_markdown(user.id, user.first_name)} ha dejado una nota.',
+        text=f'{TAG_AUTH} {mention_markdown(user.id, user.first_name)} `{user.id}` ha dejado una nota.',
         parse_mode=ParseMode.MARKDOWN,
     )
     context.bot.forward_message(
-        ADMIN,
+        CHANNEL_ID,
         update.effective_user.id,
         update.message.message_id
     )
@@ -80,62 +84,50 @@ def autorizacion(update: Update, context: CallbackContext):
         return
     try:
         new_member_id = int(context.args[0])
-        msg = context.bot.send_message(
-            chat_id=new_member_id,
-            text=f'Has sido aceptado.',
-        )
-        uc.add_user(
-            telegram_id=new_member_id,
-            name=msg.chat.full_name,
-            lang='SCH',
-            quality='720p'
-        )
-        start(
-            update,
-            context,
-            chat_id=new_member_id,
-            first_name=msg.chat.first_name
-        )
-    except BadRequest:
-        update.message.reply_text('Parece que el id no es correcto')
-    except Unauthorized:
-        update.message.reply_text(
-            text=(f'{mention_markdown(new_member_id, str(new_member_id))} no ha podido'
-                  ' ser aceptado porque ha bloqueado al bot'),
-            parse_mode=ParseMode.MARKDOWN,
-        )
+        db_user = db.set_user(new_member_id, brother=True)
+    except Exception as e:
+        logger.error(e)
+        return
     else:
-        update.message.reply_text(
-            text=f'{mention_markdown(new_member_id, msg.chat.full_name)} ha sido aceptado',
-            parse_mode=ParseMode.MARKDOWN,
+        context.bot.send_message(
+            chat_id=new_member_id,
+            text=f'🔐',
         )
+    update.message.reply_text(
+        text=f'{mention_markdown(new_member_id, db_user.full_name)} ha sido aceptado',
+        parse_mode=ParseMode.MARKDOWN,
+    )
+    start(
+        update,
+        context,
+        chat_id=new_member_id,
+        full_name=db_user.full_name
+    )
 
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
     try:
-        context.args[0]
+        db.set_user(int(context.args[0]), blocked=True)
     except IndexError:
         update.message.reply_text('Usa /delete [user_id]')
-        return
+    except:
+        update.message.reply_text('El usuario no estaba registrado en la base de datos')
     else:
-        state = uc.remove_user(int(context.args[0]))
-    if state:
-        update.message.reply_text('Usuario eliminado')
-    else:
-        update.message.reply_text('Usuario no estaba registrado')
+        update.message.reply_text('Usuario bloqueado')
 
 
 @admin
 def sending_users(update: Update, context: CallbackContext):
-    users = uc.pretty_users()
+    users = db.get_all_users()
     text = ''
-    for user in users:
-        if len(text+user) + 1 <= MAX_MESSAGE_LENGTH:
-            text += user + '\n'
-        else:
+    for i, user in enumerate(users):
+        format_user = f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.parent.lang_code} `{user.telegram_user_id}`\n'
+        if i % 10 == 0:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
             text = ''
+        else:
+            text += format_user
     if text:
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 

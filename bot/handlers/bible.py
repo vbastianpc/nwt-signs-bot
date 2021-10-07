@@ -1,34 +1,34 @@
 from pathlib import Path
 import logging
+import json
 
-from telegram import (
-    ChatAction,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    Update,
-    ParseMode,
-)
-from telegram.ext import (
-    CallbackContext,
-    CallbackQueryHandler,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-)
+from telegram import ChatAction
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Update
+from telegram import ParseMode
+from telegram.ext import CallbackContext
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import Filters
+from telegram.error import TelegramError
 
-from models import JWBible, LocalData, Video, UserController
-from utils import (
-    BIBLE_BOOKALIAS_NUM,
-    BIBLE_BOOKNAMES,
-    list_of_lists,
-    safechars,
-    parse_bible_pattern,
-    seems_bible,
-    BooknumNotFound,
-    MultipleBooknumsFound,
-)
-from utils.decorators import vip, forw, log
-from utils.secret import CHANNEL_ID, ADMIN
+from bot.models.jwpubmedia import JWBible
+from bot.models import video
+from bot.database import localdatabase as db
+from bot.utils import BIBLE_BOOKALIAS_NUM
+from bot.utils import BIBLE_BOOKNAMES
+from bot.utils import list_of_lists
+from bot.utils import safechars
+from bot.utils import parse_bible_pattern
+from bot.utils import seems_bible
+from bot.utils import BooknumNotFound
+from bot.utils import MultipleBooknumsFound
+from bot.utils.decorators import vip, forw, log
+from bot.utils.secret import CHANNEL_ID, ADMIN
+from bot.database.schemedb import SentVerse
+from bot.handlers.settings import generate_lang_buttons
 
 
 logging.basicConfig(
@@ -39,7 +39,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FORWARD_TO_CHANNEL = True
-SELECTING_CHAPTERS, SELECTING_VERSES = 'CHAPTER', 'VERSE'
+SELECTING_CHAPTERS, SELECTING_VERSES = '0', '1'
 
 
 def forward_to_channel(bot, from_chat_id, message_id):
@@ -55,8 +55,7 @@ def fallback_text(update: Update, context: CallbackContext):
 
 @vip
 @forw
-def parse_bible(update: Update, context: CallbackContext):
-    logger.info(update.message.text)
+def parse_bible(update: Update, context: CallbackContext) -> None:
     text = update.message.text.strip('/')
     reply_text = update.message.reply_text
     try:
@@ -78,32 +77,48 @@ def parse_bible(update: Update, context: CallbackContext):
         reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
 
-    uc = UserController(update.effective_user.id)
-    jw = JWBible(uc.get_lang(), uc.get_quality(), booknum, chapter, verses)
-    context.user_data['kwargs'] = {
-        'code_lang': uc.get_lang(),
-        'quality': uc.get_quality(),
+    db_user = db.get_user(update.effective_user.id)
+    if not db_user.lang_code:
+        generate_lang_buttons(update, context)
+        return
+    
+    context.user_data['msg'] = None
+    logger.info(db_user)
+    jw = JWBible(db_user.lang_code, booknum, chapter, verses)
+
+    kwargs = context.user_data['kwargs'] = {
+        'lang_code': db_user.lang_code,
         'booknum': booknum,
         'chapter': chapter,
         'verses': verses,
+        'raw_verses': ' '.join(str(v) for v in verses),
+        'telegram_user_id': update.effective_user.id
     }
-    context.user_data['msg'] = None
+
+    if jw.chapter and jw.pubmedia_exists() and not jw.check_chapternumber():
+        reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
+        kwargs.update({'chapter': None})
+        return show_chapters(update, context)
 
     if not jw.pubmedia_exists():
-        reply_text(f'No está disponible en {uc.get_lang()}. Prueba con otro libro, o cambia la lengua con /lang')
+        reply_text(f'Ese libro no está disponible en {db_user.lang_code} - {db_user.lang_vernacular}. '
+            'Usa /lang para cambiar la lengua de señas')
         return
 
-    if jw.chapter and jw.chapter not in jw.available_chapters:
-        reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
-        return show_chapters(update, context)
-    
-    if uc.get_quality() not in jw.available_qualities:
-        reply_text(
-            f'{jw.bookname} no está disponible en {jw.quality}.\n\nUsa /quality '
-            'y elige una de las siguientes calidades disponibles:\n\n' + 
-            '\n'.join(jw.available_qualities)
-        )
-        return
+    kwargs.update({
+        'quality': jw.get_best_quality(),
+        'bookname': jw.bookname,
+    })
+    logger.info('%s', json.dumps(context.user_data['kwargs'], indent=2, ensure_ascii=False))
+    db.query_or_create_bible_book(**context.user_data['kwargs'])
+
+    if chapter:
+        kwargs.update({
+            'representative_datetime': jw.get_representative_datetime(),
+        })
+        context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
+        db.manage_video_markers(jw.get_markers, **kwargs)
+
 
     if verses:
         manage_verses(update, context)
@@ -118,8 +133,8 @@ def show_chapters(update: Update, context: CallbackContext):
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(chapter),
-            callback_data=f'{SELECTING_CHAPTERS}||{jw.code_lang}||{jw.quality}||{jw.booknum}||{chapter}',
-        ) for chapter in jw.available_chapters],
+            callback_data=f'{SELECTING_CHAPTERS}|{jw.lang_code}|{jw.booknum}|{chapter}|{jw.get_representative_datetime(chapter)}',
+        ) for chapter in jw.get_all_chapternumber()],
         columns=8
     )
     kwargs = {
@@ -133,117 +148,91 @@ def show_chapters(update: Update, context: CallbackContext):
 
 @log
 def get_chapter(update: Update, context: CallbackContext):
-    update.callback_query.answer()
-    _, code_lang, quality, booknum, chapter = update.callback_query.data.split('||')
-    context.user_data.setdefault('kwargs', {}).update({
-        'code_lang': code_lang,
-        'quality': quality,
+    _, lang_code, booknum, chapter, representative_datetime = update.callback_query.data.split('|')
+    context.user_data['kwargs'] = {
+        'lang_code': lang_code,
         'booknum': booknum,
         'chapter': chapter,
-    })
+        'representative_datetime': representative_datetime
+    }
+    jw = JWBible(**context.user_data['kwargs'])
+    db.manage_video_markers(jw.get_markers, **context.user_data['kwargs'])
+    update.callback_query.answer()
     show_verses(update, context)
 
 
 def show_verses(update: Update, context: CallbackContext):
-    message = update.effective_message
-    db = LocalData(**context.user_data['kwargs'])
-    context.user_data['kwargs'].update({'videopath': db.path})
     jw = JWBible(**context.user_data['kwargs'])
-    msg = context.user_data.get('msg')
+    bible_chapter = db.get_bible_chapter(**context.user_data['kwargs'])
 
-    if not jw.is_wol_available() and (jw.checksum != db.checksum or not db.path.exists()):
-        text = f'📥 Descargando {jw.bookname} {jw.chapter}'
-        msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
-        download_chapter(jw, db)
-        if db.checksum:
-            context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=f'Se ha actualizado {jw.bookname} {jw.chapter} con fecha {jw.modifiedDatetime}',
-            )
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(verse),
-            callback_data=f'{SELECTING_VERSES}||{jw.code_lang}||{jw.quality}||{jw.booknum}||{jw.chapter}||{verse}',
-        ) for verse in jw.available_verses],
+            callback_data=f'{SELECTING_VERSES}|{jw.lang_code}|{jw.booknum}|{jw.chapter}|{jw.get_representative_datetime()}|{verse}',
+        ) for verse in (video_marker.versenum for video_marker in bible_chapter.video_markers)],
         columns=8
     )
+    if update.callback_query:
+        message_id = update.callback_query.message.message_id
+    elif context.user_data.get('msg'):
+        message_id = context.user_data['msg'].message_id
+    else:
+        message_id = None
+
     kwargs = {
         'chat_id': update.effective_chat.id,
         'text': f'📖 *{jw.bookname} {jw.title_chapter}*\nElige un versículo',
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
-    if update.callback_query:
-        context.bot.edit_message_text(
-            message_id=update.callback_query.message.message_id,
-            **kwargs,
-        )
-        return
-    if context.user_data.get('msg'):
-        context.bot.edit_message_text(
-            message_id=context.user_data['msg'].message_id,
-            **kwargs,
-        )
+    if message_id:
+        context.bot.edit_message_text(message_id=message_id, **kwargs)
     else:
         context.bot.send_message(**kwargs)
 
 
+
 @log
 def get_verse(update: Update, context: CallbackContext):
-    update.callback_query.answer('Espera unos momentos')
-    _, code_lang, quality, booknum, chapter, verse = update.callback_query.data.split('||')
-    context.user_data['kwargs'].update({
-        'code_lang': code_lang,
-        'quality': quality,
+    update.callback_query.answer()
+    _, lang_code, booknum, chapter, representative_datetime, verse = update.callback_query.data.split('|')
+    context.user_data['kwargs'] = {
+        'lang_code': lang_code,
         'booknum': booknum,
         'chapter': chapter,
-        'verses': [verse]
-    })
+        'representative_datetime': representative_datetime,
+        'verses': [int(verse)],
+        'raw_verses': str(verse),
+        'telegram_user_id': update.effective_user.id
+    }
     context.user_data['msg'] = update.callback_query.message
-    logger.info(f'Recibido: {code_lang} {quality} {booknum} {chapter} {verse}')
-    return manage_verses(update, context)
+    manage_verses(update, context)
+    return
 
 
 def manage_verses(update: Update, context: CallbackContext):
-    message = update.effective_message
-    chat = update.effective_chat
-    db = context.user_data['db'] = LocalData(**context.user_data['kwargs'])
-    context.user_data['kwargs'].update({'videopath': str(db.path)})
-    jw = context.user_data['jw'] = JWBible(**context.user_data['kwargs'])
-    msg = context.user_data.get('msg')
-    logger.info('(%s) %s', update.effective_user.name, f'{jw.booknum} {jw.chapter} {jw.verses}')
+    kwargs = context.user_data['kwargs']
+    jw = context.user_data['jw'] = JWBible(**kwargs)
+    kwargs.update(dict(quality=jw.get_best_quality()))
+    logger.info('%s', json.dumps(kwargs, indent=2, ensure_ascii=False))
+    logger.info('(%s) %s', update.effective_user.name, jw.citation())
 
-    verse = str(jw.verses[0]) if len(jw.verses) == 1 else ' '.join([str(v) for v in jw.verses])
-
-    if verse in db.existing_verses:
-        if msg:
-            msg.delete()
-        logger.info('Sending by file_id')
-        msgverse = context.bot.send_video(
-            chat_id=chat.id,
-            video=db.get_fileid(verse),
-            caption=db.get_versename(verse),
+    logger.info('%s', db.get_all_versenumbers(**kwargs))
+    not_available = [verse for verse in kwargs['verses'] if int(verse) not in db.get_all_versenumbers(**kwargs)]
+    if len(not_available) == 1:
+        text = f'{not_available[0]} no está disponible.'
+    elif len(not_available) > 1:
+        text = f'{", ".join([str(i) for i in not_available])} no están disponibles.'
+    if not_available:
+        update.message.reply_text(
+            f'{jw.bookname} {jw.chapter}:{text}\nPero puedes elegir uno de los siguientes versículos:'
         )
-        forward_to_channel(context.bot, chat.id, msgverse.message_id)
+        show_verses(update, context)
         return
-    else:
-        if jw.checksum != db.checksum or not db.path.exists():
-            text = f'📥 Descargando {jw.bookname} {jw.chapter}'
-            msg = context.user_data['msg'] = msg.edit_text(text) if msg else message.reply_text(text)
-            download_chapter(jw, db)
-            if db.checksum:
-                context.bot.send_message(
-                    chat_id=CHANNEL_ID,
-                    text=f'Se ha actualizado {jw.bookname} {jw.chapter} con fecha {jw.modifiedDatetime}',
-                )
 
-
-    if jw.not_available_verses:
-        na = jw.not_available_verses
-        message.reply_text(
-            f'{jw.bookname} {jw.chapter}:' + 
-            (f'{na[0]} no está disponible 🤷🏻‍♂️' if len(na) == 1 else f'{", ".join([str(i) for i in na])} no están disponibles 🤷🏻‍♂️')
-        )
+    sent_verse = db.query_sent_verse(**kwargs)
+    if sent_verse and sent_verse.raw_verses == ' '.join(str(v) for v in kwargs['verses']):
+        send_by_fileid(update, context, sent_verse)
         return
 
     if len(jw.verses) == 1:
@@ -251,102 +240,126 @@ def manage_verses(update: Update, context: CallbackContext):
     else:
         send_concatenate_verses(update, context)
     logger.info('Success!')
-    return delete_objects(update, context)
+    delete_objects(update, context)
+    return
 
 
-def download_chapter(jw: JWBible, db: LocalData):
-    logger.info(f'Descargando {jw.bookname} {jw.chapter}')
-    db.path = Video.download(jw.video_url)
-    db.discard_verses()
-    jw.videopath = db.path
-    db.save(jw.checksum, jw.modifiedDatetime, jw.filesize)
+def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVerse):
+    logger.info('Sending by file_id')
+    if context.user_data.get('msg'):
+        context.user_data.get('msg').delete()
+    try:
+        msgverse = context.bot.send_video(
+            chat_id=update.effective_chat.id,
+            video=sent_verse.telegram_file_id,
+            caption=sent_verse.citation,
+        )
+    except TelegramError:
+        logger.critical('Al parecer se ha eliminado de los servidores de Telegram %s file_id=%s', sent_verse.citation, sent_verse.telegram_file_id)
+
+    else:
+        db.add_sent_verse_user(sent_verse, update.effective_user.id)
+        forward_to_channel(context.bot, update.effective_chat.id, msgverse.message_id)
+    return
 
 
 def send_single_verse(update: Update, context: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
     jw = context.user_data['jw']
-    db = context.user_data['db']
     msg = context.user_data.get('msg')
-    verse = jw.verses[0]
- 
-    logger.info("Splitting verse %s from %s", verse, db.path)
-    context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-    text = f'✂️🎞 Cortando {jw.bookname} {jw.chapter}:{verse}'
+    verse = str(jw.verses[0])
+    citation = f'{jw.bookname} {jw.chapter}:{verse}'
+    logger.info("Splitting %s", citation)
+    text = f'✂️🎞 Cortando {citation}'
     if msg:
         msg.edit_text(text)
     else:
         msg = message.reply_text(text, disable_notification=True)
-
-    versepath = Video.split(db.path, jw.match_marker(verse))
-    stream = Video.show_streams(versepath)
+    context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+    marker = db.get_videomarker(versenum=verse, **context.user_data['kwargs'])
+    versepath = video.split(jw.get_video_url(), marker)
+    streams = video.show_streams(versepath)
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
-    msg.edit_text(f'📦 Enviando {jw.citation()}')
+    msg.edit_text(f'📦 Enviando {citation}')
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=versepath.read_bytes(),
         filename=versepath.name,
-        caption=jw.citation(),
-        width=stream['width'],
-        height=stream['height'],
-        duration=round(float(stream['duration'])),
+        caption=citation,
+        width=streams['width'],
+        height=streams['height'],
+        duration=round(float(streams['duration'])),
         timeout=120,
         # thumb= TODO
     )
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
+    context.user_data['kwargs'].update({
+        'citation': citation,
+        'telegram_file_id': msgverse.video.file_id,
+        'size': versepath.stat().st_size,
+        'verses': verse,
+    })
+    sent_verse = db.add_sent_verse(**context.user_data['kwargs'])
+    db.add_sent_verse_user(sent_verse, update.effective_user.id)
+    # TODO
+    # SOLO BEST QUALITY. Mantener en base de datos quality por si acaso. Quitar de comandos
+    # user blocked: -1 intruso. 0 bloqueado. 1 hermano
+    # hacer comandos para consultar y escribir en base de datos durante 5 segundos. ejecutarlo al mismo tiempo en dos chats diferentes
+    # CommandsScope por lenguaje
     versepath.unlink()
-    db.add_verse(verse, jw.citation(), msgverse.video.file_id)
-    db.save(jw.checksum, jw.modifiedDatetime, jw.filesize)
 
 
 def send_concatenate_verses(update: Update, context: CallbackContext):
     chat = update.effective_chat
     message = update.effective_message
     jw = context.user_data['jw']
-    db = context.user_data['db']
+    kwargs = context.user_data['kwargs']
     msg = context.user_data.get('msg')
-    versenums = ' '.join([str(v) for v in jw.verses])
+    raw_verses = ' '.join([str(v) for v in jw.verses])
 
     paths_to_concatenate = []
     new = []
     for verse in jw.verses:
-        context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
-        if str(verse) in db.existing_verses:
-            logger.info('Downloading verse %s from telegram servers', verse)
-            text = f'📥 Obteniendo {jw.bookname} {jw.chapter}:{verse}'
+        kwargs.update({'raw_verses': str(verse)})
+        sent_verse = db.query_sent_verse(**kwargs)
+        if sent_verse:
+            logger.info('Downloading verse %s from telegram servers', sent_verse.citation)
+            text = f'📥 Obteniendo {sent_verse.citation}'
             if msg:
                 msg.edit_text(text)
             else:
                 msg = message.reply_text(text)
-            file_id = db.get_fileid(verse)
-            filename = db.get_versename(verse) + '.mp4'
-            versepath = Path(filename)
-            context.bot.get_file(file_id, timeout=120).download(custom_path=versepath)
+            versepath = Path(f'{sent_verse.id}.mp4')
+            context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+            context.bot.get_file(sent_verse.telegram_file_id, timeout=120).download(custom_path=versepath)
             paths_to_concatenate.append(versepath)
         else:
-            logger.info("Splitting verse %s from %s", verse, db.path)
-            text = f'✂️🎞 Cortando {jw.bookname} {jw.chapter}:{verse}'
+            citation = f'{jw.bookname} {jw.chapter}:{verse}'
+            logger.info("Splitting %s", citation)
+            text = f'✂️🎞 Cortando {citation}'
             if msg:
                 msg.edit_text(text)
             else:
                 msg = message.reply_text(text)
-            marker = jw.match_marker(verse)
-            versepath = Video.split(db.path, marker)
+            context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
+            marker = db.get_videomarker(versenum=verse, **context.user_data['kwargs'])
+            versepath = video.split(jw.get_video_url(), marker)
             paths_to_concatenate.append(versepath)
             new.append((verse, versepath))
     logger.info('Concatenating video %s', jw.citation())
     msg.edit_text(f'🎥 Uniendo versículos')
-    finalpath = Video.concatenate(
+    finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
-        outname=safechars(jw.citation()),
+        outname=f'{jw.lang_code} - {safechars(jw.citation())} - {jw.get_best_quality()}',
         title_chapters=list(map(jw.citation, jw.verses)),
         title=jw.citation(),
     )
     logger.info('Sending concatenated video %s', finalpath)
     msg.edit_text(f'📦 Enviando {jw.citation()}')
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
-    stream = Video.show_streams(finalpath)
+    stream = video.show_streams(finalpath)
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=finalpath.read_bytes(),
@@ -360,14 +373,17 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     )
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
-    db.add_verse(
-        verse=versenums,
-        versename=jw.citation(),
-        file_id=msgverse.video.file_id,
-    )
+    kwargs.update({
+        'citation': jw.citation(),
+        'telegram_file_id': msgverse.video.file_id,
+        'size': finalpath.stat().st_size,
+        'raw_verses': raw_verses,
+    })
+    sent_verse = db.add_sent_verse(**kwargs)
+    db.add_sent_verse_user(sent_verse, update.effective_user.id)
     logger.info('Sending backup single verse %s', [verse for verse, _ in new])
     for verse, versepath in new:
-        stream = Video.show_streams(versepath)
+        stream = video.show_streams(versepath)
         msgverse = context.bot.send_video(
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
@@ -379,14 +395,17 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             timeout=120,
             # thumb= TODO
         )
-        db.add_verse(
-            verse=verse,
-            versename=jw.citation(verses=verse),
-            file_id=msgverse.video.file_id,
-        )
+        kwargs.update({
+            'citation': jw.citation(verses=verse),
+            'telegram_file_id': msgverse.video.file_id,
+            'size': versepath.stat().st_size,
+            'raw_verses': str(verse)
+        })
+        sent_verse = db.add_sent_verse(**kwargs)
+        db.add_sent_verse_user(sent_verse, update.effective_user.id)
     for versepath in paths_to_concatenate + [finalpath]:
         versepath.unlink()
-    db.save(jw.checksum, jw.modifiedDatetime, jw.filesize)
+
 
 def delete_objects(update: Update, context: CallbackContext):
     context.user_data.pop('jw', None)

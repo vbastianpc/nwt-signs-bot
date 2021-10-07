@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-
+"""
+Agregar handler para actualizar lenguas
+"""
 import logging
 
 from telegram import Update
 from telegram.ext import Updater, CallbackContext
 
-from handlers import handlers
-from utils.secret import TOKEN
+from bot.handlers import handlers
+from bot.utils.secret import TOKEN
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
@@ -18,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 def log_error(_: Update, context: CallbackContext) -> None:
     logger.error(context.error)
-
 
 
 if __name__ == '__main__':

@@ -1,254 +1,143 @@
 """
-CREATE TABLE IF NOT EXISTS SignLanguage (
-    CodeLang  VARCHAR NOT NULL PRIMARY KEY,
-	Locale VARCHAR,
-    Name VARCHAR,
-	Vernacular VARCHAR,
-	RsConfigSymbol VARCHAR,
-	LibrarySymbol VARCHAR
-);
-
-CREATE TABLE IF NOT EXISTS BibleBook (
-    BookNumber INT NOT NULL,
-	CodeLang REFERENCES SignLanguage,
-	BookName VARCHAR,
-	PRIMARY KEY (BookNumber, CodeLang)
-);
-
-CREATE TABLE IF NOT EXISTS BibleChapter (
-    CodeLang VARCHAR,
-	BookNumber INT,
-	ChapterNumber  INT,
-    FOREIGN KEY (CodeLang, BookNumber) REFERENCES BibleBook (CodeLang, BookNumber),
-    PRIMARY KEY (CodeLang, BookNumber, ChapterNumber)
-);
-
-CREATE TABLE IF NOT EXISTS VideoFile (
-    CodeLang VARCHAR,
-	BookNumber INT,
-	ChapterNumber INT,
-	Quality VARCHAR,
-	URL VARCHAR,
-	Checksum VARCHAR,
-	Filesize INT,
-	ModifiedDatetime VARCHAR,
-	FOREIGN KEY (CodeLang, BookNumber, ChapterNumber) REFERENCES BibleChapter (CodeLang, BookNumber, ChapterNumber) ON DELETE CASCADE,
-	PRIMARY KEY (CodeLang, BookNumber, ChapterNumber, Quality)
-);
-
-CREATE TABLE IF NOT EXISTS VideoMarker (
-    CodeLang VARCHAR,
-	BookNumber INT,
-	ChapterNumber INT,
-	VerseNumber INT,
-	StartTime FLOAT,
-	Duration FLOAT,
-	EndTransitionDuration FLOAT,
-	FOREIGN KEY (CodeLang, BookNumber, ChapterNumber) REFERENCES BibleChapter (CodeLang, BookNumber, ChapterNumber) ON DELETE CASCADE,
-	PRIMARY KEY (CodeLang, BookNumber, ChapterNumber, VerseNumber)
-);
-
-CREATE TABLE IF NOT EXISTS SentVerse (
-    CodeLang VARCHAR,
-	BookNumber INT,
-	ChapterNumber INT,
-	VerseNumbers VARCHAR,
-	Quality VARCHAR,
-	FileID VARCHAR,
-	AddedDatetime VARCHAR,
-	FOREIGN KEY (CodeLang, BookNumber, ChapterNumber) REFERENCES BibleChapter (CodeLang, BookNumber, ChapterNumber) ON DELETE CASCADE,
-    PRIMARY KEY (CodeLang, BookNumber, ChapterNumber, Quality, VerseNumbers)
-);
-
-CREATE TABLE IF NOT EXISTS Users (
-    UserID INT  NOT NULL PRIMARY KEY,
-	FullName VARCHAR,
-	CodeLang REFERENCES SignLanguage,
-	Quality VARCHAR, 
-	AddedDatetime VARCHAR
-);
-
-
-INSERT INTO SignLanguage (CodeLang, Locale, Name, Vernacular, RsConfigSymbol, LibrarySymbol)
-VALUES ("SCH", "csg", "lengua de señas chilena", "lengua de señas chilena", "r377", "lp-sch");
-
-INSERT INTO BibleBook (BookNumber, CodeLang, BookName)
-VALUES (1, "SCH", "Génesis");
-
-INSERT INTO BibleChapter (CodeLang, BookNumber, ChapterNumber)
-VALUES ("SCH", 1, 3);
-
-INSERT INTO BibleChapter (CodeLang, BookNumber, ChapterNumber)
-VALUES ("SCH", 1, 4);
-
-INSERT INTO VideoFile (CodeLang, BookNumber, ChapterNumber, Quality, Checksum, URL)
-VALUES ("SCH", 1, 3, "720p", "skjdflsdkfdslfkdfkl", "https://jw.org");
-
-
-DELETE FROM BibleChapter WHERE BookNumber=1;
-
+https://dbdiagram.io/d/61417a16825b5b0146029d49
 """
-from datetime import datetime
-
-from sqlalchemy.engine import Engine
-from sqlalchemy import Column, Integer, Float, String, ForeignKey, ForeignKeyConstraint, event, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 
 Base = declarative_base()
 
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
 
 class SignLanguage(Base):
     __tablename__ = 'SignLanguage'
-    code_lang = Column('CodeLang', String, primary_key=True)
-    locale = Column('Locale', String)
+    id = Column('SignLanguageId', Integer, primary_key=True)
+    lang_code = Column('LangCode', String, unique=True, nullable=False)
+    locale = Column('Locale', String, unique=True)
     name = Column('Name', String)
     vernacular = Column('Vernacular', String)
     rsconf = Column('RsConfigSymbol', String)
     lib = Column('LibrarySymbol', String)
+    bible_books = relationship('BibleBook', back_populates='parent')
+    users = relationship('User', back_populates='parent')
+
+    def __repr__(self):
+        return f"<SignLanguage(lang_code={self.lang_code!r}, locale={self.locale!r}, name={self.name!r}"\
+            f"vernacular={self.vernacular!r}, rsconf={self.rsconf!r}, lib={self.lib!r})>"
 
 
 class BibleBook(Base):
     __tablename__ = 'BibleBook'
-    booknum = Column('BookNumber', Integer, primary_key=True)
-    code_lang = Column('CodeLang', String, ForeignKey('SignLanguage.CodeLang'), primary_key=True)
+    id = Column('BibleBookId', Integer, primary_key=True)
+    sign_language_id = Column('SignLanguageId', Integer, ForeignKey('SignLanguage.SignLanguageId'), nullable=False)
+    booknum = Column('BookNumber', Integer)
     bookname = Column('BookName', String)
-
-
-class BibleChapter(Base):
-    __tablename__ = 'BibleChapter'
-    code_lang = Column('CodeLang', String, primary_key=True)
-    booknum = Column('BookNumber', Integer, primary_key=True)
-    chapter = Column('ChapterNumber', Integer, primary_key=True)
-    files = relationship(
-        "VideoFile",
-        cascade="all,delete",
-        back_populates='parent',
-        passive_deletes=True,
-    )
-    video_markers = relationship(
-        'VideoMarker',
-        cascade="all,delete",
-        back_populates='parent',
-        passive_deletes=True,
-    )
+    parent = relationship('SignLanguage', back_populates='bible_books')
+    bible_chapters = relationship('BibleChapter', back_populates='parent')
     sent_verses = relationship(
         'SentVerse',
         cascade="all,delete",
         back_populates='parent',
         passive_deletes=True,
     )
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ['CodeLang', 'BookNumber'],
-            ['BibleBook.CodeLang', 'BibleBook.BookNumber']
-        ),
-    )
+    __table_args__ = (UniqueConstraint('BookNumber', 'SignLanguageId'), )
 
-class VideoFile(Base):
-    __tablename__ = 'VideoFile'
-    code_lang = Column('CodeLang', String, primary_key=True)
-    booknum = Column('BookNumber', Integer, primary_key=True)
-    chapter = Column('ChapterNumber', Integer, primary_key=True)
-    quality = Column('Quality', String, primary_key=True)
-    url = Column('URL', String)
-    checksum = Column('Checksum', String)
-    filesize = Column('Filesize', Integer)
-    modified_datetime = Column('ModifiedDatetime', String)
-    parent = relationship('BibleChapter', back_populates='files')
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ['CodeLang', 'BookNumber', 'ChapterNumber'],
-            ['BibleChapter.CodeLang', 'BibleChapter.BookNumber', 'BibleChapter.ChapterNumber'],
-            ondelete="CASCADE"
-        ),
+    def __repr__(self):
+        return f"<BibleBook(booknum={self.booknum!r}, bookname={self.bookname!r})>"
+
+
+class BibleChapter(Base):
+    __tablename__ = 'BibleChapter'
+    id = Column('BibleChapterId', Integer, primary_key=True)
+    bible_book_id = Column('BibleBookId', Integer, ForeignKey('BibleBook.BibleBookId'), nullable=False)
+    chapter = Column('ChapterNumber', Integer)
+    representative_datetime = Column('RepresentativeDatetime', String)
+
+    parent = relationship('BibleBook', back_populates='bible_chapters')
+    video_markers = relationship(
+        'VideoMarker',
+        cascade="all,delete",
+        back_populates='parent',
+        # passive_deletes=True,
     )
+    __table_args__ = (UniqueConstraint('BibleBookId', 'ChapterNumber', 'RepresentativeDatetime'), )
+
+    def __repr__(self):
+        return f"<BibleChapter(chapter={self.chapter!r}, representative_datetime={self.representative_datetime!r})>"    
 
 
 class VideoMarker(Base):
     __tablename__ = 'VideoMarker'
-    code_lang = Column('CodeLang', String, primary_key=True)
-    booknum = Column('BookNumber', Integer, primary_key=True)
-    chapter = Column('ChapterNumber', Integer, primary_key=True)
-    versenum = Column('VerseNumber', Integer, primary_key=True)
-    start_time = Column('StartTime', Float)
-    duration = Column('Duration', Float)
-    end_transition_duration = Column('EndTransitionDuration', Float)
+    id = Column('VideoMarkerId', Integer, primary_key=True)
+    bible_chapter_id = Column('BibleChapterId', Integer, ForeignKey('BibleChapter.BibleChapterId'), nullable=False)
+    label = Column('Label', String)
+    start_time = Column('StartTime', String)
+    duration = Column('Duration', String)
+    versenum = Column('VerseNumber', Integer)
+    end_transition_duration = Column('EndTransitionDuration', String)
     parent = relationship('BibleChapter', back_populates='video_markers')
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ['CodeLang', 'BookNumber', 'ChapterNumber'],
-            ['BibleChapter.CodeLang', 'BibleChapter.BookNumber', 'BibleChapter.ChapterNumber'],
-            ondelete="CASCADE"
-        ),
-    )
+
+    def __repr__(self):
+        return f"<VideoMarker(label={self.label!r}, versenum={self.versenum!r}, start_time={self.start_time!r}, " \
+            f"duration={self.duration!r}, end_transition_duration={self.end_transition_duration!r})>"
 
 
 class SentVerse(Base):
     __tablename__ = 'SentVerse'
-    code_lang = Column('CodeLang', String, primary_key=True)
-    booknum = Column('BookNumber', Integer, primary_key=True)
-    chapter = Column('ChapterNumber', Integer, primary_key=True)
-    versenums = Column('VerseNumbers', String, primary_key=True)
-    quality = Column('Quality', String, primary_key=True)
-    file_id = Column('FileID', String)
+    id = Column('SentVerseId', Integer, primary_key=True)
+    bible_book_id = Column('BibleBookId', Integer, ForeignKey('BibleBook.BibleBookId'), nullable=False)
+    representative_datetime = Column('RepresentativeDatetime', String) # fecha obtenida de mejor calidad
+    chapter = Column('ChapterNumber', Integer)
+    raw_verses = Column('RawVerseNumbers', String)
+    citation = Column('Citation', String)
+    quality = Column('Quality', String)
+    telegram_file_id = Column('TelegramFileId', String, unique=True)
+    size = Column('Size', Integer)
     added_datetime = Column('AddedDatetime', String)
-    parent = relationship('BibleChapter', back_populates='sent_verses')
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ['CodeLang', 'BookNumber', 'ChapterNumber'],
-            ['BibleChapter.CodeLang', 'BibleChapter.BookNumber', 'BibleChapter.ChapterNumber'],
-            ondelete="CASCADE"
-        ),
-    )
+    parent = relationship('BibleBook', back_populates='sent_verses')
+    
+
+    def __repr__(self):
+        return f"<SentVerse(chapter={self.chapter!r}, raw_verses={self.raw_verses!r}, citation={self.citation!r}, " \
+            f"quality={self.quality!r}, telegram_file_id={self.telegram_file_id!r}, " \
+            f"added_datetime={self.added_datetime!r}, size={self.size!r})>"
 
 
 class User(Base):
-    __tablename__ = 'Users'
-    user_id = Column('UserID', Integer, primary_key=True)
+    __tablename__ = 'User'
+    id = Column('UserId', Integer, primary_key=True)
+    telegram_user_id = Column('TelegramUserId', Integer, unique=True)
+    sign_language_id = Column('SignLanguageId', Integer, ForeignKey('SignLanguage.SignLanguageId'))
     full_name = Column('FullName', String)
-    code_lang = Column('CodeLang', String, ForeignKey('SignLanguage.CodeLang'))
-    quality = Column('Quality', String)
+    status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', String)
+    bot_lang = Column('BotLanguage', String)
+    parent = relationship('SignLanguage', back_populates='users')
 
+    def __repr__(self):
+        return f"<User(id={self.id!r}, telegram_user_id={self.telegram_user_id!r}, status={self.status!r}, " \
+            f"sign_language_id={self.sign_language_id!r}, full_name={self.full_name!r}," \
+            f"added_datetime={self.added_datetime!r})>"
 
-engine = create_engine(f'sqlite:///database.db', echo=False)
-Base.metadata.create_all(engine)
+    def is_brother(self):
+        return True if self.status == 1 else False
+    
+    @property
+    def lang_code(self):
+        return self.parent.lang_code if self.parent else None
 
+    @property
+    def lang_vernacular(self):
+        return self.parent.vernacular if self.parent else None
+    
 
-if __name__ == '__main__':
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy import create_engine
+class SentVerseUser(Base):
+    __tablename__ = 'SentVerseUser'
+    id = Column('SentVerseUserId', Integer, primary_key=True)
+    sent_verse_id = Column('SentVerseId', Integer, ForeignKey('SentVerse.SentVerseId'), nullable=False)
+    user_id = Column('UserId', Integer, ForeignKey('User.UserId'))
+    datetime = Column('Datetime', String)
 
-
-    engine = create_engine(f'sqlite:///{datetime.now().isoformat(timespec="seconds")}.db', echo=True)
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    session.add(SignLanguage(code_lang='SCH', locale='csg'))
-    session.flush()
-
-    session.add(BibleBook(booknum=1, code_lang='SCH', bookname='Génesis'))
-    session.add(BibleBook(booknum=40, code_lang='SCH', bookname='Mateo'))
-    session.add(BibleBook(booknum=43, code_lang='SCH', bookname='Juan'))
-    session.flush()
-
-    session.add(BibleChapter(code_lang='SCH', booknum=1, chapter=4))
-    session.add(BibleChapter(code_lang='SCH', booknum=40, chapter=14))
-    session.add(VideoFile(code_lang='SCH', booknum=1, chapter=4, quality='720p', checksum='sdkjfhs', url='https://GENESIS'))
-    session.add(VideoFile(code_lang='SCH', booknum=40, chapter=14, quality='720p', checksum='dgdfgsfghgf', url='https://MATEO'))
-    session.commit()
-
-    session.add(VideoMarker(code_lang='SCH', booknum=40, chapter=14, versenum=10, start_time=10.5))
-
-    # session.delete(session.query(BibleChapter).filter(BibleChapter.booknum == 40)[0])
-    session.query(BibleChapter).filter(BibleChapter.booknum == 1).delete()
-    session.commit()
+    def __repr__(self):
+        return f"<UserRequest(sent_verse_id={self.sent_verse_id!r}, user_id={self.user_id!r}, " \
+            f"datetime={self.datetime!r})>"

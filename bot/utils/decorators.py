@@ -1,11 +1,13 @@
 import logging
 from functools import wraps
 
-from telegram import Update, User
+from telegram import User
+from telegram import Update
 from telegram.ext import CallbackContext
 
-from utils.secret import ADMIN, CHANNEL_ID
-from models import UserController as uc
+from bot.utils.secret import ADMIN
+from bot.utils.secret import CHANNEL_ID
+from bot.database import localdatabase as db
 
 
 logging.basicConfig(
@@ -22,18 +24,22 @@ def vip(func):
         if not isinstance(user, User):
             logger.info('¿Quién trajo este usuario?')
             return
-        if user.id in uc.get_users_id():
-            return func(update, context, **kwargs)
-        elif not update.inline_query:
-            context.bot.send_message(
-                chat_id=user.id,
-                text='Presiona /start para comenzar'
-            )
+        
+        db_user = db.get_user(user.id)
+        if db_user is None or not db_user.is_brother():
+            logger.info(f'{update.effective_user.mention_markdown_v2()} ha dicho: {update.effective_message.text}')
             context.bot.forward_message(
                 CHANNEL_ID,
                 user.id,
                 update.message.message_id,
             )
+            context.bot.send_message(
+                chat_id=user.id,
+                text='Hola ImRobo. Este es un bot privado 🔐👤'
+            )
+        else:
+            return func(update, context, **kwargs)
+
     return restricted_func
 
 

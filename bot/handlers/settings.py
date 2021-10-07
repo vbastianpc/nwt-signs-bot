@@ -1,31 +1,25 @@
 import logging
 from math import ceil
-import sys
+from uuid import uuid4
+import time
 
-from telegram import (
-    Update,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import (
-    CallbackContext,
-    CommandHandler,
-    ConversationHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    Filters,
-)
+from telegram import Update
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram.ext import CallbackContext
+from telegram.ext import CommandHandler
+from telegram.ext import CallbackQueryHandler
 from telegram.ext.callbackqueryhandler import CallbackQueryHandler
 from telegram.message import Message
 import telegram.error
 
-from models import JWInfo, JWBible, UserController
-
-from utils import list_of_lists
-from utils.decorators import vip, forw
+from bot.models.jwpubmedia import JWInfo
+from bot.database import localdatabase as db
+from bot.utils import list_of_lists
+from bot.utils.decorators import vip, forw
+from bot.database import localdatabase as db
+from bot.database.schemedb import SignLanguage
+from bot.database.localdatabase import SESSION
 
 
 logger = logging.getLogger(__name__)
@@ -37,26 +31,29 @@ PAGE = 'PAGE'
 
 @forw
 @vip
-def manage_langs(update: Update, context: CallbackContext) -> int:
-    uc = UserController(update.message.from_user.id)
-
+def manage_langs(update: Update, context: CallbackContext):
     if context.args:
-        return set_lang(update, context)
+        set_lang(update, context)
+    else:
+        generate_lang_buttons(update, context)
+
+
+def generate_lang_buttons(update: Update, context: CallbackContext):
     info_for_buttons = context.user_data['info_for_buttons'] = list_of_lists(
         [{
-            'text': f'{lang["code"]} - {lang["vernacular"]}' +
-                    ('' if lang['name'] == lang['vernacular'] else ' - ' + " ".join(lang["name"].split()[3:])),
+            'text': f'{lang["code"]} - {lang["vernacular"]}',
             'callback_data': f'{SELECTING_LANGUAGE}|{lang["code"]}'
-        } for lang in sorted(JWInfo.get_signs_languages(), key=lambda x: x['code'])
+        } for lang in sorted(JWInfo().signs_languages, key=lambda x: x['code'])
         ],
         columns=1
     )
+    db_user = db.get_user(update.effective_user.id)
     send_buttons(
         message=update.message,
         info_for_buttons=info_for_buttons,
-        text=f'Tu lengua actual es {uc.get_lang()}\nEscoge una lengua de señas.',
+        text=f'Tu idioma actual es {db_user.lang_code} - {db_user.lang_vernacular}' if db_user.lang_code else f'Primero debes escoger una lengua de señas.'
     )
-    return
+
 
 def send_buttons(message: Message, info_for_buttons, page: int=1, text: str=None, max_buttons: int=12):
     """Generic function to split large data into inlinekeyboard pages"""
@@ -80,6 +77,7 @@ def send_buttons(message: Message, info_for_buttons, page: int=1, text: str=None
         message.reply_text(**kwargs)
     return
 
+
 def mediator_page(update: Update, context: CallbackContext):
     send_buttons(
         message=update.effective_message,
@@ -88,19 +86,19 @@ def mediator_page(update: Update, context: CallbackContext):
     )
 
 def set_lang(update: Update, context: CallbackContext) -> int:
+    jw = JWInfo()
     if update.callback_query:
         valid_code = update.callback_query.data.split('|')[1]
         del context.user_data['info_for_buttons']
     elif context.args:
-        valid_code = next((lang['code'] for lang in JWInfo.get_signs_languages() if lang['code'].upper() == context.args[0].upper()), None)
+        valid_code = next((lang['code'] for lang in jw.signs_languages if lang['code'].upper() == context.args[0].upper()), None)
         if valid_code is None:
             update.message.reply_text('No he reconocido ese idioma')
             return
-    vern = next((lang['vernacular'] for lang in JWInfo.get_signs_languages() if lang['code'] == valid_code), '')
-    UserController.set_user(
-        telegram_id=update.effective_user.id,
-        lang=valid_code,
-    )
+    jw.lang_code = valid_code
+    locale, name, vern, rsconf, lib = jw.locale(), jw.name(), jw.vernacular(), jw.rsconf(), jw.lib()
+    db.insert_or_update_sign_language(valid_code, locale, name, vern, rsconf, lib)
+    db.set_user(update.effective_user.id, valid_code)
     text = f'Lengua cambiada a {valid_code} - {vern}'
     if update.callback_query:
         update.effective_message.edit_text(text)
@@ -108,43 +106,34 @@ def set_lang(update: Update, context: CallbackContext) -> int:
         update.effective_message.reply_text(text)
 
 
-@forw
-@vip
-def get_quality(update: Update, context: CallbackContext) -> int:
-    lang = UserController(update.effective_user.id).get_lang()
-    jw = JWBible(code_lang=lang, booknum=49)
-    qualities = jw.available_qualities
-    args = update.message.text.split()[1:]
-    quality = args[0] if args else update.message.text
-    if quality in qualities:
-        context.user_data['quality'] = quality
-        UserController.set_user(update.message.from_user.id, quality=quality)
-        update.message.reply_markdown_v2(
-            f'Calidad configurada a\n```\n{quality}\n```', reply_markup=ReplyKeyboardRemove())
-        return -1
-    elif quality == '/quality':
-        buttons = list_of_lists(
-            [KeyboardButton(q) for q in qualities],
-            columns=2,
+def write(update: Update, context: CallbackContext):
+    update.message.reply_text('Comenzando test...')
+    t0 = time.time()
+    for i in range(10000):
+        sign_language = SignLanguage(
+            lang_code=str(i),
+            locale=str(uuid4()),
+            name=str(uuid4()),
+            vernacular=str(uuid4()),
+            rsconf=str(uuid4()),
+            lib=str(uuid4())
         )
-        uc = UserController(update.message.from_user.id)
-        text = (f'Tu calidad actual es {uc.get_quality()}\n'
-                'Elige una calidad para los videos')
-        update.message.reply_text(text, reply_markup=ReplyKeyboardMarkup(buttons))
-        return SETTING_QUALITY
-    else:
-        update.message.reply_text(
-            f'No he reconocido esa calidad.')
-        return -1
+        SESSION.add(sign_language)
+        SESSION.commit()
+    update.message.reply_text(f'Han pasado {time.time() - t0:.2f}')
+
+
+def read(update: Update, context: CallbackContext):
+    update.message.reply_text('Comenzando test...')
+    t0 = time.time()
+    for i in range(10000):
+        sign_language = SESSION.query(SignLanguage).filter(SignLanguage.lang_code == str(i)).all()
+    update.message.reply_text(f'Han pasado {time.time() - t0:.2f} {sign_language}')
 
 
 
+write_handler = CommandHandler('write', write)
+read_handler = CommandHandler('read', read)
 showlangs_handler = CommandHandler('lang', manage_langs)
 setlang_handler = CallbackQueryHandler(set_lang, pattern=SELECTING_LANGUAGE)
 pagelang_handler = CallbackQueryHandler(mediator_page, pattern=PAGE)
-quality_handler = ConversationHandler(
-    entry_points=[CommandHandler('quality', get_quality)],
-    states={SETTING_QUALITY: [MessageHandler(Filters.text, get_quality)]},
-    fallbacks=[CommandHandler('cancel', lambda x, y: -1)],
-
-)
