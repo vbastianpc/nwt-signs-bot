@@ -27,18 +27,27 @@ def query_sign_language(lang_code) -> Optional[SignLanguage]:
         .one_or_none()
     )
 
-def insert_or_update_sign_language(lang_code, locale, name, vernacular, rsconf, lib) -> SignLanguage:
-    sign_language = query_sign_language(lang_code)
-    if not sign_language:
-        sign_language = SignLanguage(lang_code=lang_code)
-    sign_language.locale = locale
-    sign_language.name = name
-    sign_language.vernacular = vernacular
-    sign_language.rsconf = rsconf
-    sign_language.lib = lib
+
+def insert_sign_language(lang_code, locale, name, vernacular, rsconf, lib) -> SignLanguage:
+    sign_language = SignLanguage(
+        lang_code=lang_code,
+        locale=locale,
+        name=name,
+        vernacular=vernacular,
+        rsconf=rsconf,
+        lib=lib
+    )
     SESSION.add(sign_language)
     SESSION.commit()
     return sign_language
+
+
+def insert_or_update_sign_language(lang_code, locale, name, vernacular, rsconf, lib) -> SignLanguage:
+    sign_language = query_sign_language(lang_code)
+    if sign_language:
+        return sign_language
+    else:
+        return insert_sign_language(lang_code, locale, name, vernacular, rsconf, lib)
 
 
 def get_user(telegram_user_id) -> Optional[User]:
@@ -64,7 +73,7 @@ def set_user(
     user.sign_language_id = query_sign_language(lang_code).id if lang_code else user.sign_language_id
     user.full_name = full_name or user.full_name
     user.bot_lang = bot_lang or user.bot_lang
-    user.status = -1 if waiting else 0 if blocked else 1 if brother else user.status
+    user.status = -1 if blocked else 0 if waiting else 1 if brother else user.status
     SESSION.add(user)
     SESSION.commit()
     return user
