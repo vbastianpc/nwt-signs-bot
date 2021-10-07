@@ -11,6 +11,7 @@ from bot import ADMIN
 from bot import CHANNEL_ID
 from bot.utils.decorators import admin, forw
 from bot.database import localdatabase as db
+from bot.database import PATH_DB
  
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ TAG_AUTH = '#auth'
 def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
     user = update.effective_user
     full_name = full_name or user.first_name
-    text = f'Hola {full_name}. '
+    text = f'Hola {full_name} 👋🏼📖'
     if context.args:
         context.bot.send_message(
             chat_id=ADMIN,
@@ -31,7 +32,7 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
     
     db_user = db.get_user(chat_id or update.effective_user.id)
     if db_user is None or not db_user.is_brother():
-        db.add_waiting_user(update.effective_user.id, update.effective_user.full_name)
+        db.add_waiting_user(update.effective_user.id, update.effective_user.full_name, update.effective_user.language_code)
         text += 'Este es un bot privado 🔐👤\n\nCuéntame quién eres y por qué quieres usar este bot'
         context.bot.send_message(
             chat_id=ADMIN,
@@ -46,14 +47,15 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
         return 1
     else:
         text += (
-            '\n\nEscribe el pasaje de la Biblia que necesites, por ejemplo\n\n'
+            '\nTe doy la bienvenida al bot de *La Biblia en Lengua de Señas*\n\n'
+            'Pídeme un pasaje de la Biblia y te enviaré un video. Por ejemplo\n\n'
             'Mateo 24:14\n'
             'Apocalipsis 21:3, 4\n'
             '2 Timoteo 3:1-5\n'
             'Rom 14:3-5, 23\n'
             'Sal 83\n'
             'Deut\n\n'
-            'Presiona /lang para elegir una lengua de señas.\n'
+            'Pero primero usa /lang para elegir una lengua de señas.'
         )
 
     context.bot.send_message(
@@ -153,11 +155,8 @@ def help_admin(update: Update, context: CallbackContext):
 def backup(update: Update, context: CallbackContext):
     context.bot.send_document(
         chat_id=update.effective_chat.id,
-        document=open('./jw_data.json', 'rb'),
-    )
-    context.bot.send_document(
-        chat_id=update.effective_chat.id,
-        document=open('./users.json', 'rb'),
+        document=open(PATH_DB, 'rb'),
+        filename= f'{db.now()} {PATH_DB}'
     )
 
 
