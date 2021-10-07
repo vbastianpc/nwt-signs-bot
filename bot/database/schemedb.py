@@ -51,8 +51,7 @@ class BibleChapter(Base):
     id = Column('BibleChapterId', Integer, primary_key=True)
     bible_book_id = Column('BibleBookId', Integer, ForeignKey('BibleBook.BibleBookId'), nullable=False)
     chapter = Column('ChapterNumber', Integer)
-    representative_datetime = Column('RepresentativeDatetime', String)
-
+    checksum = Column('Checksum', String)
     parent = relationship('BibleBook', back_populates='bible_chapters')
     video_markers = relationship(
         'VideoMarker',
@@ -60,10 +59,10 @@ class BibleChapter(Base):
         back_populates='parent',
         # passive_deletes=True,
     )
-    __table_args__ = (UniqueConstraint('BibleBookId', 'ChapterNumber', 'RepresentativeDatetime'), )
+    __table_args__ = (UniqueConstraint('BibleBookId', 'ChapterNumber', 'Checksum'), )
 
     def __repr__(self):
-        return f"<BibleChapter(chapter={self.chapter!r}, representative_datetime={self.representative_datetime!r})>"    
+        return f"<BibleChapter(chapter={self.chapter!r}, checksum={self.checksum!r})>"    
 
 
 class VideoMarker(Base):
@@ -86,7 +85,7 @@ class SentVerse(Base):
     __tablename__ = 'SentVerse'
     id = Column('SentVerseId', Integer, primary_key=True)
     bible_book_id = Column('BibleBookId', Integer, ForeignKey('BibleBook.BibleBookId'), nullable=False)
-    representative_datetime = Column('RepresentativeDatetime', String) # fecha obtenida de mejor calidad
+    checksum = Column('Checksum', String)
     chapter = Column('ChapterNumber', Integer)
     raw_verses = Column('RawVerseNumbers', String)
     citation = Column('Citation', String)

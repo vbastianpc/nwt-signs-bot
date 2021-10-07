@@ -289,8 +289,8 @@ class JWBible(JWInfo):
     def title_chapter(self) -> str:
         return self._match()['title']
 
-    def get_checksum(self, **kwargs) -> str:
-        return self._match(**kwargs)['file']['checksum']
+    def get_checksum(self, quality=None, chapter=None) -> str:
+        return self._match(quality=quality or self.get_best_quality(), chapter=chapter or self.chapter)['file']['checksum']
     
     def get_filesize(self, **kwargs):
         return self._match(**kwargs)['filesize']

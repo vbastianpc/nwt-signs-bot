@@ -141,13 +141,13 @@ def _add_bible_chapter(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str
     ) -> BibleChapter:
     bible_book = _query_bible_book(lang_code, booknum)
     bible_chapter = BibleChapter(
         bible_book_id=bible_book.id,
         chapter=int(chapter), 
-        representative_datetime=representative_datetime,
+        checksum=checksum,
     )
     SESSION.add(bible_chapter)
     SESSION.commit()
@@ -158,7 +158,7 @@ def _query_video_marker(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str,
         ):
     return (
         SESSION.query(VideoMarker)
@@ -169,7 +169,7 @@ def _query_video_marker(
             SignLanguage.lang_code == lang_code,
             BibleBook.booknum == int(booknum),
             BibleChapter.chapter == int(chapter),
-            BibleChapter.representative_datetime == representative_datetime,
+            BibleChapter.checksum == checksum,
         )
     )
 
@@ -179,7 +179,7 @@ def get_videomarker(**kwargs) -> VideoMarker:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum'],
     ).filter(VideoMarker.versenum == int(kwargs['versenum'])).one_or_none()
 
 
@@ -188,7 +188,7 @@ def get_videomarkers(**kwargs) -> List[Optional[VideoMarker]]:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum'],
     ).order_by(VideoMarker.versenum.asc()).all()
 
 
@@ -196,7 +196,7 @@ def _get_all_versenumbers(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str,
     ) -> List[Optional[int]]:
     return [versenum for versenum, in (
         SESSION.query(VideoMarker.versenum)
@@ -207,7 +207,7 @@ def _get_all_versenumbers(
             SignLanguage.lang_code == lang_code,
             BibleBook.booknum == int(booknum),
             BibleChapter.chapter == int(chapter),
-            BibleChapter.representative_datetime == representative_datetime,
+            BibleChapter.checksum == checksum,
         )
         .all()
     )]
@@ -218,7 +218,7 @@ def get_all_versenumbers(**kwargs) -> List[Optional[int]]:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum'],
     )
 
 
@@ -227,24 +227,24 @@ def _manage_video_markers(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str,
     ) -> None:
     bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
     if bible_chapter:
         logger.info('Tengo %s marcadores', len(bible_chapter.video_markers))
-        if bible_chapter.representative_datetime != representative_datetime:
-            logger.info(f'No coinciden datetime. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.representative_datetime} != {representative_datetime} new')
+        if bible_chapter.checksum != checksum:
+            logger.info(f'No coinciden checksum. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.checksum} != {checksum} new')
             SESSION.delete(bible_chapter)
             SESSION.commit()
-            bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, representative_datetime)
+            bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
         else:
-            logger.info('Coinciden datetime')
+            logger.info('Coinciden checksum')
     else:
         logger.info('No se ha registrado capitulo. Ahora lo registro')
-        bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, representative_datetime)
+        bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
 
     if not bible_chapter.video_markers:
-        logger.info('No existían marcadores para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, representative_datetime)
+        logger.info('No existían marcadores para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, checksum)
         for marker in function_get_markers():
             bible_chapter.video_markers.append(
                 VideoMarker(
@@ -259,7 +259,7 @@ def _manage_video_markers(
         SESSION.commit()
         logger.info('Marcadores guardados en db')
     else:
-        logger.info('Ya existían marcadores en db para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, representative_datetime)
+        logger.info('Ya existían marcadores en db para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, checksum)
 
 
 def manage_video_markers(function_get_markers, **kwargs) -> None:
@@ -268,7 +268,7 @@ def manage_video_markers(function_get_markers, **kwargs) -> None:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum']
     )
 
 
@@ -276,7 +276,7 @@ def _query_sent_verse(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str,
         quality: str,
         raw_verses: Optional[str] = None
     ) -> Optional[SentVerse]:
@@ -288,7 +288,7 @@ def _query_sent_verse(
             SignLanguage.lang_code == lang_code,
             BibleBook.booknum == int(booknum),
             SentVerse.chapter == int(chapter),
-            SentVerse.representative_datetime == representative_datetime,
+            SentVerse.checksum == checksum,
             SentVerse.quality == quality,
             SentVerse.raw_verses == raw_verses
         )
@@ -302,7 +302,7 @@ def query_sent_verse(**kwargs) -> Optional[SentVerse]:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum'],
         kwargs['quality'],
         kwargs['raw_verses']
     )
@@ -332,7 +332,7 @@ def _add_sent_verse(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
-        representative_datetime: str,
+        checksum: str,
         raw_verses: str,
         citation: str,
         quality: str,
@@ -341,7 +341,7 @@ def _add_sent_verse(
     ) -> SentVerse:
     bible_book = _query_bible_book(lang_code, booknum)
     sent_verse = SentVerse(
-        representative_datetime=representative_datetime,
+        checksum=checksum,
         chapter=int(chapter),
         raw_verses=raw_verses,
         citation=citation,
@@ -361,7 +361,7 @@ def add_sent_verse(**kwargs) -> SentVerse:
         kwargs['lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
-        kwargs['representative_datetime'],
+        kwargs['checksum'],
         kwargs['raw_verses'],
         kwargs['citation'],
         kwargs['quality'],

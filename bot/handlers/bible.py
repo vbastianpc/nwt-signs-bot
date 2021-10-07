@@ -115,7 +115,7 @@ def parse_bible(update: Update, context: CallbackContext) -> None:
 
     if chapter:
         kwargs.update({
-            'representative_datetime': jw.get_representative_datetime(),
+            'checksum': jw.get_checksum(),
         })
         context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
         db.manage_video_markers(jw.get_markers, **kwargs)
@@ -134,7 +134,7 @@ def show_chapters(update: Update, context: CallbackContext):
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(chapter),
-            callback_data=f'{SELECTING_CHAPTERS}|{jw.lang_code}|{jw.booknum}|{chapter}|{jw.get_representative_datetime(chapter)}',
+            callback_data=f'{SELECTING_CHAPTERS}|{jw.lang_code}|{jw.booknum}|{chapter}|{jw.get_checksum(chapter)}',
         ) for chapter in jw.get_all_chapternumber()],
         columns=8
     )
@@ -149,12 +149,12 @@ def show_chapters(update: Update, context: CallbackContext):
 
 @log
 def get_chapter(update: Update, context: CallbackContext):
-    _, lang_code, booknum, chapter, representative_datetime = update.callback_query.data.split('|')
+    _, lang_code, booknum, chapter, checksum = update.callback_query.data.split('|')
     context.user_data['kwargs'] = {
         'lang_code': lang_code,
         'booknum': booknum,
         'chapter': chapter,
-        'representative_datetime': representative_datetime
+        'checksum': checksum
     }
     jw = JWBible(**context.user_data['kwargs'])
     db.manage_video_markers(jw.get_markers, **context.user_data['kwargs'])
@@ -169,7 +169,7 @@ def show_verses(update: Update, context: CallbackContext):
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(verse),
-            callback_data=f'{SELECTING_VERSES}|{jw.lang_code}|{jw.booknum}|{jw.chapter}|{jw.get_representative_datetime()}|{verse}',
+            callback_data=f'{SELECTING_VERSES}|{jw.lang_code}|{jw.booknum}|{jw.chapter}|{jw.get_checksum()}|{verse}',
         ) for verse in (video_marker.versenum for video_marker in bible_chapter.video_markers)],
         columns=8
     )
@@ -196,12 +196,12 @@ def show_verses(update: Update, context: CallbackContext):
 @log
 def get_verse(update: Update, context: CallbackContext):
     update.callback_query.answer()
-    _, lang_code, booknum, chapter, representative_datetime, verse = update.callback_query.data.split('|')
+    _, lang_code, booknum, chapter, checksum, verse = update.callback_query.data.split('|')
     context.user_data['kwargs'] = {
         'lang_code': lang_code,
         'booknum': booknum,
         'chapter': chapter,
-        'representative_datetime': representative_datetime,
+        'checksum': checksum,
         'verses': [int(verse)],
         'raw_verses': str(verse),
         'telegram_user_id': update.effective_user.id
@@ -218,7 +218,6 @@ def manage_verses(update: Update, context: CallbackContext):
     logger.info('%s', json.dumps(kwargs, indent=2, ensure_ascii=False))
     logger.info('(%s) %s', update.effective_user.name, jw.citation())
 
-    logger.info('%s', db.get_all_versenumbers(**kwargs))
     not_available = [verse for verse in kwargs['verses'] if int(verse) not in db.get_all_versenumbers(**kwargs)]
     if len(not_available) == 1:
         text = f'{not_available[0]} no está disponible.'
@@ -305,9 +304,6 @@ def send_single_verse(update: Update, context: CallbackContext):
     sent_verse = db.add_sent_verse(**context.user_data['kwargs'])
     db.add_sent_verse_user(sent_verse, update.effective_user.id)
     # TODO
-    # SOLO BEST QUALITY. Mantener en base de datos quality por si acaso. Quitar de comandos
-    # user blocked: -1 intruso. 0 bloqueado. 1 hermano
-    # hacer comandos para consultar y escribir en base de datos durante 5 segundos. ejecutarlo al mismo tiempo en dos chats diferentes
     # CommandsScope por lenguaje
     versepath.unlink()
 

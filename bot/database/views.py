@@ -4,11 +4,13 @@ from sqlalchemy.sql import text
 views = ['''
 CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
 SELECT
+    BibleBook.BibleBookId,
+    BibleChapter.BibleChapterId,
     SignLanguage.LangCode,
     BibleBook.BookNumber,
     BibleBook.BookName,
     BibleChapter.ChapterNumber,
-    BibleChapter.RepresentativeDatetime,
+    BibleChapter.Checksum,
     count(*) AS CountVideoMarkers
 FROM
     VideoMarker
@@ -80,7 +82,23 @@ SELECT
     SignLanguage.Vernacular
 FROM User
 INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = User.SignLanguageId
-;'''
+;''',
+'''
+CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
+SELECT
+    SentVerseUser.SentVerseUserId,
+    User.FullName,
+    SentVerse.Citation,
+    SignLanguage.LangCode,
+    SentVerseUser.Datetime
+FROM SentVerseUser
+INNER JOIN SentVerse ON SentVerse.SentVerseId = SentVerseUser.SentVerseId
+INNER JOIN User ON User.UserId = SentVerseUser.UserId
+INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
+INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+ORDER BY SentVerseUser.Datetime DESC
+;
+'''
 ]
 
 views = [text(view) for view in views]
