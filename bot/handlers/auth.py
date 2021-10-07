@@ -28,7 +28,6 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
             text=f'{mention_markdown(user.id, user.full_name)} entró desde {context.args[0]}',
             parse_mode=ParseMode.MARKDOWN
         )
-    logger.info(f'{update.effective_user=} {chat_id=}')
     
     db_user = db.get_user(chat_id or update.effective_user.id)
     if db_user is None or not db_user.is_brother():
