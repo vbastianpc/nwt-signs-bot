@@ -125,7 +125,7 @@ def sending_users(update: Update, context: CallbackContext):
     users = db.get_all_users()
     text = ''
     for i, user in enumerate(users):
-        format_user = f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.parent.lang_code} `{user.telegram_user_id}`\n'
+        format_user = f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.lang_code} `{user.telegram_user_id}`\n'
         if i % 10 == 0:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
             text = ''
