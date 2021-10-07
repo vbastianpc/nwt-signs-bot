@@ -233,7 +233,7 @@ def _manage_video_markers(
     if bible_chapter:
         logger.info('Tengo %s marcadores', len(bible_chapter.video_markers))
         if bible_chapter.representative_datetime != representative_datetime:
-            logger.info('No coinciden datetime. Intentaré borrar capítulo y sus respectivos marcadores')
+            logger.info(f'No coinciden datetime. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.representative_datetime} != {representative_datetime} new')
             SESSION.delete(bible_chapter)
             SESSION.commit()
             bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, representative_datetime)
