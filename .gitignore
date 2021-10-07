@@ -6,12 +6,10 @@
 # *~
 video/
 *.mp4
-states/
 SECRETS.json
-jw_data.json
-users.json
 *.bk
 *.ipynb
+*.db
 
 .DS_Store
 .vscode/
