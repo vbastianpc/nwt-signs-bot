@@ -7,7 +7,8 @@ from telegram.ext.messagehandler import MessageHandler
 from telegram.utils.helpers import mention_markdown
 from telegram.constants import MAX_MESSAGE_LENGTH
 
-from bot.utils.secret import ADMIN, CHANNEL_ID
+from bot import ADMIN
+from bot import CHANNEL_ID
 from bot.utils.decorators import admin, forw
 from bot.database import localdatabase as db
  

@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import Updater, CallbackContext
 
 from bot.handlers import handlers
-from bot.utils.secret import TOKEN
+from bot import TOKEN
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',

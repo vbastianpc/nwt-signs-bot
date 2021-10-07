@@ -14,9 +14,13 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.error import TelegramError
 
+from bot import CHANNEL_ID
+from bot import ADMIN
 from bot.models.jwpubmedia import JWBible
 from bot.models import video
 from bot.database import localdatabase as db
+from bot.database.schemedb import SentVerse
+from bot.handlers.settings import generate_lang_buttons
 from bot.utils import BIBLE_BOOKALIAS_NUM
 from bot.utils import BIBLE_BOOKNAMES
 from bot.utils import list_of_lists
@@ -26,9 +30,6 @@ from bot.utils import seems_bible
 from bot.utils import BooknumNotFound
 from bot.utils import MultipleBooknumsFound
 from bot.utils.decorators import vip, forw, log
-from bot.utils.secret import CHANNEL_ID, ADMIN
-from bot.database.schemedb import SentVerse
-from bot.handlers.settings import generate_lang_buttons
 
 
 logging.basicConfig(
