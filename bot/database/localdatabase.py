@@ -377,6 +377,8 @@ def add_sent_verse_user(sent_verse: SentVerse, telegram_user_id: int) -> None:
 
 
 def now():
-    # TODO CONFIG server timezone
-    return datetime.now().astimezone(tz=pytz.timezone('America/Santiago')).isoformat(sep=' ', timespec="seconds")
+    # TODO CONFIG server timezone, local timezone 
+    tzinfo = pytz.timezone('UTC')
+    tzinfo.localize(datetime.now())
+    return tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago')).isoformat(sep=' ', timespec="seconds")
 
