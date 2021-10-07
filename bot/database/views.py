@@ -98,7 +98,21 @@ INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
 INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
 ORDER BY SentVerseUser.Datetime DESC
 ;
+''',
 '''
+CREATE VIEW ViewSentVerse AS
+SELECT
+    SentVerse.SentVerseId,
+    SignLanguage.LangCode,
+	BibleBook.BookNumber,
+	SentVerse.Citation,
+	SentVerse.Quality,
+	SentVerse.AddedDatetime
+FROM SentVerse
+INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
+INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+ORDER BY SentVerse.SentVerseId DESC
+;'''
 ]
 
 views = [text(view) for view in views]
