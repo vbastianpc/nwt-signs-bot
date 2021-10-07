@@ -304,6 +304,26 @@ def query_sent_verse(**kwargs) -> Optional[SentVerse]:
         kwargs['raw_verses']
     )
 
+def query_sent_verses(
+        lang_code: str = None,
+        booknum: int = None,
+        chapter: int = None,
+        raw_verses: str = None,
+    ) -> List[Optional[SentVerse]]:
+    q = (
+        SESSION.query(SentVerse)
+        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
+    )
+    if lang_code:
+        q = q.filter(SignLanguage.lang_code == lang_code)
+    if booknum:
+        q = q.filter(BibleBook.booknum == int(booknum))
+    if chapter:
+        q = q.filter(SentVerse.chapter == int(chapter))
+    if raw_verses:
+        q = q.filter(SentVerse.raw_verses == raw_verses)
+    return q.all()
 
 def _add_sent_verse(
         lang_code: str,

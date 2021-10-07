@@ -1,24 +1,18 @@
 import logging
 from uuid import uuid4
-import json
 
-from telegram import (
-    InlineQueryResultCachedVideo,
-    Update,
-)
-from telegram.ext import (
-    CallbackContext,
-    InlineQueryHandler,
-)
+from telegram import InlineQueryResultCachedVideo
+from telegram import Update
+from telegram.ext import CallbackContext
+from telegram.ext import InlineQueryHandler
 
-from models import LocalData
-from models import UserController
-from utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
-from utils.decorators import vip
-from utils.utils import parse_booknum, parse_verses
-
+from bot.utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
+from bot.utils.decorators import vip
+from bot.utils.utils import parse_booknum, parse_verses
+import bot.database.localdatabase as db
 
 logger = logging.getLogger(__name__)
+
 
 @vip
 def inlineBibleReady(update: Update, context: CallbackContext) -> None:
@@ -32,24 +26,23 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     finally:
         chapter = parse_chapter(update.inline_query.query)
         verses = parse_verses(update.inline_query.query)
-    uc = UserController(update.effective_user.id)
+    db_user = db.get_user(update.effective_user.id)
     results = []
-    logger.info(f'{booknums} {chapter} {verses}')
+    logger.info(f'{booknums!r} {chapter!r} {verses!r}')
     for booknum in booknums:
-        db = LocalData(
-            code_lang=uc.get_lang(),
+        sent_verses = db.query_sent_verses(
+            lang_code=db_user.lang_code,
             booknum=booknum,
             chapter=chapter,
-            verses=verses,
-            quality=uc.get_quality(),
+            raw_verses=' '.join(verses),
         )
         results += [
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
-                video_file_id=file_id,
-                title=f'{name} - {uc.get_lang()} {uc.get_quality()}',
+                video_file_id=sent_verse.telegram_file_id,
+                title=f'{sent_verse.citation} - {db_user.lang_code}',
             )
-            for name, file_id in db.iter_smart()
+            for sent_verse in sent_verses
         ]
     update.inline_query.answer(results, auto_pagination=True, cache_time=5)
 
