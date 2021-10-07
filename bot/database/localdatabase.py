@@ -52,6 +52,7 @@ def set_user(
         user_id,
         lang_code=None,
         full_name=None,
+        bot_lang=None,
         waiting=False,
         blocked=False,
         brother=False,
@@ -60,12 +61,13 @@ def set_user(
     user = get_user(user_id)
     user.sign_language_id = query_sign_language(lang_code).id if lang_code else user.sign_language_id
     user.full_name = full_name or user.full_name
+    user.bot_lang = bot_lang or user.bot_lang
     user.status = -1 if waiting else 0 if blocked else 1 if brother else user.status
     SESSION.add(user)
     SESSION.commit()
     return user
 
-def add_waiting_user(telegram_user_id, full_name) -> None:
+def add_waiting_user(telegram_user_id, full_name, bot_lang) -> None:
     user = get_user(telegram_user_id)
     if not user:
         SESSION.add(User(
@@ -73,6 +75,7 @@ def add_waiting_user(telegram_user_id, full_name) -> None:
             full_name=full_name,
             status=-1,
             added_datetime=now(),
+            bot_lang=bot_lang,
         ))
         SESSION.commit()
 
