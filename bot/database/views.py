@@ -100,7 +100,7 @@ ORDER BY SentVerseUser.Datetime DESC
 ;
 ''',
 '''
-CREATE VIEW ViewSentVerse AS
+CREATE VIEW IF NOT EXISTS "ViewSentVerse" AS
 SELECT
     SentVerse.SentVerseId,
     SignLanguage.LangCode,
