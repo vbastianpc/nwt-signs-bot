@@ -2,25 +2,27 @@ from bot.handlers.bible import parse_bible_re_handler
 from bot.handlers.bible import parse_bible_cmd_handler
 from bot.handlers.bible import chapter_handler
 from bot.handlers.bible import verse_handler
+from bot.handlers.bible import parse_lang_bible_handler
 from bot.handlers.settings import showlangs_handler
 from bot.handlers.settings import setlang_handler
 from bot.handlers.settings import pagelang_handler
 from bot.handlers.inline_bible import inline_handler
-from bot.handlers.misc import botfather_handler
 from bot.handlers.misc import test_handler
 from bot.handlers.misc import info_inline_handler
 from bot.handlers.misc import all_fallback_handler
 from bot.handlers.misc import notice_handler
 from bot.handlers.misc import logs_handler
 from bot.handlers.misc import logfile_handler
-from bot.handlers.auth import start_handler
-from bot.handlers.auth import auth_handler
-from bot.handlers.auth import backup_handler
-from bot.handlers.auth import delete_user_handler
-from bot.handlers.auth import getting_user_handler
-from bot.handlers.auth import helper_admin_handler
 from bot.handlers.feedback import feedback_handler
-
+from bot.handlers.start import start_handler
+from bot.handlers.admin import auth_handler
+from bot.handlers.admin import backup_handler
+from bot.handlers.admin import delete_user_handler
+from bot.handlers.admin import getting_user_handler
+from bot.handlers.admin import helper_admin_handler
+from bot.handlers.admin import database_status_handler
+from bot.handlers.admin.set_commands import botfather_handler
+from bot.handlers.admin.set_commands import prepare_commands_handler
 
 # Order matters
 handlers = [
@@ -41,6 +43,9 @@ handlers = [
     botfather_handler,
     getting_user_handler,
     helper_admin_handler,
+    database_status_handler,
+    prepare_commands_handler, # borrar
+    parse_lang_bible_handler,
     parse_bible_re_handler,
     parse_bible_cmd_handler,
     chapter_handler,

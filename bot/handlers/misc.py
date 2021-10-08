@@ -11,7 +11,6 @@ from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 
-from bot.utils import BIBLE_BOOKNAMES, BIBLE_NUM_BOOKALIAS
 from bot.utils.decorators import admin, forw
 
 
@@ -58,22 +57,6 @@ def info_inline(update: Update, context: CallbackContext) -> None:
             )]
         ]),
     )
-
-@admin
-def paraBotFather(update: Update, context: CallbackContext):
-    commands = [
-        ('start', 'Mensaje de bienvenida'),
-        ('lang', '[código] Cambia la lengua de señas'),
-        ('inline', 'Aprende a usar el modo inline'),
-        ('feedback', 'Send me your feedback'),
-    ] + [
-        (cmd, BIBLE_BOOKNAMES[num - 1]) for num, cmd in sorted(BIBLE_NUM_BOOKALIAS.items())
-    ]
-    context.bot.set_my_commands(commands)
-
-    text = '\n'.join([f'{cmd} - {descrip}' for cmd, descrip in commands])
-    update.message.reply_text(text)
-    update.message.reply_text('Comandos actualizados')
 
 
 @forw
@@ -140,7 +123,6 @@ def logfile(update: Update, context: CallbackContext):
         update.message.reply_text('No hay archivo log')
 
 
-botfather_handler = CommandHandler('commands', paraBotFather)
 test_handler = CommandHandler('test', test_data)
 info_inline_handler = CommandHandler('inline', info_inline)
 
