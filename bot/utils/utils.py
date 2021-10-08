@@ -257,18 +257,3 @@ def seems_bible(text) -> bool:
         chapter = parse_chapter(match)
         verses = parse_verses(match)
     return any([booknum, chapter, verses])
-
-
-if __name__ == '__main__':
-    texts = ['mat 24:14', '', 'jua 17:3-5', 'ma 10:10', '1jua', '1corint', '1 corint', '2cro', '2cró', '2 cró', '2 cro 5']
-    for text in texts:
-        print(text, end='\t--->\t')
-        try:
-            print(parse_bible_pattern(text))
-        except MultipleBooknumsFound as e:
-            print(type(e).__name__, e.booknums)
-        except BooknumNotFound as e:
-            print(type(e).__name__, e)
-    # print(*sorted(dict_booknames.items(), key=lambda x: x[1]), sep='\n')
-    # print(len(dict_booknames))
-    

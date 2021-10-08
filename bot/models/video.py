@@ -77,7 +77,6 @@ def concatenate(inputvideos, outname=None, title_chapters=None, title=None) -> P
         '-metadata comment=t.me/nwtsigns_bot '
         f'-c copy "{output}"' 
     )
-    print(cmd)
     run(shlex.split(cmd), capture_output=True)
     for i in intermediates:
         Path(i).unlink()
