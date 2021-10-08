@@ -18,13 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-VIDEO_PATH = Path('../video')
-VIDEO_PATH.mkdir(parents=True, exist_ok=True)
-
-
 def split(inputvideo, marker: VideoMarker, height=None) -> Path:
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
-    output = VIDEO_PATH / (safechars(marker.label) + ".mp4")
+    output = Path(safechars(marker.label) + ".mp4")
     cmd = (
         'ffmpeg -v warning -hide_banner -y '
         f'-ss {marker.start_time} '
@@ -53,8 +49,8 @@ def concatenate(inputvideos, outname=None, title_chapters=None, title=None) -> P
     intermediates = []
     metadata = ';FFMETADATA1\n'
     offset = 0
-    metapath = VIDEO_PATH / 'metadata.txt'
-    output = VIDEO_PATH / ((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
+    metapath = Path('metadata.txt')
+    output = Path((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
 
     for i, video in enumerate(inputvideos):
         out = f'{time.time()}.ts'
@@ -85,8 +81,8 @@ def concatenate(inputvideos, outname=None, title_chapters=None, title=None) -> P
     run(shlex.split(cmd), capture_output=True)
     for i in intermediates:
         Path(i).unlink()
+    metapath.unlink()
     return output
-
 
 
 def parse_time(stamptime) -> float:
