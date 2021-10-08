@@ -64,7 +64,6 @@ def parse_lang_bible(update: Update, context: CallbackContext) -> None:
         jw = JWInfo(lang_code)
         db.insert_sign_language(lang_code, jw.locale(), jw.name(), jw.vernacular(), jw.rsconf(), jw.lib())
     query_bible = ' '.join(update.message.text.split()[1:])
-    print(f'{lang_code=}\n{query_bible=}')
     context.user_data['kwargs'] = {'lang_code': lang_code}
     parse_bible(update, context, query_bible=query_bible)
     return
@@ -75,7 +74,6 @@ def parse_lang_bible(update: Update, context: CallbackContext) -> None:
 def parse_bible(update: Update, context: CallbackContext, query_bible=None) -> None:
     reply_text = update.message.reply_text
     text = query_bible or update.message.text.strip('/')
-    print(f'{text=} {query_bible=}')
     try:
         booknum, chapter, verses = parse_bible_pattern(text)
     except BooknumNotFound:
