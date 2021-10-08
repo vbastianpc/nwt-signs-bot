@@ -1,0 +1,55 @@
+import logging
+
+from sqlalchemy import func
+
+from bot.database import SESSION
+from bot.database.schemedb import SignLanguage
+from bot.database.schemedb import BibleBook
+from bot.database.schemedb import BibleChapter
+from bot.database.schemedb import VideoMarker
+from bot.database.schemedb import SentVerse
+from bot.database.schemedb import SentVerseUser
+from bot.database.schemedb import User
+
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+)
+logger = logging.getLogger(__name__)
+
+
+
+def _count(primary_key) -> int:
+    return SESSION.query(func.count(primary_key))
+
+def count_sentverse() -> int:
+    return _count(SentVerse.id).scalar()
+
+def count_videomarker() -> int:
+    return _count(VideoMarker.id).scalar()
+
+def count_biblechapter() -> int:
+    return _count(BibleChapter.id).scalar()
+
+def count_biblebook() -> int:
+    return _count(BibleBook.id).scalar()
+
+def count_signlanguage() -> int:
+    return _count(SignLanguage.id).scalar()
+
+def count_sentverseuser() -> int:
+    return _count(SentVerseUser.id).scalar()
+
+def count_user() -> int:
+    return _count(User.id).scalar()
+
+def count_user_blocked() -> int:
+    return _count(User.id).filter(User.status == -1).scalar()
+
+def count_user_brother() -> int:
+    return _count(User.id).filter(User.status == 1).scalar()
+
+def count_user_waiting() -> int:
+    return _count(User.id).filter(User.status == 0).scalar()
+
