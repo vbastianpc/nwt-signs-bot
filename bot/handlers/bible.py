@@ -64,14 +64,13 @@ def parse_lang_bible(update: Update, context: CallbackContext) -> None:
         jw = JWInfo(lang_code)
         db.insert_sign_language(lang_code, jw.locale(), jw.name(), jw.vernacular(), jw.rsconf(), jw.lib())
     query_bible = ' '.join(update.message.text.split()[1:])
-    context.user_data['kwargs'] = {'lang_code': lang_code}
-    parse_bible(update, context, query_bible=query_bible)
+    parse_bible(update, context, query_bible=query_bible, lang_code=lang_code)
     return
 
 
 @vip
 @forw
-def parse_bible(update: Update, context: CallbackContext, query_bible=None) -> None:
+def parse_bible(update: Update, context: CallbackContext, query_bible=None, lang_code=None) -> None:
     reply_text = update.message.reply_text
     text = query_bible or update.message.text.strip('/')
     try:
@@ -93,27 +92,21 @@ def parse_bible(update: Update, context: CallbackContext, query_bible=None) -> N
         reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
 
-    context.user_data.setdefault('kwargs', {})
-    kwargs = context.user_data['kwargs']
-
-    db_user = db.get_user(update.effective_user.id)
-    print(db_user)
-    print(kwargs)
-    if not db_user.lang_code and not kwargs.get('lang_code'):
-        generate_lang_buttons(update, context)
+    lang_code = lang_code or db.get_user(update.effective_user.id).lang_code
+    if not lang_code:
+        reply_text('Primero debes elegir una lengua de señas /lang')
         return
-    
+
     context.user_data['msg'] = None
-    logger.info(db_user)
-    jw = JWBible(kwargs.get('lang_code') or db_user.lang_code, booknum, chapter, verses)
-    kwargs.update({
-        'lang_code': kwargs.get('lang_code') or db_user.lang_code,
+    jw = JWBible(lang_code, booknum, chapter, verses)
+    kwargs = context.user_data['kwargs'] = {
+        'lang_code': lang_code,
         'booknum': booknum,
         'chapter': chapter,
         'verses': verses,
         'raw_verses': ' '.join(str(v) for v in verses),
         'telegram_user_id': update.effective_user.id
-    })
+    }
 
     if jw.chapter and jw.pubmedia_exists() and not jw.check_chapternumber():
         reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
@@ -121,8 +114,7 @@ def parse_bible(update: Update, context: CallbackContext, query_bible=None) -> N
         return show_chapters(update, context)
 
     if not jw.pubmedia_exists():
-        reply_text(f"Ese libro no está disponible en {kwargs.get('lang_code') or db_user.lang_code} - {db_user.lang_vernacular}. "
-            'Usa /lang para cambiar la lengua de señas')
+        reply_text(f'Este libro no está disponible en {lang_code}. Usa /lang para cambiar la lengua de señas')
         return
 
     kwargs.update({
@@ -425,7 +417,6 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
 
 def delete_objects(update: Update, context: CallbackContext):
     context.user_data.pop('jw', None)
-    context.user_data.pop('db', None)
     context.user_data.pop('kwargs', None)
     context.user_data.pop('msg', None)
 
