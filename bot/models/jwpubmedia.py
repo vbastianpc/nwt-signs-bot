@@ -266,11 +266,10 @@ class JWBible(JWInfo):
 
     def _match(self, quality=None, chapter=None) -> Dict:
         quality = quality or self.get_best_quality()
-        chapter = chapter or self.chapter
-        assert all([quality, chapter]), f'Debes definir capítulo {self.chapter}'
+        chapter = int(chapter) if isinstance(chapter, (int, str)) else self.chapter
+        assert isinstance(chapter, (int, str)), f'Debes definir capítulo {self.chapter}'
         for item in self._items():
-            if (item['label'] == quality and
-                chapter_from_url(item['file']['url']) == chapter):
+            if (item['label'] == quality and item['track'] == chapter):
                 return item
         else:
             raise Exception(f'No hay coincidencias')
@@ -290,7 +289,10 @@ class JWBible(JWInfo):
         return self._match()['title']
 
     def get_checksum(self, chapter=None, quality=None) -> str:
-        return self._match(quality=quality or self.get_best_quality(), chapter=chapter or self.chapter)['file']['checksum']
+        return self._match(
+            quality=quality or self.get_best_quality(),
+            chapter=chapter if isinstance(chapter, (int, str)) else self.chapter
+        )['file']['checksum']
     
     def get_filesize(self, **kwargs):
         return self._match(**kwargs)['filesize']
@@ -317,7 +319,7 @@ class JWBible(JWInfo):
             return False
     
     def get_all_chapternumber(self) -> List[int]:
-        chapters = set((int(item['track'])) for item in self._items())
+        chapters = set((int(item['track'])) for item in self._items() if item['hasTrack'])
         return sorted(chapters)
     
     def match_marker(self, verseNumber) -> Dict:
@@ -395,7 +397,7 @@ class JWBible(JWInfo):
         devuelve 2 Timoteo 3:1-3, 5, 6
         """
         bookname = bookname or self.bookname
-        chapter = chapter or self.chapter
+        chapter = chapter if isinstance(chapter, (int, str)) else self.chapter
         verses = (self.__class__(verses=verses).verses or self.verses)
         assert all([bookname, chapter, verses]), f'Debes definir bookname, chapter, verses  -->  ({self})'
         pv = str(verses[0])
@@ -447,11 +449,3 @@ def ffprobe_markers(videopath):
 
 
 def remove_html_tags(text): return re.compile(r'<[^>]+>').sub('', text).strip()
-
-if __name__ == '__main__':
-    jw = JWBible('SCH', 40, 24, 14)
-    print(f'{jw.booknum} {jw.bookname}')
-    jw.booknum = 40
-    print(f'{jw.booknum} {jw.bookname}')
-    jw.booknum = 10
-    print(f'{jw.booknum} {jw.bookname}')
