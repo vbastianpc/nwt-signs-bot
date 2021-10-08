@@ -16,7 +16,8 @@ from telegram.error import TelegramError
 
 from bot import CHANNEL_ID
 from bot import ADMIN
-from bot.models.jwpubmedia import JWBible
+from bot import CODE_SIGN_LANGS
+from bot.models.jwpubmedia import JWBible, JWInfo
 from bot.models import video
 from bot.database import localdatabase as db
 from bot.database.schemedb import SentVerse
@@ -54,11 +55,27 @@ def forward_to_channel(bot, from_chat_id, message_id):
 def fallback_text(update: Update, context: CallbackContext):
     pass
 
+
+@vip
+def parse_lang_bible(update: Update, context: CallbackContext) -> None:
+    lang_code = update.message.text.split()[0].strip('/').upper()
+    sign_language = db.query_sign_language(lang_code)
+    if not sign_language:
+        jw = JWInfo(lang_code)
+        db.insert_sign_language(lang_code, jw.locale(), jw.name(), jw.vernacular(), jw.rsconf(), jw.lib())
+    query_bible = ' '.join(update.message.text.split()[1:])
+    print(f'{lang_code=}\n{query_bible=}')
+    context.user_data['kwargs'] = {'lang_code': lang_code}
+    parse_bible(update, context, query_bible=query_bible)
+    return
+
+
 @vip
 @forw
-def parse_bible(update: Update, context: CallbackContext) -> None:
-    text = update.message.text.strip('/')
+def parse_bible(update: Update, context: CallbackContext, query_bible=None) -> None:
     reply_text = update.message.reply_text
+    text = query_bible or update.message.text.strip('/')
+    print(f'{text=} {query_bible=}')
     try:
         booknum, chapter, verses = parse_bible_pattern(text)
     except BooknumNotFound:
@@ -78,23 +95,27 @@ def parse_bible(update: Update, context: CallbackContext) -> None:
         reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
 
+    context.user_data.setdefault('kwargs', {})
+    kwargs = context.user_data['kwargs']
+
     db_user = db.get_user(update.effective_user.id)
-    if not db_user.lang_code:
+    print(db_user)
+    print(kwargs)
+    if not db_user.lang_code and not kwargs.get('lang_code'):
         generate_lang_buttons(update, context)
         return
     
     context.user_data['msg'] = None
     logger.info(db_user)
-    jw = JWBible(db_user.lang_code, booknum, chapter, verses)
-
-    kwargs = context.user_data['kwargs'] = {
-        'lang_code': db_user.lang_code,
+    jw = JWBible(kwargs.get('lang_code') or db_user.lang_code, booknum, chapter, verses)
+    kwargs.update({
+        'lang_code': kwargs.get('lang_code') or db_user.lang_code,
         'booknum': booknum,
         'chapter': chapter,
         'verses': verses,
         'raw_verses': ' '.join(str(v) for v in verses),
         'telegram_user_id': update.effective_user.id
-    }
+    })
 
     if jw.chapter and jw.pubmedia_exists() and not jw.check_chapternumber():
         reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
@@ -102,7 +123,7 @@ def parse_bible(update: Update, context: CallbackContext) -> None:
         return show_chapters(update, context)
 
     if not jw.pubmedia_exists():
-        reply_text(f'Ese libro no está disponible en {db_user.lang_code} - {db_user.lang_vernacular}. '
+        reply_text(f"Ese libro no está disponible en {kwargs.get('lang_code') or db_user.lang_code} - {db_user.lang_vernacular}. "
             'Usa /lang para cambiar la lengua de señas')
         return
 
@@ -415,3 +436,4 @@ parse_bible_re_handler = MessageHandler(Filters.text, parse_bible)
 parse_bible_cmd_handler = CommandHandler([*BIBLE_BOOKALIAS_NUM], parse_bible)
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
+parse_lang_bible_handler = CommandHandler(CODE_SIGN_LANGS, parse_lang_bible)

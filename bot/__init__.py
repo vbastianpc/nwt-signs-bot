@@ -1,5 +1,9 @@
 import os
-from typing import Type
+from pathlib import Path
+import json
+
+from bot.models.jwpubmedia import JWInfo
+
 
 TOKEN = os.getenv('TOKEN_NWT')
 if TOKEN is None:
@@ -18,3 +22,11 @@ except TypeError:
     raise Exception('You must define the environment variable CHANNEL_ID')
 except ValueError:
     raise Exception('Environment variable CHANNEL_ID must be a integer')
+
+
+def code_sign_languages():
+    sign_languages = JWInfo().signs_languages
+    return [sign_language['code'] for sign_language in sign_languages]
+
+
+CODE_SIGN_LANGS = code_sign_languages()
