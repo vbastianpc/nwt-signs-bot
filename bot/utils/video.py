@@ -1,7 +1,6 @@
 from pathlib import Path
 from subprocess import run
 import logging
-import requests
 import shlex
 import time
 from typing import Dict
