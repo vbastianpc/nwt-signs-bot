@@ -16,14 +16,12 @@ from telegram.error import TelegramError
 
 from bot import CHANNEL_ID
 from bot import ADMIN
-from bot import CODE_SIGN_LANGS
-from bot.models.jwpubmedia import JWBible, JWInfo
-from bot.models import video
+from bot.jw.jwpubmedia import JWBible
+from bot.utils import video
+from bot.database import start_database
 from bot.database import localdatabase as db
-from bot.database.schemedb import SentVerse
-from bot.handlers.settings import generate_lang_buttons
+from bot.database.schemedb import SentVerse, Language
 from bot.utils import BIBLE_BOOKALIAS_NUM
-from bot.utils import BIBLE_BOOKNAMES
 from bot.utils import list_of_lists
 from bot.utils import safechars
 from bot.utils import parse_bible_pattern
@@ -59,10 +57,6 @@ def fallback_text(update: Update, context: CallbackContext):
 @vip
 def parse_lang_bible(update: Update, context: CallbackContext) -> None:
     lang_code = update.message.text.split()[0].strip('/').upper()
-    sign_language = db.query_sign_language(lang_code)
-    if not sign_language:
-        jw = JWInfo(lang_code)
-        db.insert_sign_language(lang_code, jw.locale(), jw.name(), jw.vernacular(), jw.rsconf(), jw.lib())
     query_bible = ' '.join(update.message.text.split()[1:])
     parse_bible(update, context, query_bible=query_bible, lang_code=lang_code)
     return
@@ -83,18 +77,20 @@ def parse_bible(update: Update, context: CallbackContext, query_bible=None, lang
             fallback_text(update, context)
         return
     except MultipleBooknumsFound as e:
+        # TODO
         logger.info('MultipleBooknumsFound')
-        maybe = [
-            f'{BIBLE_BOOKNAMES[booknum - 1]} - /{bookalias}'
-            for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items()
-            if str(booknum) in e.booknums
-        ]
-        reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
+        reply_text(f'Los sisguientes libros coinciden {e}')
+        # maybe = [
+        #     f'{BIBLE_BOOKNAMES[booknum - 1]} - /{bookalias}'
+        #     for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items()
+        #     if str(booknum) in e.booknums
+        # ]
+        # reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
         return
 
     lang_code = lang_code or db.get_user(update.effective_user.id).lang_code
     if not lang_code:
-        reply_text('Primero debes elegir una lengua de señas /lang')
+        reply_text('Primero debes elegir una lengua de señas /signlanguage')
         return
 
     context.user_data['msg'] = None
@@ -145,17 +141,18 @@ def show_chapters(update: Update, context: CallbackContext):
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(chapter),
-            callback_data=f'{SELECTING_CHAPTERS}|{jw.lang_code}|{jw.booknum}|{chapter}|{jw.get_checksum(chapter)}',
+            callback_data=f'{SELECTING_CHAPTERS}|{jw.lang.code}|{jw.booknum}|{chapter}|{jw.get_checksum(chapter)}',
         ) for chapter in jw.get_all_chapternumber()],
         columns=8
     )
     kwargs = {
         'chat_id': update.effective_chat.id,
-        'text': f'📖 *{jw.bookname}*\nElige un capítulo',
+        'text': f'{jw.lang.code}\n📖 {jw.bookname}\nElige un capítulo',
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
     context.user_data['msg'] = context.bot.edit_message_text(**kwargs) if update.callback_query else context.bot.send_message(**kwargs)
+    delete_objects(update, context)
 
 
 @log
@@ -180,7 +177,7 @@ def show_verses(update: Update, context: CallbackContext):
     buttons = list_of_lists(
         [InlineKeyboardButton(
             str(verse),
-            callback_data=f'{SELECTING_VERSES}|{jw.lang_code}|{jw.booknum}|{jw.chapter}|{jw.get_checksum()}|{verse}',
+            callback_data=f'{SELECTING_VERSES}|{jw.lang.code}|{jw.booknum}|{jw.chapter}|{jw.get_checksum()}|{verse}',
         ) for verse in (video_marker.versenum for video_marker in bible_chapter.video_markers)],
         columns=8
     )
@@ -193,7 +190,7 @@ def show_verses(update: Update, context: CallbackContext):
 
     kwargs = {
         'chat_id': update.effective_chat.id,
-        'text': f'📖 *{jw.bookname} {jw.title_chapter}*\nElige un versículo',
+        'text': f'{jw.lang.code}\n📖 {jw.bookname} {jw.booknum}\nElige un versículo',
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
@@ -201,6 +198,7 @@ def show_verses(update: Update, context: CallbackContext):
         context.bot.edit_message_text(message_id=message_id, **kwargs)
     else:
         context.bot.send_message(**kwargs)
+    delete_objects(update, context)
 
 
 
@@ -421,8 +419,15 @@ def delete_objects(update: Update, context: CallbackContext):
     context.user_data.pop('msg', None)
 
 
+LANGCODES = [
+        lang[0] for lang in
+        start_database().query(Language.code)
+        .filter(Language.is_sign_lang == True)
+        .all()
+    ]
+
 parse_bible_re_handler = MessageHandler(Filters.text, parse_bible)
 parse_bible_cmd_handler = CommandHandler([*BIBLE_BOOKALIAS_NUM], parse_bible)
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
-parse_lang_bible_handler = CommandHandler(CODE_SIGN_LANGS, parse_lang_bible)
+parse_lang_bible_handler = CommandHandler(LANGCODES, parse_lang_bible)

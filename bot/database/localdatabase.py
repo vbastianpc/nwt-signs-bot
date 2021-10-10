@@ -4,13 +4,14 @@ from datetime import datetime
 import pytz
 
 from bot.database import SESSION
-from bot.database.schemedb import SignLanguage
+from bot.database.schemedb import Language
 from bot.database.schemedb import BibleBook
 from bot.database.schemedb import BibleChapter
 from bot.database.schemedb import VideoMarker
 from bot.database.schemedb import SentVerse
 from bot.database.schemedb import SentVerseUser
 from bot.database.schemedb import User
+from bot.database.schemedb import BookNamesAbbreviation
 
 
 logging.basicConfig(
@@ -20,39 +21,52 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def query_sign_language(lang_code) -> Optional[SignLanguage]:
+def query_sign_language(lang_code) -> Optional[Language]:
     return (
-        SESSION.query(SignLanguage)
-        .filter(SignLanguage.lang_code == lang_code)
+        SESSION.query(Language)
+        .filter(Language.code == lang_code)
         .one_or_none()
     )
 
 
-def insert_sign_language(lang_code, locale, name, vernacular, rsconf, lib) -> SignLanguage:
-    sign_language = SignLanguage(
-        lang_code=lang_code,
+def insert_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang) -> Language:
+    sign_language = Language(
+        code=lang_code,
         locale=locale,
         name=name,
         vernacular=vernacular,
         rsconf=rsconf,
-        lib=lib
+        lib=lib,
+        is_sign_lang=is_sign_lang
     )
     SESSION.add(sign_language)
     SESSION.commit()
     return sign_language
 
 
-def insert_or_update_sign_language(lang_code, locale, name, vernacular, rsconf, lib) -> SignLanguage:
+def insert_or_update_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang) -> Language:
     sign_language = query_sign_language(lang_code)
     if sign_language:
         return sign_language
     else:
-        return insert_sign_language(lang_code, locale, name, vernacular, rsconf, lib)
+        return insert_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang)
 
+def get_sign_languages():
+    return SESSION.query(Language).filter(Language.is_sign_lang == True).order_by(Language.code.asc()).all()
+
+def get_languages():
+    return SESSION.query(Language).order_by(Language.code.asc()).all()
+
+def get_sign_language_codes() -> List[str]:
+    return [
+        lang[0] for lang in
+        SESSION.query(Language.code)
+        .filter(Language.is_sign_lang == True)
+        .all()
+    ]
 
 def get_user(telegram_user_id) -> Optional[User]:
     return SESSION.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
-
 
 def get_all_users() -> List[User]:
     return SESSION.query(User).filter(User.status == 1).all()
@@ -66,13 +80,17 @@ def set_user(
         blocked=False,
         brother=False,
     ) -> User:
-    assert [waiting, blocked, brother].count(True) <= 1, 'waiting, blocked and brother are mutually exclusive arguments' 
+    if [waiting, blocked, brother].count(True) > 1:
+        raise TypeError('waiting, blocked and brother are mutually exclusive arguments')
     user = get_user(telegram_user_id)
     if not user:
         user = User(telegram_user_id=telegram_user_id)
-    user.sign_language_id = query_sign_language(lang_code).id if lang_code else user.sign_language_id
-    user.full_name = full_name or user.full_name
-    user.bot_lang = bot_lang or user.bot_lang
+    if lang_code:
+        user.sign_language_id = query_sign_language(lang_code).id
+    if full_name:
+        user.full_name = full_name
+    if bot_lang:
+        user.bot_lang = bot_lang
     user.status = -1 if blocked else 0 if waiting else 1 if brother else user.status
     SESSION.add(user)
     SESSION.commit()
@@ -94,10 +112,10 @@ def add_waiting_user(telegram_user_id, full_name, bot_lang) -> None:
 def _query_bible_book(lang_code: str, booknum: Union[int, str]) -> Optional[BibleBook]:
     return (
         SESSION.query(BibleBook)
-        .join(SignLanguage)
+        .join(Language)
         .filter(
             BibleBook.booknum == int(booknum),
-            SignLanguage.lang_code == lang_code,
+            Language.code == lang_code,
         ).one_or_none()
     )
 
@@ -131,10 +149,10 @@ def _get_bible_chapter(
     ) -> Optional[BibleChapter]:
     return (
         SESSION.query(BibleChapter)
-        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
         .filter(
-            SignLanguage.lang_code == lang_code,
+            Language.code == lang_code,
             BibleBook.booknum == int(booknum),
             BibleChapter.chapter == int(chapter),
         )
@@ -173,11 +191,11 @@ def _query_video_marker(
         ):
     return (
         SESSION.query(VideoMarker)
-        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
         .join(BibleChapter, BibleChapter.id == VideoMarker.bible_chapter_id)
         .filter(
-            SignLanguage.lang_code == lang_code,
+            Language.code == lang_code,
             BibleBook.booknum == int(booknum),
             BibleChapter.chapter == int(chapter),
             BibleChapter.checksum == checksum,
@@ -211,11 +229,11 @@ def _get_all_versenumbers(
     ) -> List[Optional[int]]:
     return [versenum for versenum, in (
         SESSION.query(VideoMarker.versenum)
-        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
         .join(BibleChapter, BibleChapter.id == VideoMarker.bible_chapter_id)
         .filter(
-            SignLanguage.lang_code == lang_code,
+            Language.code == lang_code,
             BibleBook.booknum == int(booknum),
             BibleChapter.chapter == int(chapter),
             BibleChapter.checksum == checksum,
@@ -293,10 +311,10 @@ def _query_sent_verse(
     ) -> Optional[SentVerse]:
     q = (
         SESSION.query(SentVerse)
-        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
         .filter(
-            SignLanguage.lang_code == lang_code,
+            Language.code == lang_code,
             BibleBook.booknum == int(booknum),
             SentVerse.chapter == int(chapter),
             SentVerse.checksum == checksum,
@@ -326,11 +344,11 @@ def query_sent_verses(
     ) -> List[Optional[SentVerse]]:
     q = (
         SESSION.query(SentVerse)
-        .join(SignLanguage, SignLanguage.id == BibleBook.sign_language_id)
+        .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
     )
     if lang_code:
-        q = q.filter(SignLanguage.lang_code == lang_code)
+        q = q.filter(Language.code == lang_code)
     if booknum:
         q = q.filter(BibleBook.booknum == int(booknum))
     if chapter:
@@ -387,8 +405,17 @@ def add_sent_verse_user(sent_verse: SentVerse, telegram_user_id: int) -> None:
     SESSION.commit()
 
 
+def get_booknames(lang_locale) -> List[BookNamesAbbreviation]:
+    return (
+        SESSION.query(BookNamesAbbreviation)
+        .filter(BookNamesAbbreviation.lang_locale == lang_locale)
+        .order_by(BookNamesAbbreviation.booknum.asc())
+        .all()
+    )
+
+
 def now():
-    # TODO CONFIG server timezone, local timezone 
+    # TODO CONFIG server timezone, local timezone. database name. 
     tzinfo = pytz.timezone('UTC')
     tzinfo.localize(datetime.now())
     return tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago')).isoformat(sep=' ', timespec="seconds")

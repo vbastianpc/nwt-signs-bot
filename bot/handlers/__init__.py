@@ -23,18 +23,25 @@ from bot.handlers.admin import helper_admin_handler
 from bot.handlers.admin import database_status_handler
 from bot.handlers.admin.set_commands import botfather_handler
 from bot.handlers.admin.set_commands import prepare_commands_handler
+from bot.handlers.booknames import bookname_handler
 
 # Order matters
 handlers = [
-    inline_handler,
+    # basic commands
     start_handler,
-    test_handler,
     showlangs_handler,
     setlang_handler,
-    pagelang_handler,
     auth_handler,
     feedback_handler,
+    bookname_handler,
+
+    # inline
+    pagelang_handler,
+    inline_handler,
     info_inline_handler,
+
+    # admin handlers
+    test_handler,
     delete_user_handler,
     backup_handler,
     logs_handler,
@@ -45,10 +52,14 @@ handlers = [
     helper_admin_handler,
     database_status_handler,
     prepare_commands_handler, # borrar
+
+    # parse bible citation
     parse_lang_bible_handler,
     parse_bible_re_handler,
     parse_bible_cmd_handler,
     chapter_handler,
     verse_handler,
+
+    # fallback
     all_fallback_handler,
 ]

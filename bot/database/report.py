@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import func
 
 from bot.database import SESSION
-from bot.database.schemedb import SignLanguage
+from bot.database.schemedb import Language
 from bot.database.schemedb import BibleBook
 from bot.database.schemedb import BibleChapter
 from bot.database.schemedb import VideoMarker
@@ -36,7 +36,10 @@ def count_biblebook() -> int:
     return _count(BibleBook.id).scalar()
 
 def count_signlanguage() -> int:
-    return _count(SignLanguage.id).scalar()
+    return _count(Language.id).filter(Language.is_sign_lang == True).scalar()
+
+def count_languages() -> int:
+    return _count(Language.id).scalar()
 
 def count_sentverseuser() -> int:
     return _count(SentVerseUser.id).scalar()

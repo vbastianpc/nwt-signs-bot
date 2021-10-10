@@ -6,7 +6,7 @@ CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
 SELECT
     BibleBook.BibleBookId,
     BibleChapter.BibleChapterId,
-    SignLanguage.LangCode,
+    Language.LanguageCode,
     BibleBook.BookNumber,
     BibleBook.BookName,
     BibleChapter.ChapterNumber,
@@ -16,10 +16,10 @@ FROM
     VideoMarker
 INNER JOIN BibleChapter ON BibleChapter.BibleChapterId = VideoMarker.BibleChapterId
 INNER JOIN BibleBook ON BibleBook.BibleBookId = BibleChapter.BibleBookId
-INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
 GROUP BY BibleChapter.BibleChapterId
 ORDER BY
-    SignLanguage.LangCode ASC,
+    Language.LanguageCode ASC,
     BibleBook.BookNumber ASC,
     BibleChapter.ChapterNumber ASC
 ;''',
@@ -52,25 +52,25 @@ ORDER BY User.TelegramUserId ASC
 '''
 CREATE VIEW IF NOT EXISTS "ViewCountSentVerseByLang" AS
 SELECT
-    SignLanguage.LangCode,
-    SignLanguage.Name,
-    SignLanguage.Vernacular,
+    Language.LanguageCode,
+    Language.LanguageName,
+    Language.LanguageVernacular,
     count(*) AS CountSentVerseByLang,
     Historic.CountSentVerseHistoricByLang
 FROM SentVerse
 INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
-INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
 INNER JOIN (
     SELECT
-        SignLanguage.SignLanguageId,
+        Language.LanguageId,
         count(*) AS CountSentVerseHistoricByLang
     FROM SentVerseUser
     INNER JOIN SentVerse ON SentVerse.SentVerseId = SentVerseUser.SentVerseId
     INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
-    INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
-    GROUP BY SignLanguage.SignLanguageId
-) AS Historic ON Historic.SignLanguageId = SignLanguage.SignLanguageId
-GROUP BY SignLanguage.SignLanguageId
+    INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
+    GROUP BY Language.LanguageId
+) AS Historic ON Historic.LanguageId = Language.LanguageId
+GROUP BY Language.LanguageId
 ;''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewUser" AS
@@ -78,10 +78,10 @@ SELECT
     User.TelegramUserId,
     User.FullName,
     User.BotLanguage,
-    SignLanguage.LangCode,
-    SignLanguage.Vernacular
+    Language.LanguageCode,
+    Language.LanguageVernacular
 FROM User
-INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = User.SignLanguageId
+INNER JOIN Language ON Language.LanguageId = User.LanguageId
 ;''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
@@ -89,13 +89,13 @@ SELECT
     SentVerseUser.SentVerseUserId,
     User.FullName,
     SentVerse.Citation,
-    SignLanguage.LangCode,
+    Language.LanguageCode,
     SentVerseUser.Datetime
 FROM SentVerseUser
 INNER JOIN SentVerse ON SentVerse.SentVerseId = SentVerseUser.SentVerseId
 INNER JOIN User ON User.UserId = SentVerseUser.UserId
 INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
-INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
 ORDER BY SentVerseUser.Datetime DESC
 ;
 ''',
@@ -103,14 +103,14 @@ ORDER BY SentVerseUser.Datetime DESC
 CREATE VIEW IF NOT EXISTS "ViewSentVerse" AS
 SELECT
     SentVerse.SentVerseId,
-    SignLanguage.LangCode,
+    Language.LanguageCode,
 	BibleBook.BookNumber,
 	SentVerse.Citation,
 	SentVerse.Quality,
 	SentVerse.AddedDatetime
 FROM SentVerse
 INNER JOIN BibleBook ON BibleBook.BibleBookId = SentVerse.BibleBookId
-INNER JOIN SignLanguage ON SignLanguage.SignLanguageId = BibleBook.SignLanguageId
+INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
 ORDER BY SentVerse.SentVerseId DESC
 ;'''
 ]

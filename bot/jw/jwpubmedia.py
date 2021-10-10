@@ -6,7 +6,11 @@ import json
 from subprocess import run
 import shlex
 
-import mechanicalsoup
+from bot.utils.browser import LazyBrowser
+from bot.utils.models import LazyProperty
+from bot.jw.jwlanguage import JWLanguage
+from bot.jw import URL_PUBMEDIA
+from bot.jw import URL_WOLBIBLE
 
 
 logging.basicConfig(
@@ -15,25 +19,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# URL Principal. bookname, chapters, qualities, url videos, markers
-URL_PUBMEDIA = 'https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten={lang_code}&txtCMSLang={lang_code}&pub=nwt&booknum={booknum}&track={track}'
-
-# TODOS los lenguajes de señas (jw y wol), vernacular, name, lang_code
-URL_LANGUAGES = 'https://data.jw-api.org/mediator/v1/languages/S/all'
-
-# solo wol: rsconf, locale, lib, iswolavailable, (vernacular, name, lang_code)
-URL_LIBRARIES = 'https://wol.jw.org/es/wol/li/r4/lp-s'
-
-# para obtener marcadores
-URL_WOLBIBLE = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}'
-
-
-# citas de biblia, solo si hay wol. No se ocupa
-URL_CITATION = 'https://wol.jw.org/wol/api/v1/citation/{rsconf}/{lib}/bible/{startBook}/{startChapter}/{startVerse}/{endBook}/{endChapter}/{endVerse}?pub=nwtst'
-
-
-# https://wol.jw.org/wol/vidlink/r377/lp-sch?pub=nwt&langwritten=SCH&booknum=4&track=30&txtCMSLang=SCH&fileformat=mp4%2Cm4v&output=json
-# https://b.jw-cdn.org/apis/pub-media/GETPUBMEDIALINKS?track=30&output=json&alllangs=0&langwritten=SCH&pub=nwt&booknum=4
 
 class BiblePassage:
     def __init__(self,
@@ -61,127 +46,7 @@ class BiblePassage:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
     
 
-class LazyProperty:
-    """Para que LazyProperty pueda cachear en memoria el resultado, y no calcularlo cada vez,
-    debe ser un descriptor non-data. Implementar solo __get__, no __set__ ni __delete__
-    See https://realpython.com/python-descriptors/#lazy-properties"""
-    def __init__(self, function):
-        self.function = function
-        self.name = function.__name__
-
-    def __get__(self, obj, type=None) -> object:
-        if isinstance(obj.__dict__.get('_lazies'), list):
-            obj.__dict__['_lazies'].append(self.name)
-        else:
-            obj.__dict__['_lazies'] = [self.name]
-        obj.__dict__[self.name] = self.function(obj)
-        return obj.__dict__[self.name]
-
-
-class SpecialProperty:
-    def __set_name__(self, owner, name):
-        self.name = name
-
-    def __set__(self, obj, value) -> None:
-        if self.name in obj.__dict__ and obj.__dict__[self.name] != value:
-            if '_lazies' in obj.__dict__:
-                for lazy in obj.__dict__.get('_lazies') or []:
-                    del obj.__dict__[lazy]
-                del obj.__dict__['_lazies']
-        obj.__dict__[self.name] = value
-
-
-class LazyBrowser(mechanicalsoup.StatefulBrowser):
-    def __init__(self):
-        agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
-        self.last_url = None
-        self.response = None
-        super().__init__(user_agent=agent)
-        
-    def open(self, url):
-        if self.last_url == url or self.url == url:
-            return self.response
-        else:
-            self.last_url = url
-            self.response = super().open(url)
-            return self.response
-
-
-class classinstancemethod:
-    """https://stackoverflow.com/questions/48808788/make-a-method-that-is-both-a-class-method-and-an-instance-method"""
-    def __init__(self, method, instance=None, owner=None):
-        self.method = method
-        self.instance = instance
-        self.owner = owner
-
-    def __get__(self, instance, owner=None):
-        return type(self)(self.method, instance, owner)
-
-    def __call__(self, *args, **kwargs):
-        instance = self.instance
-        if instance is None and args:
-            instance, args = args[0], args[1:]
-        cls = self.owner
-        return self.method(cls, instance, *args, **kwargs)
-
-
-class JWInfo:
-    browser = LazyBrowser()
-
-    def __init__(self, lang_code=None):
-        self.lang_code = lang_code
-
-    @LazyProperty
-    def signs_languages(self) -> List[Dict]:
-        data = self.browser.open(URL_LANGUAGES).json()
-        raw_sign_languages = [item for item in data['languages'] if item['isSignLanguage']]
-        languages = []
-        for item in raw_sign_languages:
-            languages.append({
-                'code': item['code'],               # ASL
-                'locale': item['locale'],           # ase
-                'vernacular': item['vernacular'],   # American Sign Language
-                'name': item['name'],               # lenguaje de señas americano
-            })
-        return languages
-    
-    def _get_lang_data(self, lang_code, data_name):
-        return next((lang[data_name] for lang in self.signs_languages if lang['code'] == lang_code), '')
-    
-    def name(self, lang_code=None):
-        return self._get_lang_data(lang_code or self.lang_code, 'name')
-
-    def vernacular(self, lang_code=None):
-        return self._get_lang_data(lang_code or self.lang_code, 'vernacular')
-
-    def locale(self, lang_code=None) -> Optional[str]:
-        return self._get_lang_data(lang_code or self.lang_code, 'locale')
-
-    def is_wol_available(self, lang_code=None) -> bool:
-        self.browser.open(URL_LIBRARIES)
-        if self.browser.page.find('a', {'data-meps-symbol': lang_code or self.lang_code}):
-            return True
-        else:
-            return False
-
-    def _get_tag_attribute(self, lang_code, attribute_name) -> Optional[str]:
-        self.browser.open(URL_LIBRARIES)
-        try:
-            value = self.browser.page.find('a', {'data-meps-symbol': lang_code}).get(attribute_name)
-        except:
-            return None
-        else:
-            return value
-
-    def rsconf(self, lang_code=None) -> Optional[str]:
-        return self._get_tag_attribute(lang_code or self.lang_code, 'data-rsconf')
-    
-    def lib(self, lang_code=None) -> Optional[str]:
-        return self._get_tag_attribute(lang_code or self.lang_code, 'data-lib')
-
-
-
-class JWBible(JWInfo):
+class JWBible:
     browser_pubmedia = LazyBrowser()
     browser_wol = LazyBrowser()
 
@@ -192,13 +57,13 @@ class JWBible(JWInfo):
                  verses: Union[int, str, List[str], List[int]] = [],
                  **kwargs,
                  ):
-        self.lang_code = lang_code
+        self.lang = JWLanguage(lang_code)
         self.booknum = booknum
         self.chapter = chapter
         self.verses = verses
     
     def __str__(self):
-        return f'lang_code={self.lang_code}\tbooknum={self.booknum}\tchapter={self.chapter}\tverses={self.verses}'
+        return f'lang.code={self.lang.code}\tbooknum={self.booknum}\tchapter={self.chapter}\tverses={self.verses}'
     
     @property
     def booknum(self) -> Optional[int]:
@@ -243,12 +108,12 @@ class JWBible(JWInfo):
     
     @property
     def _rawdata(self) -> Dict:
-        assert all([self.lang_code, self.booknum]), f'Debes definir lang_code y booknum ({self.lang_code} {self.booknum})'
-        url_without_track = URL_PUBMEDIA.format(lang_code=self.lang_code, booknum=self.booknum, track='')
+        assert all([self.lang.code, self.booknum]), f'Debes definir lang.code y booknum ({self.lang.code} {self.booknum})'
+        url_without_track = URL_PUBMEDIA.format(lang_code=self.lang.code, booknum=self.booknum, track='')
         if self.chapter and self.browser_pubmedia.url == url_without_track:
             return self.browser_pubmedia.response.json()
 
-        url = URL_PUBMEDIA.format(lang_code=self.lang_code, booknum=self.booknum, track=self.chapter or '')
+        url = URL_PUBMEDIA.format(lang_code=self.lang.code, booknum=self.booknum, track=self.chapter or '')
         r = self.browser_pubmedia.open(url)
         if r.status_code == 200:
             return r.json()
@@ -260,7 +125,7 @@ class JWBible(JWInfo):
         return {}
 
     def _items(self) -> Dict:
-        for files in self._rawdata['files'][self.lang_code].values():
+        for files in self._rawdata['files'][self.lang.code].values():
             for item in files:
                 yield item
 
@@ -346,9 +211,9 @@ class JWBible(JWInfo):
     def _wol_markers(self) -> List[Dict]:
         logger.info('Scrapping WOL markers!')
         url = URL_WOLBIBLE.format(
-            locale=self.locale(),
-            rsconf=self.rsconf(),
-            lib=self.lib(),
+            locale=self.lang.locale,
+            rsconf=self.lang.rsconf,
+            lib=self.lang.lib,
             booknum=self.booknum,
             chapter=self.chapter
         )

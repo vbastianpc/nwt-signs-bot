@@ -1,38 +1,40 @@
 """
 https://dbdiagram.io/d/61417a16825b5b0146029d49
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.sqltypes import Boolean, Integer, String
 
 
 Base = declarative_base()
 
 
-class SignLanguage(Base):
-    __tablename__ = 'SignLanguage'
-    id = Column('SignLanguageId', Integer, primary_key=True)
-    lang_code = Column('LangCode', String, unique=True, nullable=False)
-    locale = Column('Locale', String, unique=True)
-    name = Column('Name', String)
-    vernacular = Column('Vernacular', String)
+class Language(Base):
+    __tablename__ = 'Language'
+    id = Column('LanguageId', Integer, primary_key=True)
+    code = Column('LanguageCode', String, unique=True, nullable=False)
+    locale = Column('LanguageLocale', String, unique=True)
+    name = Column('LanguageName', String)
+    vernacular = Column('LanguageVernacular', String)
     rsconf = Column('RsConfigSymbol', String)
     lib = Column('LibrarySymbol', String)
+    is_sign_lang = Column('IsSignLanguage', Boolean)
     bible_books = relationship('BibleBook', back_populates='parent')
     users = relationship('User', back_populates='parent')
 
     def __repr__(self):
-        return f"<SignLanguage(lang_code={self.lang_code!r}, locale={self.locale!r}, name={self.name!r}"\
+        return f"<Language(code={self.code!r}, locale={self.locale!r}, name={self.name!r}"\
             f"vernacular={self.vernacular!r}, rsconf={self.rsconf!r}, lib={self.lib!r})>"
 
 
 class BibleBook(Base):
     __tablename__ = 'BibleBook'
     id = Column('BibleBookId', Integer, primary_key=True)
-    sign_language_id = Column('SignLanguageId', Integer, ForeignKey('SignLanguage.SignLanguageId'), nullable=False)
+    sign_language_id = Column('LanguageId', Integer, ForeignKey('Language.LanguageId'), nullable=False)
     booknum = Column('BookNumber', Integer)
     bookname = Column('BookName', String)
-    parent = relationship('SignLanguage', back_populates='bible_books')
+    parent = relationship('Language', back_populates='bible_books')
     bible_chapters = relationship('BibleChapter', back_populates='parent')
     sent_verses = relationship(
         'SentVerse',
@@ -40,7 +42,7 @@ class BibleBook(Base):
         back_populates='parent',
         passive_deletes=True,
     )
-    __table_args__ = (UniqueConstraint('BookNumber', 'SignLanguageId'), )
+    __table_args__ = (UniqueConstraint('BookNumber', 'LanguageId'), )
 
     def __repr__(self):
         return f"<BibleBook(booknum={self.booknum!r}, bookname={self.bookname!r})>"
@@ -94,7 +96,6 @@ class SentVerse(Base):
     size = Column('Size', Integer)
     added_datetime = Column('AddedDatetime', String)
     parent = relationship('BibleBook', back_populates='sent_verses')
-    
 
     def __repr__(self):
         return f"<SentVerse(chapter={self.chapter!r}, raw_verses={self.raw_verses!r}, citation={self.citation!r}, " \
@@ -106,12 +107,12 @@ class User(Base):
     __tablename__ = 'User'
     id = Column('UserId', Integer, primary_key=True)
     telegram_user_id = Column('TelegramUserId', Integer, unique=True)
-    sign_language_id = Column('SignLanguageId', Integer, ForeignKey('SignLanguage.SignLanguageId'))
+    sign_language_id = Column('LanguageId', Integer, ForeignKey('Language.LanguageId'))
     full_name = Column('FullName', String)
     status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', String)
     bot_lang = Column('BotLanguage', String)
-    parent = relationship('SignLanguage', back_populates='users')
+    parent = relationship('Language', back_populates='users')
 
     def __repr__(self):
         return f"<User(id={self.id!r}, telegram_user_id={self.telegram_user_id!r}, status={self.status!r}, " \
@@ -123,7 +124,7 @@ class User(Base):
     
     @property
     def lang_code(self):
-        return self.parent.lang_code if self.parent else None
+        return self.parent.code if self.parent else None
 
     @property
     def lang_vernacular(self):
@@ -140,3 +141,18 @@ class SentVerseUser(Base):
     def __repr__(self):
         return f"<UserRequest(sent_verse_id={self.sent_verse_id!r}, user_id={self.user_id!r}, " \
             f"datetime={self.datetime!r})>"
+
+
+class BookNamesAbbreviation(Base):
+    __tablename__ = 'BookNamesAbbreviation'
+    id = Column('BookNamesAbbreviationId', Integer, primary_key=True)
+    lang_locale = Column('LangLocale', String)
+    booknum = Column('BookNumber', Integer)
+    full_name = Column('BookFullName', String)
+    long_abbr_name = Column('BookLongAbbreviationName', String)
+    abbr_name = Column('BookAbbreviationName', String)
+    __table_args__ = (UniqueConstraint('LangLocale', 'BookNumber'), )
+
+    def __repr__(self):
+        return f"<BookNamesAbbreviation(lang_locale={self.lang_locale!r}, booknum={self.booknum!r}, " \
+            f"full_name={self.full_name!r}, long_abbr_name={self.long_abbr_name!r}, abbr_name={self.abbr_name!r})>"

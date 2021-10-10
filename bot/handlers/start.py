@@ -55,7 +55,7 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
             'Rom 14:3-5, 23\n'
             'Sal 83\n'
             'Deut\n\n'
-            'Pero primero usa /lang para elegir una lengua de señas.'
+            'Pero primero usa /signlanguage para elegir una lengua de señas.'
         )
 
     context.bot.send_message(
