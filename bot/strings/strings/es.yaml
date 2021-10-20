@@ -11,7 +11,7 @@ commands:
   botlanguage: "(Coming soon)"
   # inline: "Aprende a usar el modo inline"
   feedback: "Envía un comentario al desarrollador"
-  help: "Ayuda"
+  # help: "Ayuda"
   booknames: "Índice de los Libros de la Biblia"
 
 admin_commands:
