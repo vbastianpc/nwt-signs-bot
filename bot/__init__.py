@@ -1,8 +1,4 @@
 import os
-from pathlib import Path
-import json
-
-from bot.jw.jwlanguage import JWLanguage
 
 
 TOKEN = os.getenv('TOKEN_NWT')
@@ -23,3 +19,24 @@ except TypeError:
 except ValueError:
     raise Exception('Environment variable CHANNEL_ID must be a integer')
 
+
+class MyCommand:
+    START = 'start'
+    SIGNLANGUAGE = 'signlanguage'
+    BOTLANGUAGE = 'botlanguage'
+    INLINE = 'inline'
+    FEEDBACK = 'feedback'
+    HELP = 'help'
+    BOOKNAMES = 'booknames'
+
+class AdminCommand:
+    AUTH = 'auth'
+    DELETE = 'delete'
+    USERS = 'users'
+    ADMIN = 'admin'
+    BACKUP = 'backup'
+    TEST = 'test'
+    NOTICE = 'notice'
+    LOGS = 'logs'
+    LOGFILE = 'logfile'
+    SETCOMMANDS = 'setcommands'
