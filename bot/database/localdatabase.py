@@ -51,11 +51,23 @@ def insert_or_update_language(lang_code, locale, name, vernacular, rsconf, lib, 
     else:
         return insert_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang)
 
-def get_sign_languages():
+def get_sign_languages() -> List[Language]:
     return SESSION.query(Language).filter(Language.is_sign_lang == True).order_by(Language.code.asc()).all()
 
-def get_languages():
+def get_languages() -> List[Language]:
     return SESSION.query(Language).order_by(Language.code.asc()).all()
+
+def get_language(lang_code=None, lang_locale=None) -> Optional[Language]:
+    if all([lang_locale, lang_code]):
+        raise TypeError('get_language expected one argument. lang_code and lang_locale are mutually exclusive arguments')
+    q = SESSION.query(Language)
+    if lang_code:
+        q = q.filter(Language.code == lang_code)
+    elif lang_locale:
+        q = q.filter(Language.locale == lang_locale)
+    else:
+        raise TypeError('get_language expected one argument')
+    return q.one_or_none()
 
 def get_sign_language_codes() -> List[str]:
     return [
@@ -102,7 +114,7 @@ def add_waiting_user(telegram_user_id, full_name, bot_lang) -> None:
         SESSION.add(User(
             telegram_user_id=telegram_user_id,
             full_name=full_name,
-            status=-1,
+            status=0,
             added_datetime=now(),
             bot_lang=bot_lang,
         ))
@@ -405,13 +417,28 @@ def add_sent_verse_user(sent_verse: SentVerse, telegram_user_id: int) -> None:
     SESSION.commit()
 
 
-def get_booknames(lang_locale) -> List[BookNamesAbbreviation]:
-    return (
-        SESSION.query(BookNamesAbbreviation)
-        .filter(BookNamesAbbreviation.lang_locale == lang_locale)
-        .order_by(BookNamesAbbreviation.booknum.asc())
-        .all()
+def add_bookname_abbr(lang_locale: str, booknum: int, fullname: str, long_abbr_name: str, abbr_name: str):
+    SESSION.add(
+        BookNamesAbbreviation(
+            lang_locale=lang_locale,
+            booknum=booknum,
+            full_name=fullname,
+            long_abbr_name=long_abbr_name,
+            abbr_name=abbr_name,
+        )
     )
+    try:
+        SESSION.flush()
+    except:
+        SESSION.rollback()
+    SESSION.commit()
+
+
+def get_booknames(lang_locale=None) -> List[BookNamesAbbreviation]:
+    q = SESSION.query(BookNamesAbbreviation)
+    if lang_locale:
+        q = q.filter(BookNamesAbbreviation.lang_locale == lang_locale)
+    return q.order_by(BookNamesAbbreviation.booknum.asc()).all()
 
 
 def now():

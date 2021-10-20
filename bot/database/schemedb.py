@@ -21,7 +21,7 @@ class Language(Base):
     lib = Column('LibrarySymbol', String)
     is_sign_lang = Column('IsSignLanguage', Boolean)
     bible_books = relationship('BibleBook', back_populates='parent')
-    users = relationship('User', back_populates='parent')
+    users = relationship('User', back_populates='signlanguage')
 
     def __repr__(self):
         return f"<Language(code={self.code!r}, locale={self.locale!r}, name={self.name!r}"\
@@ -112,7 +112,7 @@ class User(Base):
     status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', String)
     bot_lang = Column('BotLanguage', String)
-    parent = relationship('Language', back_populates='users')
+    signlanguage = relationship('Language', back_populates='users')
 
     def __repr__(self):
         return f"<User(id={self.id!r}, telegram_user_id={self.telegram_user_id!r}, status={self.status!r}, " \
@@ -121,15 +121,7 @@ class User(Base):
 
     def is_brother(self):
         return True if self.status == 1 else False
-    
-    @property
-    def lang_code(self):
-        return self.parent.code if self.parent else None
 
-    @property
-    def lang_vernacular(self):
-        return self.parent.vernacular if self.parent else None
-    
 
 class SentVerseUser(Base):
     __tablename__ = 'SentVerseUser'
