@@ -9,6 +9,7 @@ from bot.jw.jwlanguage import JWLanguage
 def add_all_languages():
     jwlanguage = JWLanguage()
     i = 1
+    lang_issues = []
     for lang in jwlanguage.all_langs:
         jwlanguage.code = lang['code']
         SESSION.add(
@@ -23,16 +24,15 @@ def add_all_languages():
             )
         )
         try:
-            SESSION.flush()
-        except:
+            SESSION.commit()
+        except Exception as e:
             SESSION.rollback()
         print(i)
         i += 1
-    SESSION.commit()
     print(f'There are {db.count_languages()} languages stored in the database')
 
 
 if __name__ == '__main__':
-    # add_all_languages()
+    add_all_languages()
     print('Estoy en run_config.py', __name__)
-    list(map(add_booknames, ['vi', 'en', 'fr', 'es']))
+    list(map(add_booknames, ['vi', 'es', 'en', 'fr', 'it']))
