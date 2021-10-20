@@ -23,6 +23,7 @@ from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
 from bot.handlers.admin.logs import logs_handler
 from bot.handlers.admin.logs import logfile_handler
+from bot.handlers.admin.logs import error_handler
 
 # Order matters
 handlers = [
