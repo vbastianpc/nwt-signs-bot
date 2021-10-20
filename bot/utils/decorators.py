@@ -1,5 +1,6 @@
 import logging
 from functools import wraps
+import json
 
 from telegram import User
 from telegram import Update
@@ -22,7 +23,6 @@ def vip(func):
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
         if not isinstance(user, User):
-            logger.info('¿Quién trajo este usuario?')
             return
         
         db_user = db.get_user(user.id)

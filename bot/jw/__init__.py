@@ -12,7 +12,6 @@ URL_LIBRARIES = 'https://wol.jw.org/es/wol/li/r4/lp-s'
 # para obtener marcadores
 URL_WOLBIBLE = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}'
 
-
 # citas de biblia, solo si hay wol. No se ocupa
 URL_CITATION = 'https://wol.jw.org/wol/api/v1/citation/{rsconf}/{lib}/bible/{startBook}/{startChapter}/{startVerse}/{endBook}/{endChapter}/{endVerse}?pub=nwtst'
 

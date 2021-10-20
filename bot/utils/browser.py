@@ -10,10 +10,8 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
         
     def open(self, url):
         if self.last_url == url or self.url == url:
-            print('Lazy')
             return self.response
         else:
-            print('Not Lazy')
             self.last_url = url
             self.response = super().open(url)
             return self.response
