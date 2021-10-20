@@ -25,6 +25,7 @@ admin_commands:
   logs: Muestra los últimos logs
   logfile: Envía el archivo .log
   setcommands: Configura comandos por idioma
+  stats: Resumen de la base de datos
 
 
 s1: "{} no está disponible en {}."

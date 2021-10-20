@@ -3,6 +3,7 @@ import logging
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
+from bot import AdminCommand
 
 from bot.utils.decorators import admin
 from bot.database import report as db
@@ -25,4 +26,4 @@ def database_status(update: Update, context: CallbackContext) -> None:
     parse_mode=ParseMode.HTML
     )
 
-database_status_handler = CommandHandler('status', database_status)
+database_status_handler = CommandHandler(AdminCommand.STATS, database_status)

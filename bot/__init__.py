@@ -40,3 +40,4 @@ class AdminCommand:
     LOGS = 'logs'
     LOGFILE = 'logfile'
     SETCOMMANDS = 'setcommands'
+    STATS = 'stats'
