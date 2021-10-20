@@ -9,7 +9,6 @@ from bot.jw.jwlanguage import JWLanguage
 def add_all_languages():
     jwlanguage = JWLanguage()
     i = 1
-    lang_issues = []
     for lang in jwlanguage.all_langs:
         jwlanguage.code = lang['code']
         SESSION.add(
@@ -25,7 +24,7 @@ def add_all_languages():
         )
         try:
             SESSION.commit()
-        except Exception as e:
+        except:
             SESSION.rollback()
         print(i)
         i += 1

@@ -101,7 +101,7 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
         reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
         kwargs.update({'chapter': None})
         return show_chapters(update, context)
-    logger.info('%s', json.dumps(context.user_data['kwargs'], indent=2, ensure_ascii=False))
+    # logger.info('%s', json.dumps(context.user_data['kwargs'], indent=2, ensure_ascii=False))
 
     if chapter:
         kwargs.update({
@@ -207,7 +207,7 @@ def manage_verses(update: Update, context: CallbackContext):
     kwargs = context.user_data['kwargs']
     jw = context.user_data['jw'] = JWBible(**kwargs)
     kwargs.update(dict(quality=jw.get_best_quality()))
-    logger.info('%s', json.dumps(kwargs, indent=2, ensure_ascii=False))
+    # logger.info('%s', json.dumps(kwargs, indent=2, ensure_ascii=False))
     logger.info('(%s) %s', update.effective_user.name, jw.citation())
 
     not_available = [verse for verse in kwargs['verses'] if int(verse) not in db.get_all_versenumbers(**kwargs)]
