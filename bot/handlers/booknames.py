@@ -15,21 +15,9 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.error import TelegramError
 
-from bot import CHANNEL_ID
-from bot import ADMIN
-from bot.jw.jwpubmedia import JWBible
-from bot.utils import video
-from bot.database import start_database
+from bot import MyCommand
 from bot.database import localdatabase as db
-from bot.database.schemedb import SentVerse, Language
-from bot.utils import BIBLE_BOOKALIAS_NUM
-from bot.utils import list_of_lists
-from bot.utils import safechars
-from bot.utils import parse_bible_pattern
-from bot.utils import seems_bible
-from bot.utils import BooknumNotFound
-from bot.utils import MultipleBooknumsFound
-from bot.utils.decorators import vip, forw, log
+
 
 
 logging.basicConfig(
@@ -51,4 +39,4 @@ def send_booknames(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
-bookname_handler = CommandHandler('booknames', send_booknames)
+bookname_handler = CommandHandler(MyCommand.BOOKNAMES, send_booknames)

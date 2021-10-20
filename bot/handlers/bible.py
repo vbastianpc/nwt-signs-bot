@@ -14,20 +14,18 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.error import TelegramError
 
-from bot import CHANNEL_ID
+from bot import CHANNEL_ID, MyCommand
 from bot import ADMIN
 from bot.jw.jwpubmedia import JWBible
 from bot.utils import video
-from bot.database import start_database
 from bot.database import localdatabase as db
 from bot.database.schemedb import SentVerse, Language
-from bot.utils import BIBLE_BOOKALIAS_NUM
+from bot.database import start_database
+from bot.booknames.parse import parse_bible_citation
+from bot.booknames.parse import BooknumNotFound, BibleCitationNotFound
+from bot.handlers.start import all_fallback
 from bot.utils import list_of_lists
 from bot.utils import safechars
-from bot.utils import parse_bible_pattern
-from bot.utils import seems_bible
-from bot.utils import BooknumNotFound
-from bot.utils import MultipleBooknumsFound
 from bot.utils.decorators import vip, forw, log
 
 
@@ -39,7 +37,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 FORWARD_TO_CHANNEL = True
-SELECTING_CHAPTERS, SELECTING_VERSES = '0', '1'
+SELECTING_CHAPTERS, SELECTING_VERSES = 'C', 'V'
 
 
 def forward_to_channel(bot, from_chat_id, message_id):
@@ -50,48 +48,33 @@ def forward_to_channel(bot, from_chat_id, message_id):
             message_id=message_id,
         )
 
-def fallback_text(update: Update, context: CallbackContext):
-    pass
-
-
 @vip
 def parse_lang_bible(update: Update, context: CallbackContext) -> None:
     lang_code = update.message.text.split()[0].strip('/').upper()
-    query_bible = ' '.join(update.message.text.split()[1:])
-    parse_bible(update, context, query_bible=query_bible, lang_code=lang_code)
+    likely_bible_citation = ' '.join(update.message.text.split()[1:])
+    parse_bible(update, context, likely_bible_citation=likely_bible_citation, lang_code=lang_code)
     return
 
 
 @vip
 @forw
-def parse_bible(update: Update, context: CallbackContext, query_bible=None, lang_code=None) -> None:
+def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=None, lang_code=None) -> None:
     reply_text = update.message.reply_text
-    text = query_bible or update.message.text.strip('/')
+    db_user = db.get_user(update.effective_user.id)
     try:
-        booknum, chapter, verses = parse_bible_pattern(text)
-    except BooknumNotFound:
-        logger.info('BooknumNotFound')
-        if seems_bible(text):
-            reply_text('🧐 Uhm... no conozco ese libro de la Biblia')
-        else:
-            fallback_text(update, context)
-        return
-    except MultipleBooknumsFound as e:
-        # TODO
-        logger.info('MultipleBooknumsFound')
-        reply_text(f'Los sisguientes libros coinciden {e}')
-        # maybe = [
-        #     f'{BIBLE_BOOKNAMES[booknum - 1]} - /{bookalias}'
-        #     for bookalias, booknum in BIBLE_BOOKALIAS_NUM.items()
-        #     if str(booknum) in e.booknums
-        # ]
-        # reply_text('¿Quizá quieres decir... 🤔?\n\n' + '\n'.join(maybe))
+        lang_code = lang_code or db_user.signlanguage.code
+    except AttributeError:
+        reply_text(f'Primero elige una lengua de señas /{MyCommand.SIGNLANGUAGE}')
         return
 
-    lang_code = lang_code or db.get_user(update.effective_user.id).lang_code
-    if not lang_code:
-        reply_text('Primero debes elegir una lengua de señas /signlanguage')
+    likely_bible_citation = likely_bible_citation or update.message.text.strip('/')
+    try:
+        _, booknum, chapter, verses = parse_bible_citation(likely_bible_citation, db_user.bot_lang)
+    except BooknumNotFound:
+        reply_text(f'No encontré ese libro de la Biblia. Puedes consultar nombres /{MyCommand.BOOKNAMES}')
         return
+    except BibleCitationNotFound:
+        return all_fallback(update, context)
 
     context.user_data['msg'] = None
     jw = JWBible(lang_code, booknum, chapter, verses)
@@ -100,25 +83,25 @@ def parse_bible(update: Update, context: CallbackContext, query_bible=None, lang
         'booknum': booknum,
         'chapter': chapter,
         'verses': verses,
-        'raw_verses': ' '.join(str(v) for v in verses),
+        'raw_verses': ' '.join(map(str, verses)),
         'telegram_user_id': update.effective_user.id
     }
 
-    if jw.chapter and jw.pubmedia_exists() and not jw.check_chapternumber():
-        reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
-        kwargs.update({'chapter': None})
-        return show_chapters(update, context)
-
     if not jw.pubmedia_exists():
-        reply_text(f'Este libro no está disponible en {lang_code}. Usa /lang para cambiar la lengua de señas')
+        reply_text(f'Este libro no está disponible en {lang_code}. Usa /{MyCommand.SIGNLANGUAGE} para cambiar la lengua de señas')
         return
 
     kwargs.update({
         'quality': jw.get_best_quality(),
         'bookname': jw.bookname,
     })
-    logger.info('%s', json.dumps(context.user_data['kwargs'], indent=2, ensure_ascii=False))
     db.query_or_create_bible_book(**context.user_data['kwargs'])
+
+    if jw.chapter and not jw.check_chapternumber():
+        reply_text(f'El capítulo {jw.chapter} de {jw.bookname} no está disponible 🤷🏻‍♂️ pero puedes probar con otro capítulo')
+        kwargs.update({'chapter': None})
+        return show_chapters(update, context)
+    logger.info('%s', json.dumps(context.user_data['kwargs'], indent=2, ensure_ascii=False))
 
     if chapter:
         kwargs.update({
@@ -190,7 +173,7 @@ def show_verses(update: Update, context: CallbackContext):
 
     kwargs = {
         'chat_id': update.effective_chat.id,
-        'text': f'{jw.lang.code}\n📖 {jw.bookname} {jw.booknum}\nElige un versículo',
+        'text': f'{jw.lang.code}\n📖 {jw.bookname}\nElige un versículo',
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
@@ -231,7 +214,7 @@ def manage_verses(update: Update, context: CallbackContext):
     if len(not_available) == 1:
         text = f'{not_available[0]} no está disponible.'
     elif len(not_available) > 1:
-        text = f'{", ".join([str(i) for i in not_available])} no están disponibles.'
+        text = f'{", ".join(map(str, not_available))} no están disponibles.'
     if not_available:
         update.message.reply_text(
             f'{jw.bookname} {jw.chapter}:{text}\nPero puedes elegir uno de los siguientes versículos:'
@@ -240,7 +223,7 @@ def manage_verses(update: Update, context: CallbackContext):
         return
 
     sent_verse = db.query_sent_verse(**kwargs)
-    if sent_verse and sent_verse.raw_verses == ' '.join(str(v) for v in kwargs['verses']):
+    if sent_verse and sent_verse.raw_verses == ' '.join(map(str, kwargs['verses'])):
         send_by_fileid(update, context, sent_verse)
         return
 
@@ -294,7 +277,7 @@ def send_single_verse(update: Update, context: CallbackContext):
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=versepath.read_bytes(),
-        filename=versepath.name,
+        filename=f'{versepath.stem} - {jw.lang.code}.mp4',
         caption=citation,
         width=streams['width'],
         height=streams['height'],
@@ -323,7 +306,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     jw = context.user_data['jw']
     kwargs = context.user_data['kwargs']
     msg = context.user_data.get('msg')
-    raw_verses = ' '.join([str(v) for v in jw.verses])
+    raw_verses = ' '.join(map(str, jw.verses))
 
     paths_to_concatenate = []
     new = []
@@ -358,7 +341,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     msg.edit_text(f'🎥 Uniendo versículos')
     finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
-        outname=f'{jw.lang_code} - {safechars(jw.citation())} - {jw.get_best_quality()}',
+        outname=f'{safechars(jw.citation())} - {jw.lang.code}',
         title_chapters=list(map(jw.citation, jw.verses)),
         title=jw.citation(),
     )
@@ -393,7 +376,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         msgverse = context.bot.send_video(
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
-            filename=versepath.name,
+            filename=f'{versepath.stem} - {jw.lang.code}.mp4',
             caption=jw.citation(verses=verse),
             width=stream['width'],
             height=stream['height'],
@@ -419,15 +402,17 @@ def delete_objects(update: Update, context: CallbackContext):
     context.user_data.pop('msg', None)
 
 
-LANGCODES = [
+SIGN_LANGCODES = [
         lang[0] for lang in
         start_database().query(Language.code)
         .filter(Language.is_sign_lang == True)
         .all()
     ]
 
-parse_bible_re_handler = MessageHandler(Filters.text, parse_bible)
-parse_bible_cmd_handler = CommandHandler([*BIBLE_BOOKALIAS_NUM], parse_bible)
+
+parse_bible_text_handler = MessageHandler(Filters.text, parse_bible)
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
-parse_lang_bible_handler = CommandHandler(LANGCODES, parse_lang_bible)
+# parse_lang_bible_handler = CommandHandler(['ge', 'ex'], parse_lang_bible)
+parse_lang_bible_handler = CommandHandler(SIGN_LANGCODES, parse_lang_bible)
+# parse_lang_bible_handler = MessageHandler(Filters.command, parse_lang_bible)

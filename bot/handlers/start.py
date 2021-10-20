@@ -9,10 +9,17 @@ from telegram.ext import Filters
 from telegram.ext.messagehandler import MessageHandler
 from telegram.utils.helpers import mention_markdown
 
+from bot import MyCommand
 from bot import ADMIN
 from bot import CHANNEL_ID
 from bot.utils.decorators import forw
 from bot.database import localdatabase as db
+
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +62,7 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
             'Rom 14:3-5, 23\n'
             'Sal 83\n'
             'Deut\n\n'
-            'Pero primero usa /signlanguage para elegir una lengua de señas.'
+            f'Usa /{MyCommand.SIGNLANGUAGE} para elegir una lengua de señas.'
         )
 
     context.bot.send_message(
@@ -81,9 +88,14 @@ def whois(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
-
 start_handler = ConversationHandler(
-    entry_points=[CommandHandler('start', start)],
+    entry_points=[CommandHandler(MyCommand.START, start)],
     states={1: [MessageHandler(Filters.text, whois)]},
     fallbacks=[CommandHandler('cancel', lambda x, y: -1)]
 )
+
+@forw
+def all_fallback(update: Update, context: CallbackContext) -> None:
+    return
+
+all_fallback_handler = MessageHandler(Filters.all, all_fallback)

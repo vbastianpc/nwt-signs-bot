@@ -11,6 +11,12 @@ from bot.utils.decorators import vip
 from bot.utils.utils import parse_booknum, parse_verses
 import bot.database.localdatabase as db
 
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +37,7 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     logger.info(f'{booknums!r} {chapter!r} {verses!r}')
     for booknum in booknums:
         sent_verses = db.query_sent_verses(
-            lang_code=db_user.lang_code,
+            lang_code=db_user.signlanguage.code,
             booknum=booknum,
             chapter=chapter,
             raw_verses=' '.join(verses),
@@ -40,7 +46,7 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
                 video_file_id=sent_verse.telegram_file_id,
-                title=f'{sent_verse.citation} - {db_user.lang_code}',
+                title=f'{sent_verse.citation} - {db_user.signlanguage.code}',
             )
             for sent_verse in sent_verses
         ]

@@ -1,29 +1,28 @@
-from bot.handlers.bible import parse_bible_re_handler
-from bot.handlers.bible import parse_bible_cmd_handler
+from bot.handlers.bible import parse_bible_text_handler
 from bot.handlers.bible import chapter_handler
 from bot.handlers.bible import verse_handler
 from bot.handlers.bible import parse_lang_bible_handler
 from bot.handlers.settings import showlangs_handler
 from bot.handlers.settings import setlang_handler
 from bot.handlers.settings import pagelang_handler
+from bot.handlers.settings import botlang_handler
 from bot.handlers.inline_bible import inline_handler
-from bot.handlers.misc import test_handler
-from bot.handlers.misc import info_inline_handler
-from bot.handlers.misc import all_fallback_handler
-from bot.handlers.misc import notice_handler
-from bot.handlers.misc import logs_handler
-from bot.handlers.misc import logfile_handler
+from bot.handlers.admin.logs import test_handler
 from bot.handlers.feedback import feedback_handler
 from bot.handlers.start import start_handler
+from bot.handlers.start import all_fallback_handler
+from bot.handlers.booknames import bookname_handler
+from bot.handlers.inline import info_inline_handler
 from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
 from bot.handlers.admin import getting_user_handler
 from bot.handlers.admin import helper_admin_handler
 from bot.handlers.admin import database_status_handler
-from bot.handlers.admin.set_commands import botfather_handler
-from bot.handlers.admin.set_commands import prepare_commands_handler
-from bot.handlers.booknames import bookname_handler
+from bot.handlers.admin.set_commands import set_commands_handler
+from bot.handlers.admin.logs import notice_handler
+from bot.handlers.admin.logs import logs_handler
+from bot.handlers.admin.logs import logfile_handler
 
 # Order matters
 handlers = [
@@ -34,6 +33,7 @@ handlers = [
     auth_handler,
     feedback_handler,
     bookname_handler,
+    botlang_handler,
 
     # inline
     pagelang_handler,
@@ -47,19 +47,17 @@ handlers = [
     logs_handler,
     logfile_handler,
     notice_handler,
-    botfather_handler,
+    set_commands_handler,
     getting_user_handler,
     helper_admin_handler,
     database_status_handler,
-    prepare_commands_handler, # borrar
 
     # parse bible citation
-    parse_lang_bible_handler,
-    parse_bible_re_handler,
-    parse_bible_cmd_handler,
+    parse_lang_bible_handler, # fallback commands
     chapter_handler,
     verse_handler,
+    parse_bible_text_handler,
 
-    # fallback
+    # fallback all
     all_fallback_handler,
 ]

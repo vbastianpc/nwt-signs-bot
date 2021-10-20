@@ -7,8 +7,14 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 
+from bot import MyCommand
 from bot.utils.decorators import forw
 
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +42,7 @@ def cancel_feedback(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 feedback_handler = ConversationHandler(
-    entry_points=[CommandHandler('feedback', asking_feedback)],
+    entry_points=[CommandHandler(MyCommand.FEEDBACK, asking_feedback)],
     states={1: [MessageHandler(~Filters.text('/cancel'), getting_feedback)]},
     fallbacks=[CommandHandler('cancel', cancel_feedback)],
 )
