@@ -173,7 +173,13 @@ def set_botlang(update: Update, context: CallbackContext) -> None:
     db.set_user(update.effective_user.id, bot_lang=botlang)
     logger.info(f'Idioma {botlang} ya existe archivo yaml')
     set_my_commands(update.effective_user, botlang, botlang)
-    update.effective_message.reply_text(f'Ahora te hablaré en {botlang!r}')
+    language = strings.get_language(botlang)
+    answer = f'{language["vernacular"]} - {botlang}'
+    update.callback_query.answer(answer)
+    update.effective_message.reply_text(
+        text=f'Ahora te hablaré en *{language["vernacular"]}*',
+        parse_mode=ParseMode.MARKDOWN,
+    )
     return -1
 
 

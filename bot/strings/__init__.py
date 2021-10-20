@@ -1,4 +1,4 @@
-from typing import Iterator, Optional, Tuple, List
+from typing import Dict, Iterator, Optional, Tuple, List
 from pathlib import Path
 import json
 
@@ -15,6 +15,13 @@ def botlangs_vernacular() -> Iterator[Tuple[str, str]]:
 
 def botlangs() -> List[str]:
      return [p.stem for p in STRINGS_PATH.glob('*.yaml')]
+
+
+def get_language(botlang: str) -> Dict:
+     p = STRINGS_PATH / f'{botlang}.yaml'
+     if p.exists():
+          return yaml.load(p.read_text())['language']
+     return 
 
 
 def get_commands(botlang) -> List[BotCommand]:
