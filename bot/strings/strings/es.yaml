@@ -1,0 +1,32 @@
+---
+language:
+  jw_language_code: S
+  jw_locale: es
+  name: Spanish
+  vernacular: Español
+
+commands:
+  start: "Mensaje de bienvenida"
+  signlanguage: "Elige una lengua de señas"
+  botlanguage: "(Coming soon)"
+  # inline: "Aprende a usar el modo inline"
+  feedback: "Envía un comentario al desarrollador"
+  help: "Ayuda"
+  booknames: "Índice de los Libros de la Biblia"
+
+admin_commands:
+  auth: Acepta un nuevo usuario
+  delete: Bloquea a un usuario
+  users: Muestra un listado de todos los usuarios
+  backup: Realiza un respaldo de la base de datos
+  notice: Envía mensajes a uno o varios usuarios
+  test: Muestra variables en memoria
+  admin: Muestra listados de comandos admin
+  logs: Muestra los últimos logs
+  logfile: Envía el archivo .log
+  setcommands: Configura comandos por idioma
+
+
+s1: "{} no está disponible en {}."
+s2: "{} no están disponibles en {}."
+s3: "Puedes elegir uno de los siguientes versículos"
