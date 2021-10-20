@@ -9,6 +9,7 @@ from bot.utils.decorators import admin
 from bot.database import localdatabase as db
 from bot.database import PATH_DB
 from bot.handlers.start import start
+from bot import AdminCommand, MyCommand
 
 
 logging.basicConfig(
@@ -47,7 +48,7 @@ def delete_user(update: Update, context: CallbackContext):
     try:
         db.set_user(int(context.args[0]), blocked=True)
     except IndexError:
-        update.message.reply_text('Usa /delete [user_id]')
+        update.message.reply_text(f'Usa /{AdminCommand.DELETE} [user_id]')
     except:
         update.message.reply_text('El usuario no estaba registrado en la base de datos')
     else:
@@ -59,7 +60,7 @@ def sending_users(update: Update, context: CallbackContext):
     users = db.get_all_users()
     text = ''
     for i, user in enumerate(users, 1):
-        text += f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.lang_code} `{user.telegram_user_id}`\n'
+        text += f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.signlanguage.code if user.signlanguage else None} `{user.telegram_user_id}`\n'
         if i % 10 == 0:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
             text = ''
@@ -71,15 +72,15 @@ def sending_users(update: Update, context: CallbackContext):
 def help_admin(update: Update, context: CallbackContext):
     update.message.reply_text(
         text=(
-            '/auth [user_id] - Agrega un nuevo usuario\n'
-            '/delete [user_id] - Elimina un usuario\n'
-            '/users - Muestra un listado de los usuarios\n'
-            '/test [key] - Muestra diccionarios user_data\n'
-            '/commands - Setea los comandos para BotFather\n'
-            '/notice [user_id1 user_id2] - Enviar mensajes\n'
-            '/backup - Realizar copia de seguridad\n'
-            '/logs - Muestra últimos logs\n'
-            '/logfile - Envía el archivo completo de logs'
+            f'/{AdminCommand.AUTH} [user_id] - Agrega un nuevo usuario\n'
+            f'/{AdminCommand.DELETE} [user_id] - Elimina un usuario\n'
+            f'/{AdminCommand.USERS} - Muestra un listado de los usuarios\n'
+            f'/{AdminCommand.TEST} [key] - Muestra diccionarios user_data\n'
+            f'/{AdminCommand.SETCOMMANDS} - Setea los comandos para BotFather\n'
+            f'/{AdminCommand.NOTICE} [user_id1 user_id2] - Enviar mensajes\n'
+            f'/{AdminCommand.BACKUP} - Realizar copia de seguridad\n'
+            f'/{AdminCommand.LOGS} - Muestra últimos logs\n'
+            f'/{AdminCommand.LOGFILE} - Envía el archivo completo de logs'
         )
     )
 
@@ -92,8 +93,8 @@ def backup(update: Update, context: CallbackContext):
     )
 
 
-auth_handler = CommandHandler('auth', autorizacion)
-delete_user_handler = CommandHandler('delete', delete_user)
-getting_user_handler = CommandHandler('users', sending_users)
-helper_admin_handler = CommandHandler('admin', help_admin)
-backup_handler = CommandHandler('backup', backup)
+auth_handler = CommandHandler(AdminCommand.AUTH, autorizacion)
+delete_user_handler = CommandHandler(AdminCommand.DELETE, delete_user)
+getting_user_handler = CommandHandler(AdminCommand.USERS, sending_users)
+helper_admin_handler = CommandHandler(AdminCommand.ADMIN, help_admin)
+backup_handler = CommandHandler(AdminCommand.BACKUP, backup)
