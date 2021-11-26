@@ -44,10 +44,14 @@ def add_booknames(lang_locale) -> Language:
 def find_bookname(likely_bookname: str, lang_locale: str) -> Tuple[int, str]:
     def compare_plain(real_bookname):
         return unidecode(real_bookname).lower().startswith(unidecode(likely_bookname).lower())
-
+    def rw(text: str):
+        return text.replace(' ', '')
     db_booknames = db.get_booknames(lang_locale)
     for book in db_booknames:
-        if any(map(compare_plain, [book.full_name, book.long_abbr_name, book.abbr_name])):
+        if any(map(compare_plain,
+                   [book.full_name, book.long_abbr_name, book.abbr_name,
+                   rw(book.full_name), rw(book.long_abbr_name), rw(book.abbr_name)]
+                   )):
             logger.info('Encontrado en %s', book.lang_locale) # delete
             return book.booknum, book.lang_locale
     else:
