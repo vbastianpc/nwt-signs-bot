@@ -22,6 +22,7 @@ def vip(func):
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
+        msg = update.message
         if not isinstance(user, User):
             return
         
@@ -29,13 +30,13 @@ def vip(func):
         if db_user is None or not db_user.is_brother():
             logger.info(f'{update.effective_user.mention_markdown_v2()} ha dicho: {update.effective_message.text}')
             context.bot.forward_message(
-                CHANNEL_ID,
-                user.id,
-                update.message.message_id,
+                chat_id=CHANNEL_ID,
+                from_chat_id=update.message.chat.id,
+                message_id=update.message.message_id,
             )
             context.bot.send_message(
                 chat_id=user.id,
-                text='Hola ImRobo. Este es un bot privado 🔐👤'
+                text='Este es un bot privado 🔒👤'
             )
         else:
             return func(update, context, **kwargs)

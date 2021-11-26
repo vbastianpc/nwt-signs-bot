@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 """
 TODO
+- Describir usos avanzados de comandos
+    - /signlanguage sch
+    - /sch mat 24:14
+    - /asl mat 24:14
+- Comando para listar todas las lenguas de señas
+
 ver cambios en database y mudar (agregar columnas, renombrar columnas)
 solucionar handler de comandos en diferentes situaciones
 /asl mateo 24:14 - Definido, finito. 
@@ -39,7 +45,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
 
 
 if __name__ == '__main__':
