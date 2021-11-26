@@ -28,6 +28,7 @@ class MyCommand:
     FEEDBACK = 'feedback'
     HELP = 'help'
     BOOKNAMES = 'booknames'
+    DEPR_SIGNLANGUAGE = 'lang'
 
 class AdminCommand:
     AUTH = 'auth'

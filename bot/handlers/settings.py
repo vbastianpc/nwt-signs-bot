@@ -205,7 +205,7 @@ def prev_next_botlang(update: Update, context: CallbackQueryHandler) -> None:
     return 1
 
 
-showlangs_handler = CommandHandler(MyCommand.SIGNLANGUAGE, manage_langs)
+showlangs_handler = CommandHandler([MyCommand.SIGNLANGUAGE, MyCommand.DEPR_SIGNLANGUAGE], manage_langs)
 setlang_handler = CallbackQueryHandler(set_lang, pattern=SELECTING_SIGNLANGUAGE)
 pagelang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE)
 
