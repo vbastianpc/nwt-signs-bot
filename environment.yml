@@ -2,7 +2,8 @@ name: nwt-bot
 dependencies:
   - python=3.9
   - pip:
-    - python-telegram-bot=13.7
+    - python-telegram-bot==13.7
+    - SQLAlchemy
     - requests
     - Unidecode
     - mechanicalsoup
