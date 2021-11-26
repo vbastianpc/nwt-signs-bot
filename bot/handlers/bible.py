@@ -173,7 +173,7 @@ def show_verses(update: Update, context: CallbackContext):
 
     kwargs = {
         'chat_id': update.effective_chat.id,
-        'text': f'{jw.lang.code}\n📖 {jw.bookname}\nElige un versículo',
+        'text': f'{jw.lang.code}\n📖 {jw.bookname} {jw.chapter}\nElige un versículo',
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
