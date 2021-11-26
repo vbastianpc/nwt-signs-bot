@@ -29,7 +29,6 @@ TAG_START = '#start'
 def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
     user = update.effective_user
     full_name = full_name or user.first_name
-    text = f'Hola {full_name} 👋🏼📖'
     if context.args:
         context.bot.send_message(
             chat_id=ADMIN,
@@ -40,21 +39,21 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
     db_user = db.get_user(chat_id or update.effective_user.id)
     if db_user is None or not db_user.is_brother():
         db.add_waiting_user(update.effective_user.id, update.effective_user.full_name, update.effective_user.language_code)
-        text += 'Este es un bot privado 🔐👤\n\nCuéntame quién eres y por qué quieres usar este bot'
         context.bot.send_message(
             chat_id=ADMIN,
             text=f'{mention_markdown(user.id, user.first_name)} `{user.id}` ha sido bloqueado.',
             parse_mode=ParseMode.MARKDOWN
         )
+        context.bot.send_message(update.effective_user.id, '🔒👤')
         context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=text,
+            text=f'Hola {full_name}, este es un bot privado.\nDime quién eres y por qué quieres usar este bot',
             parse_mode=ParseMode.MARKDOWN,
         )
         return 1
     else:
-        text += (
-            '\nTe doy la bienvenida al bot de *La Biblia en Lengua de Señas*\n\n'
+        text = (f'Hola {full_name} 👋🏼📖\n'
+            'Te doy la bienvenida al bot de *La Biblia en Lengua de Señas*\n\n'
             'Pídeme un pasaje de la Biblia y te enviaré un video. Por ejemplo\n\n'
             'Mateo 24:14\n'
             'Apocalipsis 21:3, 4\n'
