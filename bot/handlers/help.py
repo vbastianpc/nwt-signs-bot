@@ -4,9 +4,6 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from telegram import ParseMode
 from telegram.ext import CommandHandler
-from telegram.ext import MessageHandler
-from telegram.ext import Filters
-from telegram.ext import ConversationHandler
 
 from bot.utils.decorators import forw
 from bot import MyCommand
@@ -20,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def help(update: Update, context: CallbackContext) -> None:
+    # TODO usar negritas. ser más específico
     update.message.reply_text(
         "<b>Idioma</b>\n"
         f"Presiona /{MyCommand.SIGNLANGUAGE} y elige una lengua de señas.\n"
@@ -29,3 +27,4 @@ def help(update: Update, context: CallbackContext) -> None:
         "",        
         parse_mode=ParseMode.HTML
     )
+help_handler = CommandHandler(MyCommand.HELP, help)

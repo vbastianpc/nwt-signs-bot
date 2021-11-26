@@ -6,6 +6,7 @@ from bot.handlers.settings import showlangs_handler
 from bot.handlers.settings import setlang_handler
 from bot.handlers.settings import pagelang_handler
 from bot.handlers.settings import botlang_handler
+from bot.handlers.help import help_handler
 from bot.handlers.inline_bible import inline_handler
 from bot.handlers.admin.logs import test_handler
 from bot.handlers.feedback import feedback_handler
@@ -35,6 +36,7 @@ handlers = [
     feedback_handler,
     bookname_handler,
     botlang_handler,
+    help_handler,
 
     # inline
     pagelang_handler,
