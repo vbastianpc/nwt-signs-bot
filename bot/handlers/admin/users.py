@@ -67,23 +67,6 @@ def sending_users(update: Update, context: CallbackContext):
     if text:
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
-
-@admin
-def help_admin(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        text=(
-            f'/{AdminCommand.AUTH} [user_id] - Agrega un nuevo usuario\n'
-            f'/{AdminCommand.DELETE} [user_id] - Elimina un usuario\n'
-            f'/{AdminCommand.USERS} - Muestra un listado de los usuarios\n'
-            f'/{AdminCommand.TEST} [key] - Muestra diccionarios user_data\n'
-            f'/{AdminCommand.SETCOMMANDS} - Setea los comandos para BotFather\n'
-            f'/{AdminCommand.NOTICE} [user_id1 user_id2] - Enviar mensajes\n'
-            f'/{AdminCommand.BACKUP} - Realizar copia de seguridad\n'
-            f'/{AdminCommand.LOGS} - Muestra últimos logs\n'
-            f'/{AdminCommand.LOGFILE} - Envía el archivo completo de logs'
-        )
-    )
-
 @admin
 def backup(update: Update, context: CallbackContext):
     context.bot.send_document(
@@ -96,5 +79,4 @@ def backup(update: Update, context: CallbackContext):
 auth_handler = CommandHandler(AdminCommand.AUTH, autorizacion)
 delete_user_handler = CommandHandler(AdminCommand.DELETE, delete_user)
 getting_user_handler = CommandHandler(AdminCommand.USERS, sending_users)
-helper_admin_handler = CommandHandler(AdminCommand.ADMIN, help_admin)
 backup_handler = CommandHandler(AdminCommand.BACKUP, backup)
