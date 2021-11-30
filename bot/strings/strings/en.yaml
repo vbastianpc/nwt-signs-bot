@@ -1,17 +1,17 @@
 ---
 language:
   code: en # See column 639-1 https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-  jw_code: E # test http://jw.org/finder?wtlocale=E
+  jw_code: E # test https://jw.org/finder?wtlocale=E
   name: English
   vernacular: English # on your own language
 
 commands:
-  start: "See the greeting message"
-  signlanguage: "Change target sign language"
-  botlanguage: "Change bot interface language"
-  feedback: "Send feedback to the developer"
+  start: See the greeting message
+  signlanguage: Change target sign language
+  botlanguage: Change bot interface language
+  feedback: Send feedback to the developer
   help: Need help?
-  booknames: "Index of the Books of the Bible"
+  booknames: Index of the Books of the Bible
 
 admin_commands:
   add: Add or unban a user
@@ -27,7 +27,7 @@ admin_commands:
 
 
 # Start
-barrier_to_entry: "Hello {}, you are in a private bot. Tell me about yourself, who you are and why you want to use this bot."
+barrier_to_entry: Hello {}, you are in a private bot. Tell me about yourself, who you are and why you want to use this bot.
 wait: Ok. I will let you know when you are accepted.
 greetings: |-
   Hello {}

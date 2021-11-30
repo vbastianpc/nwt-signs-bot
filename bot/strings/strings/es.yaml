@@ -6,12 +6,12 @@ language:
   vernacular: Español
 
 commands:
-  start: "Ver el mensaje de bienvenida"
-  signlanguage: "Elige una lengua de señas"
-  botlanguage: "Cambia el idioma del bot"
-  feedback: "Envía un comentario al desarrollador"
+  start: Ver el mensaje de bienvenida
+  signlanguage: Elige una lengua de señas
+  botlanguage: Cambia el idioma del bot
+  feedback: Envía un comentario al desarrollador
   help: ¿Necesitas ayuda?
-  booknames: "Índice de los Libros de la Biblia"
+  booknames: Índice de los Libros de la Biblia
 
 admin_commands:
   add: Agrega o desbloquea a un usuario
@@ -27,7 +27,7 @@ admin_commands:
 
 
 # Start
-barrier_to_entry: "Hola {}, estás en un bot privado. Háblame de ti, de dónde eres y por qué quieres usar este bot."
+barrier_to_entry: Hola {}, estás en un bot privado. Háblame de ti, de dónde eres y por qué quieres usar este bot.
 wait: Ok. Te avisaré cuando seas aceptado.
 greetings: |-
   Hola {} 👋🏼📖
@@ -44,21 +44,21 @@ greetings: |-
 
 
 # Bible
-choose_signlang: "Primero usa el comando /{} y elige una lengua de señas"
-book_not_found: "Disculpa, no entendí lo que dijiste. Puedes usar el comando /{} para consultar los Libros de la Biblia."
+choose_signlang: Primero usa el comando /{} y elige una lengua de señas
+book_not_found: Disculpa, no entendí lo que dijiste. Puedes usar el comando /{} para consultar los Libros de la Biblia.
 
-unavailable: "Actualmente *{}* no está disponible para el idioma *{}*."
-optional_book: "Cambia la lengua de señas con el comando /{} o intenta con otro libro."
-optional_chapter: "Pero puedes elegir otro capítulo."
-optional_verse: "Pero puedes elegir otro versículo."
+unavailable: Actualmente *{}* no está disponible para el idioma *{}*.
+optional_book: Cambia la lengua de señas con el comando /{} o intenta con otro libro.
+optional_chapter: Pero puedes elegir otro capítulo.
+optional_verse: Pero puedes elegir otro versículo.
 
 choose_chapter: "*Elige un capítulo*"
 choose_verse: "*Elige un versículo*"
 
-downloading: 'Descargando'
-trimming: 'Recortando'
-splicing: 'Uniendo versículos'
-sending: 'Enviando'
+downloading: Descargando
+trimming: Recortando
+splicing: Uniendo versículos
+sending: Enviando
 
 
 # Help
