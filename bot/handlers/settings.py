@@ -238,9 +238,9 @@ pagelang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIG
 botlang_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.BOTLANGUAGE, show_botlangs)],
     states={
-        1: [MessageHandler(Filters.text, set_new_botlang),
+        1: [MessageHandler(Filters.text & (~ Filters.command), set_new_botlang),
             CallbackQueryHandler(set_botlang, pattern=SELECTING_BOTLANGUAGE),
             CallbackQueryHandler(prev_next_botlang, pattern=PAGE_BOTLANGUAGE)]
     },
-    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)]
+    fallbacks=[CommandHandler(Filters.command, lambda x, y: -1)]
 )
