@@ -6,7 +6,7 @@ from telegram import BotCommand
 
 
 STRINGS_PATH = Path(__file__).parent / 'strings'
-DEFAULT = STRINGS_PATH / 'es.yaml'
+DEFAULT = STRINGS_PATH / 'en.yaml'
 yaml = YAML(typ='safe')
 
 
@@ -51,7 +51,6 @@ class TextGetter:
      ok_signlanguage_code = Self()
      choose_botlang = Self()
      wrong_botlang = Self()
-     ok_new_botlang = Self()
      ok_botlang = Self()
      feedback_1 = Self()
      feedback_2 = Self()
