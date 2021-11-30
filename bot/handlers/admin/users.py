@@ -4,12 +4,14 @@ from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.utils.helpers import mention_markdown
+from telegram.error import Unauthorized
 
 from bot.utils.decorators import admin
 from bot.database import localdatabase as db
 from bot.database import PATH_DB
 from bot.handlers.start import start
-from bot import AdminCommand, MyCommand
+from bot import AdminCommand
+from bot.strings import TextGetter
 
 
 logging.basicConfig(
@@ -22,37 +24,48 @@ logger = logging.getLogger(__name__)
 
 @admin
 def autorizacion(update: Update, context: CallbackContext):
-    if not context.args:
-        return
     try:
         new_member_id = int(context.args[0])
-        db_user = db.set_user(new_member_id, brother=True)
-    except Exception as e:
-        logger.error(e)
+    except:
         return
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+
+    if not db.get_user(new_member_id):
+        update.message.reply_text(t.warn_user)
+        return
+
+    try:
+        context.bot.send_message(chat_id=new_member_id, text='🔐')
+    except Unauthorized:
+        update.message.reply_text(t.user_stopped_bot)
+        return
+    
+    new_db_user = db.set_user(new_member_id, brother=True)
     update.message.reply_text(
-        text=f'{mention_markdown(new_member_id, db_user.full_name)} ha sido aceptado',
+        text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
         parse_mode=ParseMode.MARKDOWN,
     )
-    context.bot.send_message(chat_id=new_member_id, text=f'🔐')
     start(
         update,
         context,
         chat_id=new_member_id,
-        full_name=db_user.full_name
+        full_name=new_db_user.full_name
     )
 
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     try:
-        db.set_user(int(context.args[0]), blocked=True)
+        user_id = int(context.args[0])
     except IndexError:
-        update.message.reply_text(f'Usa /{AdminCommand.DELETE} [user_id]')
-    except:
-        update.message.reply_text('El usuario no estaba registrado en la base de datos')
-    else:
-        update.message.reply_text('Usuario bloqueado')
+        return
+
+    if not db.get_user(user_id):
+        update.message.reply_text(t.warn_user)
+        return
+    db.set_user(user_id, blocked=True)
+    update.message.reply_text(t.user_banned)
 
 
 @admin
@@ -76,7 +89,7 @@ def backup(update: Update, context: CallbackContext):
     )
 
 
-auth_handler = CommandHandler(AdminCommand.AUTH, autorizacion)
-delete_user_handler = CommandHandler(AdminCommand.DELETE, delete_user)
+auth_handler = CommandHandler(AdminCommand.ADD, autorizacion)
+delete_user_handler = CommandHandler(AdminCommand.BAN, delete_user)
 getting_user_handler = CommandHandler(AdminCommand.USERS, sending_users)
 backup_handler = CommandHandler(AdminCommand.BACKUP, backup)

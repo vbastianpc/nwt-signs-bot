@@ -1,17 +1,16 @@
 import logging
 
-from telegram import Update, ParseMode
-from telegram import BotCommand, BotCommandScopeChat
+from telegram import Update
+from telegram import BotCommandScopeChat
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.utils.helpers import mention_markdown
 
 from bot.utils.decorators import admin
-from bot import ADMIN
 from bot.booknames import booknames
 from bot import strings
 from bot import AdminCommand
 from bot.database import localdatabase as db
+from bot.strings import TextGetter
 
 
 logging.basicConfig(
@@ -34,7 +33,8 @@ def set_commands(update: Update, context: CallbackContext):
         commands=strings.get_commands(db_user.bot_lang) + strings.get_admin_commands(db_user.bot_lang) + booknames.get_commands(db_user.bot_lang),
         scope=BotCommandScopeChat(update.effective_user.id),
     )
-    update.message.reply_text('Comandos actualizados')
+    t = TextGetter(db_user.bot_lang)
+    update.message.reply_text(t.setcommands)
 
 
 set_commands_handler = CommandHandler(AdminCommand.SETCOMMANDS, set_commands)

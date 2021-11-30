@@ -5,8 +5,11 @@ from telegram.ext import CallbackContext
 from telegram import ParseMode
 from telegram.ext import CommandHandler
 
-from bot.utils.decorators import forw
+from bot.utils.decorators import vip
 from bot import MyCommand
+from bot.strings import TextGetter
+from bot.database import localdatabase as db
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
@@ -16,15 +19,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@vip
 def help(update: Update, context: CallbackContext) -> None:
-    # TODO usar negritas. ser más específico
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     update.message.reply_text(
-        "<b>Idioma</b>\n"
-        f"Presiona /{MyCommand.SIGNLANGUAGE} y elige una lengua de señas.\n"
-        f"O bien escribe /{MyCommand.SIGNLANGUAGE} y luego el código de la lengua de señas. Por ejemplo:\n"
-        f"/{MyCommand.SIGNLANGUAGE} ASL\n\n"
-        f"Usa /{MyCommand.BOTLANGUAGE} para cambiar el idioma del bot. También entenderé los nombres de los libros de la Biblia en tu idioma.\n\n\n"
-        "",        
-        parse_mode=ParseMode.HTML
+        text=t.help.format(
+            MyCommand.SIGNLANGUAGE,
+            MyCommand.BOTLANGUAGE,
+            MyCommand.FEEDBACK,
+            'https://www.jw.org',
+            MyCommand.BOOKNAMES,
+            context.bot.username,
+        ),        
+        parse_mode=ParseMode.MARKDOWN,
+        disable_web_page_preview=True
     )
 help_handler = CommandHandler(MyCommand.HELP, help)

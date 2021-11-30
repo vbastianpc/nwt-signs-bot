@@ -12,9 +12,12 @@ from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 
+from bot.database import localdatabase as db
 from bot.utils.decorators import admin
-from bot import AdminCommand
+from bot import AdminCommand, MyCommand
 from bot import ADMIN
+from bot.strings import TextGetter
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
@@ -44,39 +47,45 @@ def test_data(update: Update, context: CallbackContext) -> None:
 
 
 @admin
-def notice(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        'Envíame los mensajes que quieres que reenvíe. '
-        'Pueden ser stickers, gifs, videos, imágenes, lo que sea. '
-        'Cuando estés listo, escribe /ok. Para cancelar usa /cancel'
-    )
-    context.user_data['notices'] = []
-    context.user_data['user_ids'] = context.args or []
+def notify(update: Update, context: CallbackContext):
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    if not context.args:
+        update.message.reply_text(
+            text=t.wrong_notify.format(AdminCommand.NOTIFY),
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return -1
+    context.user_data['user_ids'] = context.args
+    update.message.reply_text(t.notify.format(MyCommand.OK, MyCommand.CANCEL))
+    context.user_data['advice_note'] = []
     return 1
 
 
-def get_notice(update: Update, context: CallbackContext):
-    context.user_data['notices'].append(update.message)
+def get_notification(update: Update, context: CallbackContext):
+    context.user_data['advice_note'].append(update.message)
     return 1
 
 
-def send_notice(update: Update, context: CallbackContext):
+def send_notification(update: Update, context: CallbackContext):
     user_ids = context.user_data['user_ids']
-    for msg in context.user_data['notices']:
+    for msg in context.user_data['advice_note']:
         for user_id in user_ids:
             context.bot.copy_message(
                 chat_id=user_id,
                 from_chat_id=update.effective_user.id,
                 message_id=msg.message_id,
             )
-    update.message.reply_text('Mensajes enviados')
-    del context.user_data['notices']
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(t.notify_success)
+    del context.user_data['advice_note']
     del context.user_data['user_ids']
     return -1
 
+
 def cancel(update: Update, context: CallbackContext):
-    update.message.reply_text('No enviaré nada.')
-    del context.user_data['notices']
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(t.notify_cancel)
+    del context.user_data['advice_note']
     return -1
 
 
@@ -86,7 +95,8 @@ def logs(update: Update, context: CallbackContext):
         with open('./log.log', 'r', encoding='utf-8') as f:
             data = f.read()
     except FileNotFoundError:
-        update.message.reply_text('No hay archivo log')
+        t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+        update.message.reply_text(t.logfile_notfound)
     else:
         update.message.reply_markdown_v2(f'```{data[-MAX_MESSAGE_LENGTH::]}```')
     return
@@ -100,7 +110,8 @@ def logfile(update: Update, context: CallbackContext):
             document=open('./log.log', 'rb'),
         )
     except FileNotFoundError:
-        update.message.reply_text('No hay archivo log')
+        t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+        update.message.reply_text(t.logfile_notfound)
 
 
 def error_handler(update: object, context: CallbackContext) -> None:
@@ -126,13 +137,13 @@ def error_handler(update: object, context: CallbackContext) -> None:
 test_handler = CommandHandler(AdminCommand.TEST, test_data)
 
 notice_handler = ConversationHandler(
-    entry_points=[CommandHandler(AdminCommand.NOTICE, notice)],
+    entry_points=[CommandHandler(AdminCommand.NOTIFY, notify)],
     states={
-        1: [CommandHandler('ok', send_notice),
-            CommandHandler('cancel', cancel),
-            MessageHandler(Filters.all, get_notice)],
+        1: [CommandHandler(MyCommand.OK, send_notification),
+            CommandHandler(MyCommand.CANCEL, cancel),
+            MessageHandler(Filters.all, get_notification)],
     },
-    fallbacks=[CommandHandler('cancel', cancel)],
+    fallbacks=[CommandHandler(MyCommand.CANCEL, cancel)],
 )
 
 logs_handler = CommandHandler(AdminCommand.LOGS, logs)

@@ -14,6 +14,7 @@ from bot import ADMIN
 from bot import CHANNEL_ID
 from bot.utils.decorators import forw
 from bot.database import localdatabase as db
+from bot.strings import TextGetter
 
 
 logging.basicConfig(
@@ -29,59 +30,50 @@ TAG_START = '#start'
 def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
     user = update.effective_user
     full_name = full_name or user.first_name
-    if context.args:
+    db_user = db.get_user(chat_id or update.effective_user.id)
+    t = TextGetter(update.effective_user.language_code if db_user is None else db_user.bot_lang)
+
+    if context.args and context.args[0] == 'github':
         context.bot.send_message(
             chat_id=ADMIN,
-            text=f'{mention_markdown(user.id, user.full_name)} entró desde {context.args[0]}',
+            text=t.from_github.format(mention_markdown(user.id, user.full_name)),
             parse_mode=ParseMode.MARKDOWN
         )
     
-    db_user = db.get_user(chat_id or update.effective_user.id)
     if db_user is None or not db_user.is_brother():
         db.add_waiting_user(update.effective_user.id, update.effective_user.full_name, update.effective_user.language_code)
         context.bot.send_message(
             chat_id=ADMIN,
-            text=f'{mention_markdown(user.id, user.first_name)} `{user.id}` ha sido bloqueado.',
+            text=t.waiting_list.format(mention_markdown(user.id, user.first_name), user.id),
             parse_mode=ParseMode.MARKDOWN
         )
         context.bot.send_message(update.effective_user.id, '🔒👤')
         context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=f'Hola {full_name}, este es un bot privado.\nDime quién eres y por qué quieres usar este bot',
+            text=t.barrier_to_entry.format(full_name),
             parse_mode=ParseMode.MARKDOWN,
         )
         return 1
-    else:
-        text = (f'Hola {full_name} 👋🏼📖\n'
-            'Te doy la bienvenida al bot de *La Biblia en Lengua de Señas*\n\n'
-            'Pídeme un pasaje de la Biblia y te enviaré un video. Por ejemplo\n\n'
-            'Mateo 24:14\n'
-            'Apocalipsis 21:3, 4\n'
-            '2 Timoteo 3:1-5\n'
-            'Rom 14:3-5, 23\n'
-            'Sal 83\n'
-            'Deut\n\n'
-            f'Usa /{MyCommand.SIGNLANGUAGE} para elegir una lengua de señas.'
-        )
 
     context.bot.send_message(
         chat_id=chat_id if chat_id else update.effective_user.id,
-        text=text,
+        text=t.greetings.format(user.first_name, MyCommand.SIGNLANGUAGE, MyCommand.HELP),
         parse_mode=ParseMode.MARKDOWN,
     )
 
 
 def whois(update: Update, context: CallbackContext):
-    update.message.reply_text('Bien. Espera a que el administrador te acepte.')
     user = update.effective_user
+    t = TextGetter(user.language_code)
+    update.message.reply_text(t.wait)
     context.bot.send_message(
         chat_id=ADMIN,
-        text=f'{TAG_START} {mention_markdown(user.id, user.first_name)} `{user.id}` ha dejado una nota.',
+        text=t.introduced_himself.format(TAG_START, mention_markdown(user.id, user.first_name), user.id),
         parse_mode=ParseMode.MARKDOWN,
     )
     context.bot.forward_message(
         CHANNEL_ID,
-        update.effective_user.id,
+        user.id,
         update.message.message_id
     )
     return ConversationHandler.END
@@ -89,8 +81,12 @@ def whois(update: Update, context: CallbackContext):
 
 start_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.START, start)],
-    states={1: [MessageHandler(Filters.text, whois)]},
-    fallbacks=[CommandHandler('cancel', lambda x, y: -1)]
+    states={
+        1: [MessageHandler(Filters.text & (~ Filters.command), whois),
+            MessageHandler(Filters.command, lambda x, y: 1)
+        ],
+    },
+    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)]
 )
 
 @forw

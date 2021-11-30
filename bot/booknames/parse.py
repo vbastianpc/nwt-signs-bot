@@ -30,7 +30,7 @@ def parse_bible_citation(text: str, preference_lang_locale=None) -> Tuple[int, O
     likely_chapter = match.group(2)
     likely_verses = match.group(3)
     try:
-        booknum, lang_locale = find_bookname(likely_bookname, preference_lang_locale)
+        booknum, lang_locale, bookname = find_bookname(likely_bookname, preference_lang_locale)
     except:
         if not likely_chapter:
             raise BibleCitationNotFound
@@ -48,5 +48,5 @@ def parse_bible_citation(text: str, preference_lang_locale=None) -> Tuple[int, O
         else:
             verses.append(int(group))
 
-    return lang_locale, booknum, chapter, verses
+    return lang_locale, bookname, booknum, chapter, verses
 

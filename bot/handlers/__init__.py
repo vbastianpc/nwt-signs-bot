@@ -13,7 +13,6 @@ from bot.handlers.feedback import feedback_handler
 from bot.handlers.start import start_handler
 from bot.handlers.start import all_fallback_handler
 from bot.handlers.booknames import bookname_handler
-from bot.handlers.inline import info_inline_handler
 from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
@@ -31,6 +30,7 @@ handlers = [
     start_handler,
     showlangs_handler,
     setlang_handler,
+    pagelang_handler,
     auth_handler,
     feedback_handler,
     bookname_handler,
@@ -38,9 +38,7 @@ handlers = [
     help_handler,
 
     # inline
-    pagelang_handler,
     inline_handler,
-    info_inline_handler,
 
     # admin handlers
     test_handler,

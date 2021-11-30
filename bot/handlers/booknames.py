@@ -11,6 +11,7 @@ from telegram.ext import CommandHandler
 
 from bot import MyCommand
 from bot.database import localdatabase as db
+from bot.utils.decorators import vip
 
 
 logging.basicConfig(
@@ -20,6 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@vip
 def send_booknames(update: Update, context: CallbackContext) -> None:
     db_user = db.get_user(update.effective_user.id)
     db_booknames = db.get_booknames(db_user.bot_lang)

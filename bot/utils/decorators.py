@@ -25,7 +25,6 @@ def vip(func):
         msg = update.message
         if not isinstance(user, User):
             return
-        
         db_user = db.get_user(user.id)
         if db_user is None or not db_user.is_brother():
             logger.info(f'{update.effective_user.mention_markdown_v2()} ha dicho: {update.effective_message.text}')
@@ -34,10 +33,12 @@ def vip(func):
                 from_chat_id=update.message.chat.id,
                 message_id=update.message.message_id,
             )
-            context.bot.send_message(
-                chat_id=user.id,
-                text='Este es un bot privado 🔒👤'
-            )
+            # TODO si el mensaje es command, di que es privado. sino, ignoralo
+            if any([ent.type == ent.BOT_COMMAND for ent in update.message.entities]):
+                context.bot.send_message(
+                    chat_id=user.id,
+                    text='Este es un bot privado 🔒👤'
+                )
         else:
             return func(update, context, **kwargs)
 

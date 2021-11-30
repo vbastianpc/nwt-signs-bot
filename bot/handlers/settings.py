@@ -1,7 +1,6 @@
 import logging
 from math import ceil
 from ruamel.yaml import YAML
-from pathlib import Path
 
 from telegram import Update
 from telegram import InlineKeyboardButton
@@ -24,9 +23,11 @@ from bot.database import localdatabase as db
 from bot.database import report as rdb
 from bot.utils import list_of_lists
 from bot.utils.decorators import vip, forw
+from bot import ADMIN
 from bot import strings
 from bot import MyCommand
 from bot.booknames import booknames
+from bot.strings import TextGetter
 
 
 logging.basicConfig(
@@ -66,12 +67,12 @@ def manage_langs(update: Update, context: CallbackContext):
 
 
 def generate_lang_buttons(update: Update, context: CallbackContext):
-    text = f'🧏‍♂️ <b>Escoge una lengua de señas</b>\n🌎 Total: <b>{rdb.count_signlanguage()}</b>'
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     send_buttons(
         message=update.message,
         info_for_buttons=build_signlangs(),
         suffix=PAGE_SIGNLANGUAGE,
-        text=text,
+        text=t.menu_signlanguage.format(rdb.count_signlanguage()),
     )
 
 
@@ -92,7 +93,7 @@ def send_buttons(message: Message, info_for_buttons, suffix: str, page: int=1, t
             InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
             InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}')
         ])
-    kwargs = {'text': text, 'reply_markup': InlineKeyboardMarkup(buttons), 'parse_mode': ParseMode.HTML}
+    kwargs = {'text': text, 'reply_markup': InlineKeyboardMarkup(buttons), 'parse_mode': ParseMode.MARKDOWN}
     try:
         msg = message.edit_text(**kwargs)
     except telegram.error.BadRequest:
@@ -110,20 +111,21 @@ def prev_next_signlanguage(update: Update, context: CallbackContext):
 
 
 def set_lang(update: Update, context: CallbackContext) -> int:
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     lang = JWLanguage()
     if update.callback_query:
         lang.code = update.callback_query.data.split('|')[1]
     elif context.args:
         lang.code = context.args[0].upper()
         if lang.locale is None:
-            update.message.reply_text('No he reconocido ese idioma')
+            update.message.reply_text(t.wrong_signlanguage_code)
             return
     db.set_user(update.effective_user.id, lang.code)
-    text = f'Has escogido <b>{lang.code} - {lang.vernacular}</b>'
+    text = t.ok_signlanguage_code.format(lang.code, lang.vernacular)
     if update.callback_query:
-        update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)
+        update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
     else:
-        update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
+        update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
 
 
@@ -136,18 +138,21 @@ def build_botlangs():
     )
 
 
+@vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     msg = send_buttons(
         message=update.message,
         info_for_buttons=build_botlangs(),
         suffix=PAGE_BOTLANGUAGE,
-        text='Escoge un idioma para la interfaz del bot. Si tu idioma no está en la lista escribe su código.'
+        text=t.choose_botlang
     )
     context.user_data['msgbotlang'] = msg
     return 1
 
 
 def set_new_botlang(update: Update, context: CallbackQueryHandler) -> None:
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     logger.info('')
     context.user_data['msgbotlang'].edit_reply_markup()
     del context.user_data['msgbotlang']
@@ -159,25 +164,24 @@ def set_new_botlang(update: Update, context: CallbackQueryHandler) -> None:
         update.message.reply_text(f'El idioma {likely_langlocale!r} no existe')
     else:
         db.set_user(update.effective_user.id, bot_lang=db_language.locale)
-        update.message.reply_text(f'A partir de ahora te entenderé si me pides nombres de libros bíblicos en {db_language.locale} - {db_language.vernacular}.\n'
-            f'Si quieres ayudarme a traducir este bot a más idiomas, déjame un comentario en /{MyCommand.FEEDBACK}.')
+        update.message.reply_text(t.ok_new_botlang.format(db_language.locale, db_language.vernacular), parse_mode=ParseMode.MARKDOWN)
         logger.info(f'idioma {likely_langlocale!r} configurado para usuario en db')
-    set_my_commands(update.effective_user, likely_langlocale, likely_langlocale)
-    return -1
+        set_my_commands(update.effective_user, likely_langlocale, likely_langlocale)
+        return -1
 
 
 def set_botlang(update: Update, context: CallbackContext) -> None:
     context.user_data['msgbotlang'].edit_reply_markup()
     del context.user_data['msgbotlang']
     botlang = update.callback_query.data.split('|')[1]
+    t = TextGetter(botlang)
     db.set_user(update.effective_user.id, bot_lang=botlang)
     logger.info(f'Idioma {botlang} ya existe archivo yaml')
     set_my_commands(update.effective_user, botlang, botlang)
     language = strings.get_language(botlang)
-    answer = f'{language["vernacular"]} - {botlang}'
-    update.callback_query.answer(answer)
+    update.callback_query.answer(f'{language["vernacular"]} - {botlang}')
     update.effective_message.reply_text(
-        text=f'Ahora te hablaré en *{language["vernacular"]}*',
+        text=t.ok_botlang.format(language["vernacular"]),
         parse_mode=ParseMode.MARKDOWN,
     )
     return -1
@@ -185,11 +189,15 @@ def set_botlang(update: Update, context: CallbackContext) -> None:
 
 def set_my_commands(user: User, botlang: str, lang_locale: str) -> None:
     if user.language_code == botlang:
-        user.bot.delete_my_commands(scope=BotCommandScopeChat(user.id))
+        user.bot.delete_my_commands(scope=BotCommandScopeChat(user.id), language_code=botlang)
         logger.info('Comandos BotCommandScopeChat borrados')
     else:
         user.bot.set_my_commands(
-            commands=strings.get_commands(botlang) + booknames.get_commands(lang_locale),
+            commands=(
+                strings.get_commands(botlang) +
+                (strings.get_admin_commands(botlang) if user.id == ADMIN else []) +
+                booknames.get_commands(lang_locale)
+            ),
             scope=BotCommandScopeChat(user.id)
         )
         logger.info(f'Comandos BotCommandScopeChat para {user.id} {botlang}')
@@ -216,5 +224,5 @@ botlang_handler = ConversationHandler(
             CallbackQueryHandler(set_botlang, pattern=SELECTING_BOTLANGUAGE),
             CallbackQueryHandler(prev_next_botlang, pattern=PAGE_BOTLANGUAGE)]
     },
-    fallbacks=[CommandHandler('cancel', lambda x, y: -1)]
+    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)]
 )

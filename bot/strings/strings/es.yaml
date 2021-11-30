@@ -1,33 +1,145 @@
 ---
 language:
-  jw_language_code: S
-  jw_locale: es
+  code: es
+  jw_code: S
   name: Spanish
   vernacular: Español
 
 commands:
-  start: "Mensaje de bienvenida"
+  start: "Ver el mensaje de bienvenida"
   signlanguage: "Elige una lengua de señas"
-  botlanguage: "(Coming soon)"
-  # inline: "Aprende a usar el modo inline"
+  botlanguage: "Cambia el idioma del bot"
   feedback: "Envía un comentario al desarrollador"
-  # help: "Ayuda"
+  help: ¿Necesitas ayuda?
   booknames: "Índice de los Libros de la Biblia"
 
 admin_commands:
-  auth: Acepta un nuevo usuario
-  delete: Bloquea a un usuario
+  add: Agrega o desbloquea a un usuario
+  ban: Bloquea a un usuario
   users: Muestra un listado de todos los usuarios
-  backup: Realiza un respaldo de la base de datos
-  notice: Envía mensajes a uno o varios usuarios
-  test: Muestra variables en memoria
-  admin: Muestra listados de comandos admin
-  logs: Muestra los últimos logs
-  logfile: Envía el archivo .log
-  setcommands: Configura comandos por idioma
-  stats: Resumen de la base de datos
+  setcommands: Establece los comandos por ámbito de lenguaje
+  notify: Notifica mensajes a uno o varios usuarios
+  backup: Envía un respaldo de la base de datos
+  logs: Muestra las entradas del registro más recientes
+  logfile: Envía una copia del archivo de registro
+  stats: Muestra Resumen de la base de datos
+  test: Muestra las variables en memoria
 
 
-s1: "{} no está disponible en {}."
-s2: "{} no están disponibles en {}."
-s3: "Puedes elegir uno de los siguientes versículos"
+# Start
+barrier_to_entry: "Hola {}, estás en un bot privado. Háblame de ti, de dónde eres y por qué quieres usar este bot."
+wait: Ok. Te avisaré cuando seas aceptado.
+greetings: |-
+  Hola {} 👋🏼📖
+  Pídeme un pasaje de la Biblia, por ejemplo
+
+  Salmo 104:14
+  Génesis 1:29, 30
+  Romanos 14:6-8, 22, 23
+  2 Tim 3
+  1Cor
+
+  Pero primero usa /{} para elegir una lengua de señas.
+  Haz click en /{} para más detalles
+
+
+# Bible
+choose_signlang: "Primero usa el comando /{} y elige una lengua de señas"
+book_not_found: "Disculpa, no entendí lo que dijiste. Puedes usar el comando /{} para consultar los Libros de la Biblia."
+
+unavailable: "Actualmente *{}* no está disponible para el idioma *{}*."
+optional_book: "Cambia la lengua de señas con el comando /{} o intenta con otro libro."
+optional_chapter: "Pero puedes elegir otro capítulo."
+optional_verse: "Pero puedes elegir otro versículo."
+
+choose_chapter: "*Elige un capítulo*"
+choose_verse: "*Elige un versículo*"
+
+downloading: 'Descargando'
+trimming: 'Recortando'
+splicing: 'Uniendo versículos'
+sending: 'Enviando'
+
+
+# Help
+help: |-
+  *Lengua de Señas*
+  Para cambiar la lengua de señas, usa /{0}. Navega por el menú y elige una.
+
+  Tip: Si ya conoces el código de tu lengua de señas, escríbelo seguido del comando. Por ejemplo:
+  /{0} sch
+
+  Puedes cambiar momentáneamente la lengua de señas. Debes escribir su código seguido del pasaje de la Biblia. Por ejemplo:
+  /asl prov 15:17
+
+
+  *Idioma del bot*
+  Puedo hablar contigo en varios idiomas. Haz click en /{1} y elige un idioma.
+  Si no ves el tuyo, déjame un comentario /{2} y comienza a traducir [este archivo](3).
+
+
+  *Libros de la Biblia*
+  Haz click en /{4} para conocer las abreviaciones de los Libros de la Biblia.
+
+
+  *Modo Inline*
+  Escribe `@{5}` en cualquier chat de Telegram para enviar pasajes de la Biblia.
+
+
+  *Feedback*
+  ¿Tienes alguna sugerencia? ¿Algo anda mal? ¿Quieres dejar un mensaje de agradecimiento? Haz click en /{2}. Estaré encantado de leer tus comentarios.
+
+
+# Settings
+menu_signlanguage: |-
+  🧏‍♂️ *Escoge una lengua de señas*
+  🌎 Total *{}*
+
+wrong_signlanguage_code: No existe ese código de lengua de señas
+ok_signlanguage_code: Has elegido *{} - {}*
+
+choose_botlang: Escoge un idioma para la interfaz del bot.
+wrong_botlang: El idioma {} no existe
+ok_new_botlang: Ahora puedes pedirme libros bíblicos en {} - {}.
+ok_botlang: Ahora te hablaré en *{0}*. También puedes pedirme libros en *{0}*.
+
+
+# Feedback
+feedback_1: ¿Tienes alguna sugerencia? ¿Algo anda mal? Puedes cancelar esta conversación cuando quieras /{}
+feedback_2: Gracias por dejarme tu comentario.
+feedback_3: ¡Ups! No te preocupes.
+
+
+# ADMIN
+waiting_list: "{} `{}` ha sido puesto en la sala de espera."
+from_github: "{} ha entrado desde el enlace de github."
+introduced_himself: "{} {} `{}` se ha presentado."
+
+db_summary: |-
+  ```
+  {:>5} Marcadores guardados
+  {:>5} Versículos enviados
+  {:>5} Capítulos buscados
+  {:>5} Libros buscados
+  {:>5} Lengua de Señas
+  {:>5} Usuarios permitidos
+  {:>5} Usuarios bloqueados
+  {:>5} Usuarios en lista de espera
+  {:>5} Usuarios en total
+  ```
+
+wrong_notify: |-
+  La sintaxis correcta es:
+  `/{} <user_id1>...`
+notify: Envíame los mensajes que quieres que reenvíe. Pueden ser stickers, gifs, vídeos, imágenes, lo que sea. Cuando estés listo, escribe /{}. Para cancelar usa /{}.
+notify_success: Mensajes enviados.
+notify_cancel: Cancelado.
+
+logfile_notfound: No hay archivo de registro.
+
+setcommands: Comandos con alcance de lenguaje y administrador establecidos.
+
+user_added: "{} ha sido agregado."
+warn_user: No he podido hacer la operación porque el usuario no estaba registrado en la base de datos.
+user_banned: El usuario ha sido bloqueado.
+user_stopped_bot: No lo he podido agregar porque el usuario ha detenido al bot.

@@ -9,6 +9,8 @@ from telegram.ext import ConversationHandler
 
 from bot import MyCommand
 from bot.utils.decorators import forw
+from bot.strings import TextGetter
+from bot.database import localdatabase as db
 
 
 logging.basicConfig(
@@ -21,28 +23,24 @@ logger = logging.getLogger(__name__)
 
 @forw
 def asking_feedback(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Do you have any suggestions? Something it's wrong? "
-        "You can /cancel this conversation anyway"
-    )
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(t.feedback_1.format(MyCommand.CANCEL))
     return 1
 
 @forw
 def getting_feedback(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Thank you very much for your time. Your feedback is highly appreciated."
-    )
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(t.feedback_2)
     return ConversationHandler.END
 
 @forw
 def cancel_feedback(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        'Oops. Do not worry about that. Send me a suggestion whenever you want.'
-    )
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(t.feedback_3)
     return ConversationHandler.END
 
 feedback_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.FEEDBACK, asking_feedback)],
-    states={1: [MessageHandler(~Filters.text('/cancel'), getting_feedback)]},
-    fallbacks=[CommandHandler('cancel', cancel_feedback)],
+    states={1: [MessageHandler(~Filters.text(MyCommand.CANCEL), getting_feedback)]},
+    fallbacks=[CommandHandler(MyCommand.CANCEL, cancel_feedback)],
 )

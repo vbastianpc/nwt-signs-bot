@@ -1,0 +1,145 @@
+---
+language:
+  code: en # See column 639-1 https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+  jw_code: E # test http://jw.org/finder?wtlocale=E
+  name: English
+  vernacular: English # on your own language
+
+commands:
+  start: "See the greeting message"
+  signlanguage: "Change target sign language"
+  botlanguage: "Change bot interface language"
+  feedback: "Send feedback to the developer"
+  help: Need help?
+  booknames: "Index of the Books of the Bible"
+
+admin_commands:
+  add: Add or unban a user
+  ban: Ban a user
+  users: Shows a list of all users
+  test: key Show variables in memory
+  setcommands: Set commands by language scope
+  notify: Notify messages to one or more users
+  backup: Send a database backup
+  logs: Show newest log entries
+  logfile: Send a logfile backup
+  stats: Show the database summary
+
+
+# Start
+barrier_to_entry: "Hello {}, you are in a private bot. Tell me about yourself, who you are and why you want to use this bot."
+wait: Ok. I will let you know when you are accepted.
+greetings: |-
+  Hello {}
+  Query me for a Bible passage, e.g.
+
+  Psalms 104:14
+  Genesis 1:29, 30
+  Romans 14:6-8, 22, 23
+  2 Tim 3
+  1Co
+
+  But first click /{} to choose a sign language.
+  Click on /{} for more information
+
+
+# bible
+choose_signlang: First you must choose a sign language /{}.
+book_not_found: I’m sorry, I didn’t catch what you said. You can use /{} to consult the names of the Books of the Bible.
+
+unavailable: "*{}* is currently unavailable for the sign language *{}*."
+optional_book: Change sign language with the command /{} or try another book.
+optional_chapter: But you can choose another chapter.
+optional_verse: But you can choose another verse.
+
+choose_chapter: "*Choose a chapter*"
+choose_verse: "*Choose a verse*"
+
+downloading: Downloading
+trimming: Trimming
+splicing: Splicing verses
+sending: Sending
+
+
+# Help
+help: |-
+  *Sign Language*
+  Type /{0} to change the sign language. Navigate through the menu and choose one.
+
+  Tip: If you already know your sign language code, type it followed by the command. e.g.:
+  /{0} sch
+
+  You can momentarily change the sign language. You must write your code followed by the Bible passage. e.g.:
+  /asl prov 15:17
+
+
+  *Bot language*
+  I can talk to you in several languages. Type /{1} and choose a language.
+  If you don't see yours, leave me a feedback /{2} and start translating [this file]({3}).
+
+
+  *Books of the Bible*
+  Type /{4} to know the abbreviations of the Books of the Bible.
+
+
+  *Inline mode*
+  Write `@{5}` in any Telegram chat to send Bible passages.
+
+
+  *Feedback*
+  Do you have any suggestions? Something it's wrong? Send me a feedback /{2} and I will be happy to read your comments.
+
+
+# Settings
+menu_signlanguage: |-
+  🧏‍♂️ *Choose a sign language*
+  🌎 Total *{}*
+
+wrong_signlanguage_code: There is no such sign language code
+ok_signlanguage_code: You have chosen *{} - {}*
+
+choose_botlang: Choose a language for the bot interface.
+wrong_botlang: The {} language does not exist.
+ok_new_botlang: Now you can query me Bible books in *{} - {}*.
+ok_botlang: Now I'll talk to you in *{0}*. You can also query me books of the Bible in *{0}*.
+
+
+# Feedback
+feedback_1: Do you have any suggestions? Something it's wrong? You can cancel this conversation anyway /{}.
+feedback_2: Thank you very much for your time. Your feedback is highly appreciated.
+feedback_3: Oops! Do not worry about that.
+
+
+# ADMIN
+waiting_list: "{} `{}` has been placed in the waiting room."
+from_github: "{} has entered from the github link."
+introduced_himself: "{} {} `{}` has introduced himself."
+
+db_summary: |-
+  ```
+  {:>5} Saved Markers
+  {:>5} Sent Verses
+  {:>5} Searched Chapters
+  {:>5} Searched Biblebooks
+  {:>5} Sign Languages
+  {:>5} Allowed Users
+  {:>5} Banned Users
+  {:>5} Waiting List Users
+  {:>5} Total Users
+  ```
+
+wrong_notify: |-
+  The correct syntax is:
+  `/{} <user_id1>...`
+notify: Send me the messages you want me to forward. It can be stickers, gifs, videos, images, whatever. When you're ready, type /{}. To cancel type /{}.
+notify_success: I have sent the messages.
+notify_cancel: Cancelled.
+
+logfile_notfound: There is no log file.
+
+setcommands: Commands set with administrator and language scope.
+
+user_added: "{} has been added."
+warn_user: I could not do the operation because the user was not registered in the database.
+user_banned: The user has been banned.
+user_stopped_bot: I have not been able to add it because the user has stopped the bot.

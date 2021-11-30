@@ -53,7 +53,7 @@ def find_bookname(likely_bookname: str, lang_locale: str) -> Tuple[int, str]:
                    rw(book.full_name), rw(book.long_abbr_name), rw(book.abbr_name)]
                    )):
             logger.info('Encontrado en %s', book.lang_locale) # delete
-            return book.booknum, book.lang_locale
+            return book.booknum, book.lang_locale, book.full_name
     else:
         if lang_locale:
             logger.info(f'No encontrado en idioma {lang_locale!r}. Intentando en todos los idiomas')
