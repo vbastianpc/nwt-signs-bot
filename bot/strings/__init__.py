@@ -45,6 +45,7 @@ class TextGetter:
      greetings = Self()
      wait = Self()
      help = Self()
+     show_settings = Self()
      menu_signlanguage = Self()
      wrong_signlanguage_code = Self()
      ok_signlanguage_code = Self()

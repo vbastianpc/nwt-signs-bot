@@ -8,10 +8,11 @@ language:
 commands:
   start: See the greeting message
   signlanguage: Change target sign language
-  botlanguage: Change bot interface language
-  feedback: Send feedback to the developer
-  help: Need help?
+  botlanguage: Change the bot's language
   booknames: Index of the Books of the Bible
+  help: Need help?
+  settings: Show your current settings
+  feedback: Send feedback to the developer
 
 admin_commands:
   add: Add or unban a user
@@ -67,7 +68,7 @@ help: |-
   Type /{0} to change the sign language. Navigate through the menu and choose one.
 
   Tip: If you already know your sign language code, type it followed by the command. e.g.:
-  /{0} sch
+  /{0} lsf
 
   You can momentarily change the sign language. You must write your code followed by the Bible passage. e.g.:
   /asl prov 15:17
@@ -91,6 +92,21 @@ help: |-
 
 
 # Settings
+show_settings: |-
+  Target sign language: *{0} - {1}*
+  Bot language: *{2} - {3}*
+
+
+  *Sign Language*
+  Type /{4} to change the sign language. Navigate through the menu and choose one.
+
+  Tip: If you already know your sign language code, type it followed by the command. e.g.:
+  /{4} lsf
+
+
+  *Bot language*
+  Type /{5} to change the bot's language
+
 menu_signlanguage: |-
   🧏‍♂️ *Choose a sign language*
   🌎 Total *{}*

@@ -1,5 +1,6 @@
 import logging
 from math import ceil
+from typing import Text
 from ruamel.yaml import YAML
 
 from telegram import Update
@@ -43,6 +44,22 @@ SELECTING_BOTLANGUAGE = 'SELECTING_BOTLANGUAGE'
 PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 yaml = YAML(typ='safe')
 
+
+@vip
+def show_current_settings(update: Update, context: CallbackContext) -> None:
+    db_user = db.get_user(update.effective_user.id)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    update.message.reply_text(
+        text=t.show_settings.format(
+            db_user.signlanguage.code,
+            db_user.signlanguage.vernacular,
+            db_user.bot_lang,
+            strings.get_language(db_user.bot_lang)['vernacular'],
+            MyCommand.SIGNLANGUAGE,
+            MyCommand.BOTLANGUAGE
+        ),
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 def build_signlangs():
     return list_of_lists(
@@ -213,6 +230,7 @@ def prev_next_botlang(update: Update, context: CallbackQueryHandler) -> None:
     return 1
 
 
+show_settings_handler = CommandHandler(MyCommand.SETTINGS, show_current_settings)
 showlangs_handler = CommandHandler([MyCommand.SIGNLANGUAGE, MyCommand.DEPR_SIGNLANGUAGE], manage_langs)
 setlang_handler = CallbackQueryHandler(set_lang, pattern=SELECTING_SIGNLANGUAGE)
 pagelang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE)

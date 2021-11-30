@@ -9,9 +9,10 @@ commands:
   start: Ver el mensaje de bienvenida
   signlanguage: Elige una lengua de señas
   botlanguage: Cambia el idioma del bot
-  feedback: Envía un comentario al desarrollador
-  help: ¿Necesitas ayuda?
   booknames: Índice de los Libros de la Biblia
+  help: ¿Necesitas ayuda?
+  settings: Muestra tus ajustes actuales
+  feedback: Envía un comentario al desarrollador
 
 admin_commands:
   add: Agrega o desbloquea a un usuario
@@ -67,7 +68,7 @@ help: |-
   Para cambiar la lengua de señas, usa /{0}. Navega por el menú y elige una.
 
   Tip: Si ya conoces el código de tu lengua de señas, escríbelo seguido del comando. Por ejemplo:
-  /{0} sch
+  /{0} lsf
 
   Puedes cambiar momentáneamente la lengua de señas. Debes escribir su código seguido del pasaje de la Biblia. Por ejemplo:
   /asl prov 15:17
@@ -91,6 +92,22 @@ help: |-
 
 
 # Settings
+show_settings: |-
+  Tu lengua de señas: *{0} - {1}*
+  Idioma del bot: *{2} - {3}*
+
+
+  *Lengua de Señas*
+  Para cambiar la lengua de señas, usa /{4}. Navega por el menú y elige una.
+
+  Tip: Si ya conoces el código de tu lengua de señas, escríbelo seguido del comando. Por ejemplo:
+  /{4} lsf
+
+
+  *Bot language*
+  Haz click en /{5} para cambiar el idioma del bot
+
+
 menu_signlanguage: |-
   🧏‍♂️ *Escoge una lengua de señas*
   🌎 Total *{}*

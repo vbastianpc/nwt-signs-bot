@@ -2,6 +2,7 @@ from bot.handlers.bible import parse_bible_text_handler
 from bot.handlers.bible import chapter_handler
 from bot.handlers.bible import verse_handler
 from bot.handlers.bible import parse_lang_bible_handler
+from bot.handlers.settings import show_settings_handler
 from bot.handlers.settings import showlangs_handler
 from bot.handlers.settings import setlang_handler
 from bot.handlers.settings import pagelang_handler
@@ -36,6 +37,7 @@ handlers = [
     bookname_handler,
     botlang_handler,
     help_handler,
+    show_settings_handler,
 
     # inline
     inline_handler,

@@ -31,6 +31,7 @@ class MyCommand:
     DEPR_SIGNLANGUAGE = 'lang'
     CANCEL = 'cancel'
     OK = 'ok'
+    SETTINGS = 'settings'
 
 class AdminCommand:
     ADD = 'add'
