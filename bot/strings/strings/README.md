@@ -1,5 +1,5 @@
 ## Translating the bot's interface
-Copy the `en.yaml` file and start translating. The filename must be a two-letter [ISO 639-1 language code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes).
+Copy `en.yaml` file and start translating. The file name must be the language code.
 
 
 
