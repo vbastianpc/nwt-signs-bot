@@ -116,8 +116,7 @@ ok_signlanguage_code: You have chosen *{} - {}*
 
 choose_botlang: Choose a language for the bot interface.
 wrong_botlang: The {} language does not exist.
-ok_new_botlang: Now you can query me Bible books in *{} - {}*.
-ok_botlang: Now I'll talk to you in *{0}*. You can also query me books of the Bible in *{0}*.
+ok_botlang: Now you can query me Bible books in *{} - {}*.
 
 
 # Feedback

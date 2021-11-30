@@ -181,7 +181,7 @@ def set_new_botlang(update: Update, context: CallbackQueryHandler) -> None:
         update.message.reply_text(f'El idioma {likely_langlocale!r} no existe')
     else:
         db.set_user(update.effective_user.id, bot_lang=db_language.locale)
-        update.message.reply_text(t.ok_new_botlang.format(db_language.locale, db_language.vernacular), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(t.ok_botlang.format(db_language.locale, db_language.vernacular), parse_mode=ParseMode.MARKDOWN)
         logger.info(f'idioma {likely_langlocale!r} configurado para usuario en db')
         set_my_commands(update.effective_user, likely_langlocale, likely_langlocale)
         return -1

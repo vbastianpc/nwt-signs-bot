@@ -118,7 +118,7 @@ ok_signlanguage_code: Has elegido *{} - {}*
 choose_botlang: Escoge un idioma para la interfaz del bot.
 wrong_botlang: El idioma {} no existe
 ok_new_botlang: Ahora puedes pedirme libros bíblicos en {} - {}.
-ok_botlang: Ahora te hablaré en *{0}*. También puedes pedirme libros en *{0}*.
+ok_botlang: Ahora puedes pedirme libros bíblicos en *{}*.
 
 
 # Feedback
