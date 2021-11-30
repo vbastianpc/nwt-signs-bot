@@ -27,7 +27,7 @@ def help(update: Update, context: CallbackContext) -> None:
             MyCommand.SIGNLANGUAGE,
             MyCommand.BOTLANGUAGE,
             MyCommand.FEEDBACK,
-            'https://www.jw.org',
+            'https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
             MyCommand.BOOKNAMES,
             context.bot.username,
         ),        
