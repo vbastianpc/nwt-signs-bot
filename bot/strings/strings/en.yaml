@@ -1,9 +1,8 @@
----
 language:
-  code: en # See column 639-1 https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-  jw_code: E # test https://jw.org/finder?wtlocale=E
+  code: en
+  jw_code: E
   name: English
-  vernacular: English # on your own language
+  vernacular: English
 
 commands:
   start: See the greeting message
@@ -116,7 +115,7 @@ ok_signlanguage_code: You have chosen *{} - {}*
 
 choose_botlang: Choose a language for the bot interface.
 wrong_botlang: The {} language does not exist.
-ok_botlang: Now you can query me Bible books in *{} - {}*.
+ok_botlang: Now you can query me Bible books in *{}*.
 
 
 # Feedback

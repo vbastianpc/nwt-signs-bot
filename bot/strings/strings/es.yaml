@@ -1,4 +1,3 @@
----
 language:
   code: es
   jw_code: S
@@ -107,7 +106,6 @@ show_settings: |-
   *Bot language*
   Haz click en /{5} para cambiar el idioma del bot
 
-
 menu_signlanguage: |-
   🧏‍♂️ *Escoge una lengua de señas*
   🌎 Total *{}*
@@ -117,7 +115,6 @@ ok_signlanguage_code: Has elegido *{} - {}*
 
 choose_botlang: Escoge un idioma para la interfaz del bot.
 wrong_botlang: El idioma {} no existe
-ok_new_botlang: Ahora puedes pedirme libros bíblicos en {} - {}.
 ok_botlang: Ahora puedes pedirme libros bíblicos en *{}*.
 
 

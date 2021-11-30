@@ -1,28 +1,5 @@
----
 language:
-  code: vi # See column 639-1 https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-  jw_code: VT # test https://jw.org/finder?wtlocale=jw_code
+  code: vi
+  jw_code: VT
   name: Vietnamese
-  vernacular: Tiếng Việt # on your own language
-
-commands:
-  start: See the greeting message
-  signlanguage: Change target sign language
-  botlanguage: Change the bot's language
-  booknames: Index of the Books of the Bible
-  help: Need help?
-  settings: Show your current settings
-  feedback: Send feedback to the developer
-
-admin_commands:
-  add: Add or unban a user
-  ban: Ban a user
-  users: Shows a list of all users
-  test: key Show variables in memory
-  setcommands: Set commands by language scope
-  notify: Notify messages to one or more users
-  backup: Send a database backup
-  logs: Show newest log entries
-  logfile: Send a logfile backup
-  stats: Show the database summary
-
+  vernacular: Tiếng Việt
