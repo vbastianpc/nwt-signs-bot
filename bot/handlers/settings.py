@@ -205,19 +205,21 @@ def set_botlang(update: Update, context: CallbackContext) -> None:
 
 
 def set_my_commands(user: User, botlang: str, lang_locale: str) -> None:
-    if user.language_code == botlang:
-        user.bot.delete_my_commands(scope=BotCommandScopeChat(user.id), language_code=botlang)
+    if user.language_code == botlang and user.id != ADMIN:
+        user.bot.delete_my_commands(scope=BotCommandScopeChat(user.id))
         logger.info('Comandos BotCommandScopeChat borrados')
-    else:
-        user.bot.set_my_commands(
-            commands=(
-                strings.get_commands(botlang) +
-                (strings.get_admin_commands(botlang) if user.id == ADMIN else []) +
-                booknames.get_commands(lang_locale)
-            ),
-            scope=BotCommandScopeChat(user.id)
-        )
-        logger.info(f'Comandos BotCommandScopeChat para {user.id} {botlang}')
+        return
+
+    user.bot.set_my_commands(
+        commands=(
+            strings.get_commands(botlang) +
+            (strings.get_admin_commands(botlang) if user.id == ADMIN else []) +
+            booknames.get_commands(lang_locale)
+        ),
+        scope=BotCommandScopeChat(user.id)
+    )
+    logger.info(f'Comandos BotCommandScopeChat para {user.id} {botlang}')
+    
 
 
 def prev_next_botlang(update: Update, context: CallbackQueryHandler) -> None:

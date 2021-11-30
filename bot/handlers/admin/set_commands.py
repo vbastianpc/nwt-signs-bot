@@ -30,7 +30,11 @@ def set_commands(update: Update, context: CallbackContext):
         )
     db_user = db.get_user(update.effective_user.id)
     context.bot.set_my_commands(
-        commands=strings.get_commands(db_user.bot_lang) + strings.get_admin_commands(db_user.bot_lang) + booknames.get_commands(db_user.bot_lang),
+        commands=(
+            strings.get_commands(db_user.bot_lang) +
+            strings.get_admin_commands(db_user.bot_lang) +
+            booknames.get_commands(db_user.bot_lang)
+        ),
         scope=BotCommandScopeChat(update.effective_user.id),
     )
     t = TextGetter(db_user.bot_lang)
