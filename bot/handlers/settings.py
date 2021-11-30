@@ -242,5 +242,5 @@ botlang_handler = ConversationHandler(
             CallbackQueryHandler(set_botlang, pattern=SELECTING_BOTLANGUAGE),
             CallbackQueryHandler(prev_next_botlang, pattern=PAGE_BOTLANGUAGE)]
     },
-    fallbacks=[CommandHandler(Filters.command, lambda x, y: -1)]
+    fallbacks=[MessageHandler(Filters.command, lambda x, y: -1)]
 )
