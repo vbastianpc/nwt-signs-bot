@@ -1,5 +1,4 @@
 import json
-import logging
 import traceback
 import html
 
@@ -16,15 +15,11 @@ from bot.database import localdatabase as db
 from bot.utils.decorators import admin
 from bot import AdminCommand, MyCommand
 from bot import ADMIN
+from bot import get_logger
 from bot.strings import TextGetter
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @admin

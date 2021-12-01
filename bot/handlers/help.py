@@ -1,22 +1,16 @@
-import logging
-
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram import ParseMode
 from telegram.ext import CommandHandler
 
+from bot import get_logger
 from bot.utils.decorators import vip
 from bot import MyCommand
 from bot.strings import TextGetter
 from bot.database import localdatabase as db
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @vip

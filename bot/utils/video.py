@@ -1,20 +1,16 @@
 from pathlib import Path
 from subprocess import run
-import logging
 import shlex
 import time
 from typing import Dict
 import json
 
+from bot import get_logger
 from bot.utils import safechars
 from bot.database.schemedb import VideoMarker
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def split(inputvideo, marker: VideoMarker, height=None) -> Path:

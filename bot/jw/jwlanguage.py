@@ -1,4 +1,3 @@
-import logging
 from typing import List, Dict, Optional
 import requests
 
@@ -6,13 +5,10 @@ from bot.utils.browser import LazyBrowser
 from bot.utils.models import LazyProperty
 from bot.jw import URL_LANGUAGES
 from bot.jw import URL_LIBRARIES
+from bot import get_logger
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class JWLanguage:

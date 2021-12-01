@@ -1,6 +1,4 @@
 from pathlib import Path
-import logging
-import json
 
 from telegram import ChatAction
 from telegram import InlineKeyboardButton
@@ -14,7 +12,7 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.error import TelegramError
 
-from bot import CHANNEL_ID, MyCommand
+from bot import CHANNEL_ID, MyCommand, get_logger
 from bot import ADMIN
 from bot.jw.jwpubmedia import JWBible
 from bot.utils import video
@@ -30,12 +28,7 @@ from bot.utils.decorators import vip, forw, log
 from bot.strings import TextGetter
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 FORWARD_TO_CHANNEL = True
 SELECTING_CHAPTERS, SELECTING_VERSES = 'C', 'V'

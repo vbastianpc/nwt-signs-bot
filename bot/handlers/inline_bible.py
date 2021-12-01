@@ -1,4 +1,3 @@
-import logging
 from uuid import uuid4
 
 from telegram import InlineQueryResultCachedVideo
@@ -6,18 +5,14 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import InlineQueryHandler
 
+from bot import get_logger
 from bot.utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
 from bot.utils.decorators import vip
 from bot.utils.utils import parse_booknum, parse_verses
 import bot.database.localdatabase as db
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @vip
@@ -34,7 +29,6 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
         verses = parse_verses(update.inline_query.query)
     db_user = db.get_user(update.effective_user.id)
     results = []
-    logger.info(f'{booknums!r} {chapter!r} {verses!r}')
     for booknum in booknums:
         sent_verses = db.query_sent_verses(
             lang_code=db_user.signlanguage.code,

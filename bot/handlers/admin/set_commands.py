@@ -1,4 +1,3 @@
-import logging
 
 from telegram import Update
 from telegram import BotCommandScopeChat
@@ -9,16 +8,12 @@ from bot.utils.decorators import admin
 from bot.booknames import booknames
 from bot import strings
 from bot import AdminCommand
+from bot import get_logger
 from bot.database import localdatabase as db
 from bot.strings import TextGetter
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @admin

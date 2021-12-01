@@ -1,4 +1,3 @@
-import logging
 from math import ceil
 from typing import Text
 from ruamel.yaml import YAML
@@ -26,17 +25,13 @@ from bot.utils import list_of_lists
 from bot.utils.decorators import vip, forw
 from bot import ADMIN
 from bot import strings
+from bot import get_logger
 from bot import MyCommand
 from bot.booknames import booknames
 from bot.strings import TextGetter
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 SELECTING_SIGNLANGUAGE = 'SELECTING_SIGNLANGUAGE'
 PAGE_SIGNLANGUAGE = 'PAGE_SIGNLANGUAGE'

@@ -1,11 +1,11 @@
 from pathlib import Path
-import logging
 import re
 from typing import List, Dict, Union, Optional
 import json
 from subprocess import run
 import shlex
 
+from bot import get_logger
 from bot.utils.browser import LazyBrowser
 from bot.utils.models import LazyProperty
 from bot.jw.jwlanguage import JWLanguage
@@ -13,11 +13,7 @@ from bot.jw import URL_PUBMEDIA
 from bot.jw import URL_WOLBIBLE
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BiblePassage:

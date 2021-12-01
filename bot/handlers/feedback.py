@@ -1,5 +1,3 @@
-import logging
-
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
@@ -7,18 +5,14 @@ from telegram.ext import MessageHandler
 from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 
+from bot import get_logger
 from bot import MyCommand
 from bot.utils.decorators import forw
 from bot.strings import TextGetter
 from bot.database import localdatabase as db
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @forw

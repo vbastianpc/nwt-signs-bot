@@ -1,21 +1,16 @@
-import logging
 from unidecode import unidecode
 from typing import Tuple, List
 
 from telegram import BotCommand
 
+from bot import get_logger
 from bot.utils.browser import LazyBrowser
 from bot.jw.jwlanguage import JWLanguage
 from bot.database import localdatabase as db
 from bot.database.schemedb import Language
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 browser = LazyBrowser()

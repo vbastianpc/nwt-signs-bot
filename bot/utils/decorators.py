@@ -1,4 +1,3 @@
-import logging
 from functools import wraps
 import json
 
@@ -6,16 +5,13 @@ from telegram import User
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from bot import get_logger
 from bot import ADMIN
 from bot import CHANNEL_ID
 from bot.database import localdatabase as db
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def vip(func):

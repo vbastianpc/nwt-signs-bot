@@ -31,20 +31,13 @@ def main_func(session, first, second):
 main_fun(1, 2)
 
 """
-import logging
-
 from telegram.ext import Updater
 
-from bot import TOKEN
+from bot import TOKEN, get_logger
 from bot.handlers import handlers, error_handler
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 if __name__ == '__main__':

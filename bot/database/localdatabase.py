@@ -1,8 +1,8 @@
 from typing import Optional, List, Union
-import logging
 from datetime import datetime
 import pytz
 
+from bot import get_logger
 from bot.database import SESSION
 from bot.database.schemedb import Language
 from bot.database.schemedb import BibleBook
@@ -14,11 +14,7 @@ from bot.database.schemedb import User
 from bot.database.schemedb import BookNamesAbbreviation
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def query_sign_language(lang_code) -> Optional[Language]:

@@ -1,4 +1,3 @@
-import logging
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -11,15 +10,11 @@ from bot.database import localdatabase as db
 from bot.database import PATH_DB
 from bot.handlers.start import start
 from bot import AdminCommand
+from bot import get_logger
 from bot.strings import TextGetter
 
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-)
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @admin
