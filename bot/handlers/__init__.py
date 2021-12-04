@@ -27,15 +27,18 @@ from bot.handlers.admin.logs import error_handler
 
 # Order matters
 handlers = [
-    # basic commands
+    # conversation handler
+    feedback_handler,
+    botlang_handler,
     start_handler,
+    notice_handler,
+
+    # basic commands
     showlangs_handler,
     setlang_handler,
     pagelang_handler,
     auth_handler,
-    feedback_handler,
     bookname_handler,
-    botlang_handler,
     help_handler,
     show_settings_handler,
 
@@ -48,7 +51,6 @@ handlers = [
     backup_handler,
     logs_handler,
     logfile_handler,
-    notice_handler,
     set_commands_handler,
     getting_user_handler,
     database_status_handler,

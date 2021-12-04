@@ -1,3 +1,4 @@
+from logging import Filter
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
@@ -35,6 +36,9 @@ def cancel_feedback(update: Update, context: CallbackContext):
 
 feedback_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.FEEDBACK, asking_feedback)],
-    states={1: [MessageHandler(~Filters.text(MyCommand.CANCEL), getting_feedback)]},
-    fallbacks=[CommandHandler(MyCommand.CANCEL, cancel_feedback)],
+    states={1: [MessageHandler(Filters.text & (~ Filters.command), getting_feedback)]},
+    fallbacks=[
+        CommandHandler(MyCommand.CANCEL, cancel_feedback),
+        MessageHandler(Filters.command, lambda x, y: 1)
+    ],
 )
