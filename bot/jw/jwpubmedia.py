@@ -40,7 +40,12 @@ class BiblePassage:
             self._verses = None
         else:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
-    
+
+def clean(func):
+    def function(self):
+        s = re.sub('(nbsp;|amp;|&)', ' ', func(self))
+        return re.sub(' +', ' ', s)
+    return function
 
 class JWBible:
     browser_pubmedia = LazyBrowser()
@@ -139,6 +144,7 @@ class JWBible:
         return bool(self._rawdata)
     
     @property
+    @clean
     def bookname(self) -> str:
         return self._rawdata['pubName']
     
@@ -146,6 +152,7 @@ class JWBible:
         return self._match(**kwargs)['file']['url']
 
     @property
+    @clean
     def title_chapter(self) -> str:
         return self._match()['title']
 
