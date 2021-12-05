@@ -66,8 +66,8 @@ help: |-
   *Sign Language*
   Type /{0} to change the sign language. Navigate through the menu and choose one.
 
-  Tip: If you already know your sign language code, type it followed by the command. e.g.:
-  /{0} lsf
+  Tip: If you already know your sign language code, you can do as follows:
+  /lsf
 
   You can momentarily change the sign language. You must write your code followed by the Bible passage. e.g.:
   /asl prov 15:17
@@ -99,8 +99,8 @@ show_settings: |-
   *Sign Language*
   Type /{4} to change the sign language. Navigate through the menu and choose one.
 
-  Tip: If you already know your sign language code, type it followed by the command. e.g.:
-  /{4} lsf
+  Tip: If you already know your sign language code, you can do as follows:
+  /lsf
 
 
   *Bot language*

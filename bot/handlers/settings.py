@@ -122,16 +122,16 @@ def prev_next_signlanguage(update: Update, context: CallbackContext):
     )
 
 
-def set_lang(update: Update, context: CallbackContext) -> int:
+def set_lang(update: Update, context: CallbackContext, lang_code=None) -> int:
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     lang = JWLanguage()
     if update.callback_query:
         lang.code = update.callback_query.data.split('|')[1]
-    elif context.args:
-        lang.code = context.args[0].upper()
-        if lang.locale is None:
-            update.message.reply_text(t.wrong_signlanguage_code)
-            return
+    else:
+        lang.code = lang_code or context.args[0].upper()
+    if lang.locale is None:
+        update.message.reply_text(t.wrong_signlanguage_code)
+        return
     db.set_user(update.effective_user.id, lang.code)
     text = t.ok_signlanguage_code.format(lang.code, lang.vernacular)
     if update.callback_query:

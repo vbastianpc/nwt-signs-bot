@@ -66,8 +66,8 @@ help: |-
   *Lengua de Señas*
   Para cambiar la lengua de señas, usa /{0}. Navega por el menú y elige una.
 
-  Tip: Si ya conoces el código de tu lengua de señas, escríbelo seguido del comando. Por ejemplo:
-  /{0} lsf
+  Tip: Si ya conoces el código de tu lengua de señas, puedes hacer lo siguiente:
+  /lsf
 
   Puedes cambiar momentáneamente la lengua de señas. Debes escribir su código seguido del pasaje de la Biblia. Por ejemplo:
   /asl prov 15:17
@@ -99,8 +99,8 @@ show_settings: |-
   *Lengua de Señas*
   Para cambiar la lengua de señas, usa /{4}. Navega por el menú y elige una.
 
-  Tip: Si ya conoces el código de tu lengua de señas, escríbelo seguido del comando. Por ejemplo:
-  /{4} lsf
+  Tip: Si ya conoces el código de tu lengua de señas, puedes hacer lo siguiente:
+  /lsf
 
 
   *Bot language*

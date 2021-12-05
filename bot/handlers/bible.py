@@ -22,6 +22,7 @@ from bot.database import start_database
 from bot.booknames.parse import parse_bible_citation
 from bot.booknames.parse import BooknumNotFound, BibleCitationNotFound
 from bot.handlers.start import all_fallback
+from bot.handlers.settings import set_lang
 from bot.utils import list_of_lists
 from bot.utils import safechars
 from bot.utils.decorators import vip, forw, log
@@ -45,8 +46,11 @@ def forward_to_channel(bot, from_chat_id, message_id):
 @vip
 def parse_lang_bible(update: Update, context: CallbackContext) -> None:
     lang_code = update.message.text.split()[0].strip('/').upper()
-    likely_bible_citation = ' '.join(update.message.text.split()[1:])
-    parse_bible(update, context, likely_bible_citation=likely_bible_citation, lang_code=lang_code)
+    if context.args:
+        likely_bible_citation = ' '.join(context.args)
+        parse_bible(update, context, likely_bible_citation, lang_code)
+    else:
+        set_lang(update, context, lang_code)
     return
 
 

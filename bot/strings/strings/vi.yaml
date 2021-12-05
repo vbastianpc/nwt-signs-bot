@@ -67,7 +67,7 @@ help: |-
   Bấm /{0} để đổi ngôn ngữ ký hiệu. Di chuyển tới lui trong menu để chọn.
 
   Bí quyết: Nếu đã biết mã của ngôn ngữ ký hiệu mà bạn cần, bạn có thể chọn bằng cách như sau:
-  /{0} lsf
+  /lsf
 
   Để chọn nhanh câu Kinh Thánh trong một ngôn ngữ cụ thể, bạn có thể bấm như dưới đây:
   /asl ch 15:17
@@ -100,7 +100,7 @@ show_settings: |-
   Bấm /{4} để đổi ngôn ngữ ký hiệu. Di chuyển tới lui trong menu để chọn.
 
   Bí quyết: Nếu đã biết mã của ngôn ngữ ký hiệu mà bạn cần, bạn có thể chọn bằng cách như sau:
-  /{4} lsf
+  /lsf
 
 
   *Ngôn ngữ của bot*
