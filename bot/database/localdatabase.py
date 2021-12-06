@@ -77,6 +77,15 @@ def get_user(telegram_user_id) -> Optional[User]:
     return SESSION.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
 
 def get_all_users() -> List[User]:
+    return SESSION.query(User).all()
+
+def get_banned_users() -> Optional[List[User]]:
+    return SESSION.query(User).filter(User.status == -1).all()
+
+def get_waiting_users() -> Optional[List[User]]:
+    return SESSION.query(User).filter(User.status == 0).all()
+
+def get_active_users() -> Optional[List[User]]:
     return SESSION.query(User).filter(User.status == 1).all()
 
 def set_user(

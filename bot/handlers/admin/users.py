@@ -12,6 +12,7 @@ from bot.handlers.start import start
 from bot import AdminCommand
 from bot import get_logger
 from bot.strings import TextGetter
+from bot.database.schemedb import User
 
 
 logger = get_logger(__name__)
@@ -65,15 +66,23 @@ def delete_user(update: Update, context: CallbackContext):
 
 @admin
 def sending_users(update: Update, context: CallbackContext):
-    users = db.get_all_users()
-    text = ''
-    for i, user in enumerate(users, 1):
-        text += f'{mention_markdown(user.telegram_user_id, user.full_name)} {user.signlanguage.code if user.signlanguage else None} `{user.telegram_user_id}`\n'
-        if i % 10 == 0:
+    def print_users(users: User, title: str = ''):
+        text = f'*{title}*'
+        for i, user in enumerate(users, 1):
+            text += (
+                f'\n{mention_markdown(user.telegram_user_id, user.full_name.split()[0])} '
+                f'{user.signlanguage.code if user.signlanguage else None} '
+                f'{user.bot_lang} '
+                f'`{user.telegram_user_id}`'
+                )
+            if i % 10 == 0:
+                update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+                text = ''
+        if text:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-            text = ''
-    if text:
-        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    print_users(db.get_active_users(), "ACTIVE")
+    print_users(db.get_banned_users(), 'BANNED')
+    print_users(db.get_waiting_users(), 'WAITING')
 
 @admin
 def backup(update: Update, context: CallbackContext):
