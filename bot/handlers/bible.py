@@ -46,9 +46,9 @@ def forward_to_channel(bot, from_chat_id, message_id):
 @vip
 def parse_lang_bible(update: Update, context: CallbackContext) -> None:
     lang_code = update.message.text.split()[0].strip('/').upper()
+    logger.info("%s", context.args)
     if context.args:
-        likely_bible_citation = ' '.join(context.args)
-        parse_bible(update, context, likely_bible_citation, lang_code)
+        parse_bible(update, context, likely_bible_citation=' '.join(context.args), lang_code=lang_code)
     else:
         set_lang(update, context, lang_code)
     return
@@ -91,7 +91,6 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
             text=t.unavailable.format(bookname, lang_code) + " " + t.optional_book.format(MyCommand.SIGNLANGUAGE),
             parse_mode=ParseMode.MARKDOWN    
         )
-        # TODO verificar con slv con libro que no exista
         return
 
     kwargs.update({
