@@ -62,8 +62,8 @@ def forw(func):
             if update.callback_query:
                 context.bot.send_message(
                     chat_id=CHANNEL_ID,
-                    text=f'{update.effective_user.mention_markdown()}:\n{update.callback_query.data}',
-                    parse_mode=ParseMode.MARKDOWN
+                    text=f'{update.effective_user.mention_html()}\n{update.callback_query.data}',
+                    parse_mode=ParseMode.HTML
                     )
             else:
                 context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
