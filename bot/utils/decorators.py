@@ -3,6 +3,7 @@ import json
 
 from telegram import User
 from telegram import Update
+from telegram import ParseMode
 from telegram.ext import CallbackContext
 
 from bot import get_logger
@@ -29,52 +30,52 @@ def vip(func):
                 from_chat_id=update.message.chat.id,
                 message_id=update.message.message_id,
             )
-            # TODO si el mensaje es command, di que es privado. sino, ignoralo
             if any([ent.type == ent.BOT_COMMAND for ent in update.message.entities]):
                 context.bot.send_message(
                     chat_id=user.id,
                     text='Este es un bot privado 🔒👤'
                 )
+            return
         else:
-            return func(update, context, **kwargs)
+            return func(update, context, *args, **kwargs)
 
     return restricted_func
 
 
 def admin(func):
     @wraps(func)
-    def restricted_func(update: Update, context: CallbackContext, **kwargs):
+    def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
-        if user.id == ADMIN:
-            return func(update, context, **kwargs)
-        else:
-            context.bot.send_message(
-                chat_id=user.id,
-                text=f'No tienes autorización para esta función',
-            )
-            context.bot.forward_message(
-                CHANNEL_ID,
-                user.id,
-                update.message.message_id,
-            )
+        if user.id != ADMIN:
+            context.bot.send_message(chat_id=user.id, text=f'No tienes autorización para esta función')
+            context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+            return
+        return func(update, context, *args, **kwargs)
     return restricted_func
 
 
 def forw(func):
     @wraps(func)
-    def forward_function(update: Update, context: CallbackContext, **kwargs):
+    def forward_function(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
         if user and user.id != ADMIN:
-            context.bot.forward_message(CHANNEL_ID, user.id, update.message.message_id)
-        return func(update, context, **kwargs)
+            if update.callback_query:
+                context.bot.send_message(
+                    chat_id=CHANNEL_ID,
+                    text=f'{update.effective_user.mention_markdown()}:\n{update.callback_query.data}',
+                    parse_mode=ParseMode.MARKDOWN
+                    )
+            else:
+                context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+        return func(update, context, *args, **kwargs)
     return forward_function
 
 
 def log(func):
     @wraps(func)
-    def log_function(update: Update, context: CallbackContext, **kwargs):
+    def log_function(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
-        payload = update.callback_query.data if update.callback_query else update.message.text
+        payload = update.callback_query.data if update.callback_query else update.effective_message.text
         logger.info(f'{user.id} {user.full_name} {payload}')
-        return func(update, context, **kwargs)
+        return func(update, context, *args, **kwargs)
     return log_function

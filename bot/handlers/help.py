@@ -4,7 +4,7 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 
 from bot import get_logger
-from bot.utils.decorators import vip
+from bot.utils.decorators import vip, forw
 from bot import MyCommand
 from bot.strings import TextGetter
 from bot.database import localdatabase as db
@@ -12,7 +12,7 @@ from bot.database import localdatabase as db
 
 logger = get_logger(__name__)
 
-
+@forw
 @vip
 def help(update: Update, context: CallbackContext) -> None:
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)

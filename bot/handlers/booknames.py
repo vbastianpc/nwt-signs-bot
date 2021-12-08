@@ -7,12 +7,12 @@ from telegram.ext import CommandHandler
 from bot import get_logger
 from bot import MyCommand
 from bot.database import localdatabase as db
-from bot.utils.decorators import vip
+from bot.utils.decorators import forw, vip
 
 
 logger = get_logger(__name__)
 
-
+@forw
 @vip
 def send_booknames(update: Update, context: CallbackContext) -> None:
     db_user = db.get_user(update.effective_user.id)

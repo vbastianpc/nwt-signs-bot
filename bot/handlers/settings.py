@@ -22,7 +22,7 @@ from bot.jw.jwlanguage import JWLanguage
 from bot.database import localdatabase as db
 from bot.database import report as rdb
 from bot.utils import list_of_lists
-from bot.utils.decorators import vip, forw
+from bot.utils.decorators import vip, forw, log
 from bot import ADMIN
 from bot import strings
 from bot import get_logger
@@ -40,6 +40,7 @@ PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 yaml = YAML(typ='safe')
 
 
+@forw
 @vip
 def show_current_settings(update: Update, context: CallbackContext) -> None:
     db_user = db.get_user(update.effective_user.id)
@@ -113,6 +114,7 @@ def send_buttons(message: Message, info_for_buttons, suffix: str, page: int=1, t
     return msg
 
 
+@forw
 def prev_next_signlanguage(update: Update, context: CallbackContext):
     send_buttons(
         message=update.effective_message,
@@ -121,7 +123,7 @@ def prev_next_signlanguage(update: Update, context: CallbackContext):
         page=int(update.callback_query.data.strip(f'{PAGE_SIGNLANGUAGE}|')),
     )
 
-
+@forw
 def set_lang(update: Update, context: CallbackContext, lang_code=None) -> int:
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     lang = JWLanguage()
@@ -149,7 +151,7 @@ def build_botlangs():
         columns=1,
     )
 
-
+@forw
 @vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
@@ -163,9 +165,9 @@ def show_botlangs(update: Update, context: CallbackContext) -> None:
     return 1
 
 
+@forw
 def set_new_botlang(update: Update, context: CallbackQueryHandler) -> None:
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
-    logger.info('')
     context.user_data['msgbotlang'].edit_reply_markup()
     del context.user_data['msgbotlang']
     likely_langlocale = update.message.text.lower()
@@ -182,13 +184,14 @@ def set_new_botlang(update: Update, context: CallbackQueryHandler) -> None:
         return -1
 
 
+@forw
+@log
 def set_botlang(update: Update, context: CallbackContext) -> None:
     context.user_data['msgbotlang'].edit_reply_markup()
     del context.user_data['msgbotlang']
     botlang = update.callback_query.data.split('|')[1]
     t = TextGetter(botlang)
     db.set_user(update.effective_user.id, bot_lang=botlang)
-    logger.info(f'Idioma {botlang} ya existe archivo yaml')
     set_my_commands(update.effective_user, botlang, botlang)
     language = strings.get_language(botlang)
     update.callback_query.answer(f'{language["vernacular"]} - {botlang}')

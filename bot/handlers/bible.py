@@ -25,7 +25,7 @@ from bot.handlers.start import all_fallback
 from bot.handlers.settings import set_lang
 from bot.utils import list_of_lists
 from bot.utils import safechars
-from bot.utils.decorators import vip, forw, log
+from bot.utils.decorators import vip, forw
 from bot.strings import TextGetter
 
 
@@ -45,10 +45,10 @@ def forward_to_channel(bot, from_chat_id, message_id):
 
 @vip
 def parse_lang_bible(update: Update, context: CallbackContext) -> None:
-    lang_code = update.message.text.split()[0].strip('/').upper()
+    lang_code = update.effective_message.text.split()[0].strip('/').upper()
     logger.info("%s", context.args)
     if context.args:
-        parse_bible(update, context, likely_bible_citation=' '.join(context.args), lang_code=lang_code)
+        parse_bible(update, context, ' '.join(context.args), lang_code)
     else:
         set_lang(update, context, lang_code)
     return
@@ -57,7 +57,7 @@ def parse_lang_bible(update: Update, context: CallbackContext) -> None:
 @vip
 @forw
 def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=None, lang_code=None) -> None:
-    reply_text = update.message.reply_text
+    reply_text = update.effective_message.reply_text
     db_user = db.get_user(update.effective_user.id)
     t = TextGetter(db_user.bot_lang)
     try:
@@ -66,7 +66,7 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
         reply_text(t.choose_signlang.format(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.MARKDOWN)
         return
 
-    likely_bible_citation = likely_bible_citation or update.message.text.strip('/')
+    likely_bible_citation = likely_bible_citation or update.effective_message.text.strip('/')
     try:
         _, bookname, booknum, chapter, verses = parse_bible_citation(likely_bible_citation, db_user.bot_lang)
     except BooknumNotFound:
@@ -112,7 +112,6 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
         context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
         db.manage_video_markers(jw.get_markers, **kwargs)
 
-
     if verses:
         manage_verses(update, context)
     elif chapter:
@@ -141,7 +140,7 @@ def show_chapters(update: Update, context: CallbackContext):
     delete_objects(update, context)
 
 
-@log
+@forw
 def get_chapter(update: Update, context: CallbackContext):
     _, lang_code, booknum, chapter, checksum = update.callback_query.data.split('|')
     context.user_data['kwargs'] = {
@@ -188,7 +187,7 @@ def show_verses(update: Update, context: CallbackContext):
     delete_objects(update, context)
 
 
-@log
+@forw
 def get_verse(update: Update, context: CallbackContext):
     update.callback_query.answer()
     _, lang_code, booknum, chapter, checksum, verse = update.callback_query.data.split('|')
@@ -219,7 +218,7 @@ def manage_verses(update: Update, context: CallbackContext):
     elif len(not_available) > 1:
         v = ", ".join(map(str, not_available))
     if not_available:
-        update.message.reply_text(
+        update.effective_message.reply_text(
             text=t.unavailable.format(f'{jw.bookname} {jw.chapter}:{v}', jw.lang.code) + ' ' + t.optional_verse,
             parse_mode=ParseMode.MARKDOWN
         )
@@ -301,8 +300,6 @@ def send_single_verse(update: Update, context: CallbackContext):
     })
     sent_verse = db.add_sent_verse(**context.user_data['kwargs'])
     db.add_sent_verse_user(sent_verse, update.effective_user.id)
-    # TODO
-    # CommandsScope por lenguaje
     versepath.unlink()
 
 
