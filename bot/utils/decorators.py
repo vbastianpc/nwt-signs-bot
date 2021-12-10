@@ -5,6 +5,7 @@ from telegram import User
 from telegram import Update
 from telegram import ParseMode
 from telegram.ext import CallbackContext
+import telegram.error
 
 from bot import get_logger
 from bot import ADMIN
@@ -19,22 +20,16 @@ def vip(func):
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
-        msg = update.message
         if not isinstance(user, User):
             return
         db_user = db.get_user(user.id)
         if db_user is None or not db_user.is_brother():
-            logger.info(f'{update.effective_user.mention_markdown_v2()} ha dicho: {update.effective_message.text}')
+            logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
             context.bot.forward_message(
                 chat_id=CHANNEL_ID,
                 from_chat_id=update.message.chat.id,
                 message_id=update.message.message_id,
             )
-            if any([ent.type == ent.BOT_COMMAND for ent in update.message.entities]):
-                context.bot.send_message(
-                    chat_id=user.id,
-                    text='Este es un bot privado 🔒👤'
-                )
             return
         else:
             return func(update, context, *args, **kwargs)
@@ -47,7 +42,6 @@ def admin(func):
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
         if user.id != ADMIN:
-            context.bot.send_message(chat_id=user.id, text=f'No tienes autorización para esta función')
             context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
             return
         return func(update, context, *args, **kwargs)
@@ -66,7 +60,12 @@ def forw(func):
                     parse_mode=ParseMode.HTML
                     )
             else:
-                context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+                try:
+                    context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+                except telegram.error.BadRequest:
+                    context.bot.send_message(CHANNEL_ID, update.effective_user.mention_html(), parse_mode=ParseMode.HTML)
+                    context.bot.copy_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+
         return func(update, context, *args, **kwargs)
     return forward_function
 
