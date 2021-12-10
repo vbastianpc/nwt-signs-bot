@@ -81,7 +81,8 @@ start_handler = ConversationHandler(
             MessageHandler(Filters.command, lambda x, y: 1)
         ],
     },
-    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)]
+    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)],
+    conversation_timeout=600
 )
 
 @forw
