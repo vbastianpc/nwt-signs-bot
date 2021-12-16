@@ -198,14 +198,7 @@ class JWBible:
 
     @LazyProperty
     def markers(self) -> List[Dict]:
-        mks = self._wol_markers() or self._ffprobe_markers()
-        logger.info('Getting endTransitionDuration from JW-API markers!')
-        for marker in mks:
-            marker['endTransitionDuration'] = next(
-                (str(jam['endTransitionDuration']) for jam in self._api_markers() if jam['verseNumber'] == marker['verseNumber']),
-                marker['endTransitionDuration'],
-            )
-        return mks
+        return self._api_markers() or self._ffprobe_markers()
     
     def get_markers(self):
         """Wrap function"""
@@ -243,10 +236,11 @@ class JWBible:
         return ffprobe_markers(self.get_video_url())
 
     def _api_markers(self) -> List[Dict]:
+        logger.info('Getting JW-API markers')
         for item in self._items():
             if (item['markers'] and
                 chapter_from_url(item['file']['url']) == self.chapter):
-                # return item['markers']['markers']
+                # return item['markers']['markers'] # nope
                 # PEP 20 Explicit is better than implicit.
                 markers = item['markers']['markers']
                 return [dict(
