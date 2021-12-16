@@ -1,6 +1,7 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Tuple, Union
 from datetime import datetime
 import pytz
+from sqlalchemy.util.langhelpers import NoneType
 
 from bot import get_logger
 from bot.database import SESSION
@@ -200,6 +201,25 @@ def _add_bible_chapter(
     return bible_chapter
 
 
+def touch_checksum(
+        lang_code: str,
+        booknum: Union[int, str],
+        chapter: Union[int, str]
+    ) -> Optional[Tuple[BibleChapter, List[SentVerse]]]:
+    bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
+    if bible_chapter is None:
+        return
+    fake_checksum = f'FAKE CHECKSUM: {now()}'
+    sent_verses = query_sent_verses(lang_code, booknum, chapter, checksum=bible_chapter.checksum)
+    for sent_verse in sent_verses:
+        sent_verse.checksum = fake_checksum
+    SESSION.add_all(sent_verses)
+    bible_chapter.checksum = fake_checksum
+    SESSION.add(bible_chapter)
+    SESSION.commit()
+    return (bible_chapter, sent_verses)
+
+
 def _query_video_marker(
         lang_code: str,
         booknum: Union[int, str],
@@ -358,20 +378,23 @@ def query_sent_verses(
         booknum: int = None,
         chapter: int = None,
         raw_verses: str = None,
+        checksum: str = None,
     ) -> List[Optional[SentVerse]]:
     q = (
         SESSION.query(SentVerse)
         .join(Language, Language.id == BibleBook.sign_language_id)
         .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
     )
-    if lang_code:
+    if lang_code is not None:
         q = q.filter(Language.code == lang_code)
-    if booknum:
+    if booknum is not None:
         q = q.filter(BibleBook.booknum == int(booknum))
-    if chapter:
+    if chapter is not None:
         q = q.filter(SentVerse.chapter == int(chapter))
-    if raw_verses:
+    if raw_verses is not None:
         q = q.filter(SentVerse.raw_verses == raw_verses)
+    if checksum is not None:
+        q = q.filter(SentVerse.checksum == checksum)
     return q.all()
 
 def _add_sent_verse(
@@ -446,7 +469,7 @@ def get_booknames(lang_locale=None) -> List[BookNamesAbbreviation]:
     return q.order_by(BookNamesAbbreviation.booknum.asc()).all()
 
 
-def now():
+def now() -> str:
     # TODO CONFIG server timezone, local timezone. database name. 
     tzinfo = pytz.timezone('UTC')
     tzinfo.localize(datetime.now())

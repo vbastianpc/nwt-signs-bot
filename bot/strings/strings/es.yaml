@@ -24,6 +24,7 @@ admin_commands:
   logfile: Envía una copia del archivo de registro
   stats: Muestra Resumen de la base de datos
   test: Muestra las variables en memoria
+  reset_chapter: Altera el checksum de un capítulo
 
 
 # Start
@@ -157,3 +158,8 @@ user_added: "{} ha sido agregado."
 warn_user: No he podido hacer la operación porque el usuario no estaba registrado en la base de datos.
 user_banned: El usuario ha sido bloqueado.
 user_stopped_bot: No lo he podido agregar porque el usuario ha detenido al bot.
+
+checksum_touched: |-
+  He alterado el checksum de:
+  {}
+checksum_failed: No he podido alterar el checksum porque {} {} no ha sido registrado en la base de datos.

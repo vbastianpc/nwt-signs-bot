@@ -24,6 +24,8 @@ admin_commands:
   logs: Show newest log entries
   logfile: Send a logfile backup
   stats: Show the database summary
+  reset_chapter: Make a fake checksum of a chapter
+
 
 
 # Start
@@ -157,3 +159,8 @@ user_added: "{} has been added."
 warn_user: I could not do the operation because the user was not registered in the database.
 user_banned: The user has been banned.
 user_stopped_bot: I have not been able to add it because the user has stopped the bot.
+
+checksum_touched: |-
+  I have faked the checksum of:
+  {}
+checksum_failed: I have not been able to fake the checksum because {} {} has not been registered in the database.

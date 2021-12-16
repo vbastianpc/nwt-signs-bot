@@ -69,6 +69,8 @@ class TextGetter:
      warn_user = Self()
      user_banned = Self()
      user_stopped_bot = Self()
+     checksum_touched = Self()
+     checksum_failed = Self()
 
 
      def __init__(self, language_code) -> None:

@@ -47,6 +47,7 @@ class AdminCommand:
     LOGFILE = 'logfile'
     STATS = 'stats'
     TEST = 'test'
+    RESET_CHAPTER = 'reset_chapter'
 
 class Formatter(logging.Formatter):
     def converter(self, timestamp):

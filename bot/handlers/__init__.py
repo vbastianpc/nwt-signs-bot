@@ -19,6 +19,7 @@ from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
 from bot.handlers.admin import getting_user_handler
 from bot.handlers.admin import database_status_handler
+from bot.handlers.admin import reset_chapter_handler
 from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
 from bot.handlers.admin.logs import logs_handler
@@ -54,6 +55,7 @@ handlers = [
     set_commands_handler,
     getting_user_handler,
     database_status_handler,
+    reset_chapter_handler,
 
     # parse bible citation
     parse_lang_bible_handler, # fallback commands
