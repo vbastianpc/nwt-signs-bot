@@ -34,7 +34,7 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
             lang_code=db_user.signlanguage.code,
             booknum=booknum,
             chapter=chapter,
-            raw_verses=' '.join(verses),
+            raw_verses=' '.join(verses) or None,
         )
         results += [
             InlineQueryResultCachedVideo(
