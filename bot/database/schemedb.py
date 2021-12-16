@@ -99,7 +99,7 @@ class SentVerse(Base):
 
     def __repr__(self):
         return f"<SentVerse(chapter={self.chapter!r}, raw_verses={self.raw_verses!r}, citation={self.citation!r}, " \
-            f"quality={self.quality!r}, telegram_file_id={self.telegram_file_id!r}, " \
+            f"quality={self.quality!r}, telegram_file_id={self.telegram_file_id!r}, checksum={self.checksum!r}, " \
             f"added_datetime={self.added_datetime!r}, size={self.size!r})>"
 
 
