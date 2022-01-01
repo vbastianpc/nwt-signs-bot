@@ -86,4 +86,11 @@ def parse_time(stamptime) -> float:
     except ValueError:
         hours, minutes, seconds = stamptime.split(':')
         return int(hours)*60*60 + int(minutes)*60 + float(seconds)
-    
+
+def make_thumbnail(inputvideo: Path) -> Path:
+    thumb = inputvideo.parent / (inputvideo.stem + '.jpg')
+    console = run(
+        shlex.split(f'ffmpeg -v error -stats -i "{inputvideo}" -vframes 1 -vf scale=240:-2 -q:v 2 "{thumb}"'),
+        capture_output=True, check=True
+    )
+    return thumb

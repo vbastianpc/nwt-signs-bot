@@ -279,6 +279,8 @@ def send_single_verse(update: Update, context: CallbackContext):
     streams = video.show_streams(versepath)
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
     msg.edit_text(f'📦 {t.sending} {citation}', parse_mode=ParseMode.MARKDOWN)
+    thumbnail = video.make_thumbnail(versepath)
+    logger.info('%s', thumbnail)
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=versepath.read_bytes(),
@@ -288,8 +290,9 @@ def send_single_verse(update: Update, context: CallbackContext):
         height=streams['height'],
         duration=round(float(streams['duration'])),
         timeout=120,
-        # thumb= TODO
+        thumb=thumbnail
     )
+    thumbnail.unlink()
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
     context.user_data['kwargs'].update({
@@ -353,6 +356,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     msg.edit_text(f'📦 {t.sending} {jw.citation()}', parse_mode=ParseMode.MARKDOWN)
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO_NOTE)
     stream = video.show_streams(finalpath)
+    thumbnail = video.make_thumbnail(finalpath)
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=finalpath.read_bytes(),
@@ -362,8 +366,9 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         height=stream['height'],
         duration=round(float(stream['duration'])),
         timeout=120,
-        # thumb= TODO
+        thumb=thumbnail
     )
+    thumbnail.unlink()
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
     kwargs.update({
@@ -376,6 +381,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     db.add_sent_verse_user(sent_verse, update.effective_user.id)
     for verse, versepath in new:
         stream = video.show_streams(versepath)
+        thumbnail = video.make_thumbnail(versepath)
         msgverse = context.bot.send_video(
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
@@ -385,8 +391,9 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             height=stream['height'],
             duration=round(float(stream['duration'])),
             timeout=120,
-            # thumb= TODO
+            thumb=thumbnail
         )
+        thumbnail.unlink()
         kwargs.update({
             'citation': jw.citation(verses=verse),
             'telegram_file_id': msgverse.video.file_id,
