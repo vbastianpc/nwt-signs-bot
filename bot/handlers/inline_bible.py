@@ -41,6 +41,7 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
                 id=str(uuid4()),
                 video_file_id=sent_verse.telegram_file_id,
                 title=f'{sent_verse.citation} - {db_user.signlanguage.code}',
+                caption=f'{sent_verse.citation} - {db_user.signlanguage.code}',
             )
             for sent_verse in sent_verses
         ]
