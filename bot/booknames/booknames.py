@@ -39,28 +39,35 @@ def add_booknames(lang_locale) -> Language:
 def search_bookname(likely_bookname: str, lang_locale: str = None) -> Tuple[int, str]:
     # search case insensitive
     likely_bookname = likely_bookname.lower()
-    db_booknames = db.get_booknames(lang_locale)
-    def strict(bookname: str):
-        return bookname.lower() == likely_bookname
-    def startswith(bookname: str):
-        return bookname.lower().startswith(likely_bookname)
-    def startswith_unidecode(bookname: str):
-        return unidecode(bookname).lower().startswith(unidecode(likely_bookname))
-    def strict_unidecode(bookname: str):
-        return unidecode(bookname).lower() == likely_bookname.lower()
-    def contains(bookname: str):
-        return likely_bookname in bookname.lower()
-    def contains_unidecode(bookname: str):
-        return unidecode(likely_bookname) in unidecode(bookname).lower()
     def variations(book: BookNamesAbbreviation) -> List[str]:
         return [
-            book.full_name,
-            book.long_abbr_name,
-            book.abbr_name,
-            book.full_name.replace(' ', ''),
-            book.long_abbr_name.replace(' ', ''),
-            book.abbr_name.replace(' ', '')
+            book.full_name.lower(),
+            book.long_abbr_name.lower(),
+            book.abbr_name.lower(),
+            book.full_name.lower().replace(' ', ''),
+            book.long_abbr_name.lower().replace(' ', ''),
+            book.abbr_name.lower().replace(' ', '')
         ]
+
+    def strict(bookname: str):
+        return bookname.lower() == likely_bookname
+
+    def startswith(bookname: str):
+        return bookname.lower().startswith(likely_bookname)
+
+    def startswith_unidecode(bookname: str):
+        return unidecode(bookname).lower().startswith(unidecode(likely_bookname))
+
+    def strict_unidecode(bookname: str):
+        return unidecode(bookname).lower() == likely_bookname.lower()
+
+    def contains(bookname: str):
+        return likely_bookname in bookname.lower()
+
+    def contains_unidecode(bookname: str):
+        return unidecode(likely_bookname) in unidecode(bookname).lower()
+
+    db_booknames = db.get_booknames(lang_locale)
     def find_bookname(*funcs: Callable[[str], bool]) -> Iterator[BookNamesAbbreviation]:
         i = 0
         for func in funcs:
@@ -104,3 +111,6 @@ def testing_bible_booknames_commands():
     for book in db_booknames:
         check(book)
     logger.info('All booknames checked')
+
+if __name__ == '__main__':
+    testing_bible_booknames_commands()
