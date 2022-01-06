@@ -349,7 +349,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
         outname=f'{safechars(jw.citation())} - {jw.lang.code}',
-        title_chapters=list(map(jw.citation, jw.verses)),
+        title_chapters=[jw.citation(verses=verse) for verse in jw.verses],
         title=jw.citation(),
     )
     logger.info('Sending concatenated video %s', finalpath)
