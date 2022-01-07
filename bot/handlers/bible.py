@@ -227,7 +227,7 @@ def manage_verses(update: Update, context: CallbackContext):
 
     sent_verse = db.query_sent_verse(**kwargs)
     if sent_verse and sent_verse.raw_verses == ' '.join(map(str, kwargs['verses'])):
-        send_by_fileid(update, context, sent_verse)
+        send_by_fileid(update, context, sent_verse, jw.lang.code)
         return
 
     if len(jw.verses) == 1:
@@ -239,7 +239,7 @@ def manage_verses(update: Update, context: CallbackContext):
     return
 
 
-def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVerse):
+def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVerse, lang_code: str):
     logger.info('Sending by file_id')
     if context.user_data.get('msg'):
         context.user_data.get('msg').delete()
@@ -247,7 +247,7 @@ def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVer
         msgverse = context.bot.send_video(
             chat_id=update.effective_chat.id,
             video=sent_verse.telegram_file_id,
-            caption=sent_verse.citation,
+            caption=f'{sent_verse.citation} - {lang_code}',
         )
     except TelegramError:
         # Nunca ha pasado
@@ -285,7 +285,7 @@ def send_single_verse(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=versepath.read_bytes(),
         filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-        caption=citation,
+        caption=f'{citation} - {jw.lang.code}',
         width=streams['width'],
         height=streams['height'],
         duration=round(float(streams['duration'])),
@@ -361,7 +361,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=finalpath.read_bytes(),
         filename=finalpath.name,
-        caption=jw.citation(),
+        caption=f'{jw.citation()} - {jw.lang.code}',
         width=stream['width'],
         height=stream['height'],
         duration=round(float(stream['duration'])),
@@ -386,7 +386,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
             filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-            caption=jw.citation(verses=verse),
+            caption=f'{jw.citation(verses=verse)} - {jw.lang.code}',
             width=stream['width'],
             height=stream['height'],
             duration=round(float(stream['duration'])),
