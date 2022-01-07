@@ -1,19 +1,6 @@
 #!/usr/bin/env python
 """
 TODO
-- Describir usos avanzados de comandos
-    - /signlanguage sch
-    - /sch mat 24:14
-    - /asl mat 24:14
-- Comando para listar todas las lenguas de señas
-
-ver cambios en database y mudar (agregar columnas, renombrar columnas)
-solucionar handler de comandos en diferentes situaciones
-/asl mateo 24:14 - Definido, finito. 
-/mat 24:14 - Filter.command atajar todos los comandos. Verificar en database
-
-Comandos Scopes mostrando libros booknames por idioma
-
 solucionar tema SESSION
     - SESSION decorador para thread safe?
 
@@ -32,7 +19,6 @@ main_fun(1, 2)
 
 """
 from telegram.ext import Updater
-
 from bot import TOKEN, get_logger
 from bot.handlers import handlers, error_handler
 
