@@ -1,5 +1,5 @@
 from unidecode import unidecode
-from typing import Tuple, List, Callable, Iterator
+from typing import Tuple, List, Callable, Iterator, Union
 
 from telegram import BotCommand
 
@@ -22,6 +22,8 @@ def add_booknames(lang_locale) -> Language:
         raise ValueError(f"Language {lang_locale!r} doesn't exist")
     lang.locale = lang_locale
     url = f'https://wol.jw.org/wol/finder?pub=nwt&wtlocale={lang.code}'
+    # https://www.jw.org/en/library/bible/json/ entrar aqui para obtener link de abajo TODO
+    # https://www.jw.org/en/library/bible/study-bible/books/json/
     browser.open(url)
 
     booklinks = browser.page.find_all('a', class_='bookLink')
@@ -36,7 +38,7 @@ def add_booknames(lang_locale) -> Language:
     return db_language
 
 
-def search_bookname(likely_bookname: str, lang_locale: str = None) -> Tuple[int, str]:
+def search_bookname(likely_bookname: str, lang_locale: str = None) -> BookNamesAbbreviation:
     # search case insensitive
     likely_bookname = likely_bookname.lower()
     def variations(book: BookNamesAbbreviation) -> List[str]:
@@ -86,7 +88,7 @@ def search_bookname(likely_bookname: str, lang_locale: str = None) -> Tuple[int,
             startswith_unidecode,
             contains,
             contains_unidecode):
-        return book.booknum, book.lang_locale, book.full_name
+        return book
 
     if lang_locale:
         logger.info(f'{likely_bookname} not found in {lang_locale!r}. Trying in all languages')
@@ -94,7 +96,6 @@ def search_bookname(likely_bookname: str, lang_locale: str = None) -> Tuple[int,
     else:
         logger.info(f'{likely_bookname!r} not found in any language')
         raise Exception
-
 
 def get_commands(lang_locale) -> List[BotCommand]:
     db_booknames = db.get_booknames(lang_locale)

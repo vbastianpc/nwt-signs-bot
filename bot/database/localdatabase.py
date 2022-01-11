@@ -151,10 +151,10 @@ def _create_bible_book(lang_code: str, booknum: Union[int, str], bookname: str) 
 
 def query_or_create_bible_book(**kwargs) -> BibleBook:
     return _query_bible_book(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
     ) or _create_bible_book(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['bookname']
     )
@@ -179,7 +179,7 @@ def _get_bible_chapter(
 
 def get_bible_chapter(**kwargs) -> Optional[BibleChapter]:
     return _get_bible_chapter(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter']
     )
@@ -242,7 +242,7 @@ def _query_video_marker(
 
 def get_videomarker(**kwargs) -> VideoMarker:
     return _query_video_marker(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -251,7 +251,7 @@ def get_videomarker(**kwargs) -> VideoMarker:
 
 def get_videomarkers(**kwargs) -> List[Optional[VideoMarker]]:
     return _query_video_marker(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -281,7 +281,7 @@ def _get_all_versenumbers(
 
 def get_all_versenumbers(**kwargs) -> List[Optional[int]]:
     return _get_all_versenumbers(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -331,7 +331,7 @@ def _manage_video_markers(
 def manage_video_markers(function_get_markers, **kwargs) -> None:
     _manage_video_markers(
         function_get_markers,
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum']
@@ -365,7 +365,7 @@ def _query_sent_verse(
 
 def query_sent_verse(**kwargs) -> Optional[SentVerse]:
     return _query_sent_verse(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -427,7 +427,7 @@ def _add_sent_verse(
 
 def add_sent_verse(**kwargs) -> SentVerse:
     return _add_sent_verse(
-        kwargs['lang_code'],
+        kwargs['sign_lang_code'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -467,6 +467,16 @@ def get_booknames(lang_locale=None) -> List[BookNamesAbbreviation]:
     if lang_locale:
         q = q.filter(BookNamesAbbreviation.lang_locale == lang_locale)
     return q.order_by(BookNamesAbbreviation.booknum.asc()).all()
+
+def get_bookname(lang_locale, booknum) -> BookNamesAbbreviation:
+    q = (
+        SESSION.query(BookNamesAbbreviation)
+        .filter(
+            BookNamesAbbreviation.lang_locale == lang_locale,
+            BookNamesAbbreviation.booknum == int(booknum)
+        )
+    )
+    return q.one()
 
 
 def now() -> str:

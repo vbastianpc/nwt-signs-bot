@@ -90,7 +90,7 @@ def parse_time(stamptime) -> float:
 def make_thumbnail(inputvideo: Path) -> Path:
     thumb = inputvideo.parent / (inputvideo.stem + '.jpg')
     run(
-        shlex.split(f'ffmpeg -v error -stats -i "{inputvideo}" -vframes 1 -vf scale=240:-2 -q:v 2 "{thumb}"'),
+        shlex.split(f'ffmpeg -v error -stats -y -i "{inputvideo}" -vframes 1 -vf scale=240:-2 -q:v 2 "{thumb}"'),
         capture_output=True, check=True
     )
     return thumb

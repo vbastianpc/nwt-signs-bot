@@ -4,6 +4,7 @@ from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.utils.helpers import mention_markdown
 from telegram.error import Unauthorized
+from telegram import BotCommandScopeChat
 
 from bot.utils.decorators import admin
 from bot.database import localdatabase as db
@@ -11,8 +12,12 @@ from bot.database import PATH_DB
 from bot.handlers.start import start
 from bot import AdminCommand
 from bot import get_logger
+from bot import strings
 from bot.strings import TextGetter
+from bot.strings import botlangs
+from bot.booknames import booknames
 from bot.database.schemedb import User
+
 
 
 logger = get_logger(__name__)
@@ -41,6 +46,15 @@ def autorizacion(update: Update, context: CallbackContext):
         text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
         parse_mode=ParseMode.MARKDOWN,
     )
+    if new_db_user.bot_lang not in botlangs():
+        booknames.add_booknames(new_db_user.bot_lang)
+        context.bot.set_my_commands(
+            commands=(
+                strings.get_commands('en') +
+                booknames.get_commands(new_db_user.bot_lang)
+            ),
+            scope=BotCommandScopeChat(new_member_id)
+        )
     start(
         update,
         context,

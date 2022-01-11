@@ -22,16 +22,16 @@ def reset_chapter(update: Update, context: CallbackContext) -> None:
     db_user = db.get_user(update.effective_user.id)
     t = TextGetter(db_user.bot_lang)
     try:
-        _, bookname, booknum, chapter, _ = parse_bible_citation(' '.join(context.args), db_user.bot_lang)
+        book, chapter, _ = parse_bible_citation(' '.join(context.args), db_user.bot_lang)
         assert chapter is not None
     except (BooknumNotFound, BibleCitationNotFound, AssertionError):
         return
-    bible_chapter, sent_verses = db.touch_checksum(db_user.signlanguage.code, booknum, chapter)
+    bible_chapter, sent_verses = db.touch_checksum(db_user.signlanguage.code, book.booknum, chapter)
     if bible_chapter is not None:
-        text = f'{bookname} {chapter}\n' + '\n'.join([s.citation for s in sent_verses])
+        text = f'{book.full_name} {chapter}\n' + '\n'.join([s.citation for s in sent_verses])
         update.effective_message.reply_text(t.checksum_touched.format(text))
     else:
-        update.effective_message.reply_text(t.checksum_failed.format(bookname, chapter))
+        update.effective_message.reply_text(t.checksum_failed.format(book.full_name, chapter))
 
 
 reset_chapter_handler = CommandHandler(AdminCommand.RESET_CHAPTER, reset_chapter)

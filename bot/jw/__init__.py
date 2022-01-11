@@ -12,9 +12,17 @@ URL_LIBRARIES = 'https://wol.jw.org/es/wol/li/r4/lp-s'
 # para obtener marcadores desde wol
 URL_WOLBIBLE = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}'
 
+
 # citas de biblia, solo si hay wol. No se ocupa
 URL_CITATION = 'https://wol.jw.org/wol/api/v1/citation/{rsconf}/{lib}/bible/{startBook}/{startChapter}/{startVerse}/{endBook}/{endChapter}/{endVerse}?pub=nwtst'
 
+def SHARE_URL(lang_code, booknum, chapter, first_verse=0, last_verse=0):
+    if first_verse and last_verse:
+        return f'https://www.jw.org/finder?wtlocale={lang_code}&bible={booknum:0=2}{chapter:0=3}{first_verse:0=3}-{booknum:0=2}{chapter:0=3}{last_verse:0=3}'
+    else: 
+        return f'https://www.jw.org/finder?wtlocale={lang_code}&bible={booknum:0=2}{chapter:0=3}{first_verse:0=3}'
+
+URL_WOL_DISCOVER = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}#v={booknum}:{chapter}:{first_verse}-{booknum}:{chapter}:{last_verse}'
 # others
 # https://www.jw.org/csg/biblioteca/biblia/nwt/libros/json/translations/
 # https://www.jw.org/csg/biblioteca/biblia/nwt/libros/json/data/

@@ -4,6 +4,7 @@ from typing import List, Dict, Union, Optional
 import json
 from subprocess import run
 import shlex
+from urllib.parse import urlparse
 
 from bot import get_logger
 from bot.utils.browser import LazyBrowser
@@ -11,35 +12,64 @@ from bot.utils.models import LazyProperty
 from bot.jw.jwlanguage import JWLanguage
 from bot.jw import URL_PUBMEDIA
 from bot.jw import URL_WOLBIBLE
+from bot.jw import SHARE_URL
+from bot.jw import URL_WOL_DISCOVER
+
 
 
 logger = get_logger(__name__)
 
+class NWT:
+    browser_wol = LazyBrowser()
 
-class BiblePassage:
     def __init__(self,
+                 lang: JWLanguage = None, # speak language
                  booknum: int = None,
                  chapter: int = None,
-                 verses: Union[int, str, List[str], List[int]] = [],
+                 verses: Union[List[str], List[int]] = None,
                  ):
         self.booknum = booknum
         self.chapter = chapter
         self.verses = verses
-
-    @property
-    def verses(self) -> Optional[List[int]]:
-        return self._verses
+        self.lang = lang
     
-    @verses.setter
-    def verses(self, value):
-        if isinstance(value, list):
-            self._verses = [int(verse) for verse in value]
-        elif isinstance(value, (int, str)):
-            self._verses = [int(value)]
-        elif value is None:
-            self._verses = None
-        else:
-            raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
+    def passages(self):
+        global span
+        if not all([self.lang, self.booknum, self.chapter, self.verses]):
+            raise ValueError('First you must define lang, booknum, chapter and verses')
+        self.browser_wol.open(SHARE_URL(self.lang.code, self.booknum, self.chapter))
+        article = self.browser_wol.page.find('article', id='article')
+        href = SHARE_URL(self.lang.code, self.booknum, self.chapter, sorted(self.verses)[0], sorted(self.verses)[-1])
+        header = f'<a href="{href}"><b>{article.get("data-bookname")} {article.get("data-chapter")}</b></a>:'
+        passages = [header]
+        for i, versenum in enumerate(self.verses):
+            verse_href = f'<a href="{SHARE_URL(self.lang.code, self.booknum, self.chapter, versenum)}"><b>{versenum}</b></a>'
+            span = self.browser_wol.page.find('span', id=f'v{self.booknum}{self.chapter:0=3}{versenum:0=3}')
+            spanverse = ''
+            for e in span.find_all('span'):
+                c = e.get('class')
+                if 'first' in c:
+                    spanverse += '    '
+                spanverse += '    ' if 'style-z' in c else '\n' if 'style-l' in c else ''
+                if e.find('sup', class_='verseNum'):
+                    spanverse += '\n    ' if i > 0 and versenum != self.verses[i-1] + 1 else ''
+                    spanverse += verse_href
+                if any(['style-' in cc for cc in c]):
+                    spanverse += ''.join(e.find_all(text=True, recursive=False)).rstrip()
+                if 'parabreak' in c or 'newblock' in c:
+                    spanverse += '\n'
+            spanverse = re.sub(r'(\xa0)+', ' ', spanverse)
+            if versenum == 1:
+                spanverse = f'{verse_href} {spanverse.lstrip()}'
+            if i == 0:
+                spanverse = spanverse.lstrip()
+            passages.append(spanverse + ' ')
+        print(passages)
+        text = ''.join(passages)
+        text = re.sub(r'( ?\n ?)+', '\n', text)
+        return text
+
+
 
 def clean(func):
     def function(self):
@@ -52,16 +82,19 @@ class JWBible:
     browser_wol = LazyBrowser()
 
     def __init__(self,
-                 lang_code: str = None,
+                 sign_lang_code: str = None,
                  booknum: Union[str, int] = None,
                  chapter: Union[str, int] = None,
                  verses: Union[int, str, List[str], List[int]] = [],
+                 lang_locale_written: str = None,
                  **kwargs,
                  ):
-        self.lang = JWLanguage(lang_code)
+        self.lang = JWLanguage(sign_lang_code)
+        self.nwt = NWT()
         self.booknum = booknum
         self.chapter = chapter
         self.verses = verses
+        self.lang_locale_written = lang_locale_written
     
     def __str__(self):
         return f'lang.code={self.lang.code}\tbooknum={self.booknum}\tchapter={self.chapter}\tverses={self.verses}'
@@ -76,6 +109,7 @@ class JWBible:
             self.__dict__.pop('markers', None)
         try:
             self._booknum = int(value)
+            self.nwt.booknum = int(value)
         except TypeError:
             self._booknum = None
 
@@ -89,6 +123,7 @@ class JWBible:
             self.__dict__.pop('markers', None)
         try:
             self._chapter = int(value)
+            self.nwt.chapter = int(value)
         except TypeError:
             self._chapter = None
 
@@ -100,12 +135,24 @@ class JWBible:
     def verses(self, value):
         if isinstance(value, list):
             self._verses = [int(verse) for verse in value]
+            self.nwt.verses = [int(verse) for verse in value]
         elif isinstance(value, (int, str)):
             self._verses = [int(value)]
+            self.nwt.verses = [int(value)]
         elif value is None:
             self._verses = None
         else:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
+    
+    @property
+    def lang_locale_written(self) -> str:
+        return self._lang_locale_written
+    
+    @lang_locale_written.setter
+    def lang_locale_written(self, value):
+        self._lang_locale_written = value
+        self.nwt.lang = JWLanguage(locale=value)
+
     
     @property
     def _rawdata(self) -> Dict:
@@ -282,6 +329,17 @@ class JWBible:
         if last != verses[-1]:
             pv += f'{sep}{verses[-1]}'
         return f'{bookname} {chapter}:{pv}'
+
+    def wol_discover(self, verse=None) -> Optional[str]:
+        if self.lang.is_wol_available():
+            return URL_WOL_DISCOVER.format(locale=self.lang.locale,
+                                        rsconf=self.lang.rsconf,
+                                        lib=self.lang.lib,
+                                        booknum=self.booknum,
+                                        chapter=self.chapter,
+                                        first_verse=verse or self.verses[0],
+                                        last_verse=verse or self.verses[-1]
+                                        )
 
 
 def chapter_from_url(url) -> Optional[int]:

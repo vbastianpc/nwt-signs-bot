@@ -71,9 +71,9 @@ class JWLanguage:
 
     def _get_lang_data(self, key, code=None, locale=None) -> Optional[str]:
         if code:
-            return next((lang[key] for lang in self.all_langs if lang['code'] == code), None)
+            return next((lang[key] for lang in self.all_langs if lang['code'] == code))
         elif locale:
-            return next((lang[key] for lang in self.all_langs if lang['locale'] == locale), None)
+            return next((lang[key] for lang in self.all_langs if lang['locale'] == locale))
         else:
             raise TypeError('Missing required argument: code or locale')
 
@@ -87,5 +87,5 @@ class JWLanguage:
             return value
 
     def __str__(self):
-        return f"JWLanguage\n\tcode={self.code!r}\n\tlocale={self.locale!r}\n\tname={self.name!r}\n\t" \
-            f"vernacular={self.vernacular!r}\n\trsconf={self.rsconf!r}\n\tlib={self.lib!r}"
+        return f"JWLanguage(code={self.code!r}, locale={self.locale!r}, name={self.name!r}, " \
+            f"vernacular={self.vernacular!r}, rsconf={self.rsconf!r}, lib={self.lib!r})"
