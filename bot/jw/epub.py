@@ -15,7 +15,6 @@ from bot.jw.language import JWLanguage
 
 EPUB_PATH = Path('bible-epub')
 
-
 class Epub(BaseBible):
     def __init__(self, *args, download=True, **kwargs):
         super().__init__(*args, **kwargs)
@@ -124,7 +123,6 @@ class Epub(BaseBible):
             e = e.next
 
         text = re.sub(r'(\xa0)+', ' ', text)
-        text = re.sub(' +', ' ', text)
         text = re.sub(r'(\n)+', '\n', text)
         return text
 
@@ -134,15 +132,11 @@ if __name__ == '__main__':
     from bot import ADMIN, TOKEN
     from telegram import Bot
 
-    bot = Bot(TOKEN)
-    epub = Epub(JWLanguage('I'), 19, 133, [1, 2])
-    print('ITALIANO')
-    # print('"', epub.get_text(), '"')
-    epub.get_text()
     epub = Epub(JWLanguage('S'), 19, 133, [1, 2])
-    print('\n\n\nESPAÑOL')
-    epub.get_text()
+    print('ESPAÑOL')
+    print(epub.get_text())
     # print('"', epub.get_text(), '"')
+    bot = Bot(TOKEN)
     # bot.send_message(chat_id=ADMIN, text=epub.get_text(), parse_mode='HTML', disable_web_page_preview=True)
     print('Enviado')
     
