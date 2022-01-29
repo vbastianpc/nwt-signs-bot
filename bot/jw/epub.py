@@ -124,7 +124,7 @@ class Epub(BaseBible):
 
         text = re.sub(r'(\xa0)+', ' ', text)
         text = re.sub(r'(\n)+', '\n', text)
-        return text
+        return text.replace('*', '')
 
 
 if __name__ == '__main__':
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     from bot import ADMIN, TOKEN
     from telegram import Bot
 
-    epub = Epub(JWLanguage('S'), 19, 133, [1, 2])
+    epub = Epub(JWLanguage('S'), 43, 1, [1, 2])
     print('ESPAÑOL')
     print(epub.get_text())
     # print('"', epub.get_text(), '"')
