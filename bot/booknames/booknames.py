@@ -5,7 +5,7 @@ from telegram import BotCommand
 
 from bot import get_logger
 from bot.utils.browser import LazyBrowser
-from bot.jw.jwlanguage import JWLanguage
+from bot.jw.language import JWLanguage
 from bot.database import localdatabase as db
 from bot.database.schemedb import BookNamesAbbreviation, Language
 

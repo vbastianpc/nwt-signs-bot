@@ -18,7 +18,7 @@ from telegram.ext import MessageHandler
 from telegram.ext.filters import Filters
 import telegram.error
 
-from bot.jw.jwlanguage import JWLanguage
+from bot.jw.language import JWLanguage
 from bot.database import localdatabase as db
 from bot.database import report as rdb
 from bot.utils import list_of_lists

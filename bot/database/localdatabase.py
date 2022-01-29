@@ -56,7 +56,7 @@ def get_languages() -> List[Language]:
 
 def get_language(lang_code=None, lang_locale=None) -> Optional[Language]:
     if all([lang_locale, lang_code]):
-        raise TypeError('get_language expected one argument. lang_code and lang_locale are mutually exclusive arguments')
+        raise TypeError('lang_code and lang_locale are mutually exclusive arguments')
     q = SESSION.query(Language)
     if lang_code:
         q = q.filter(Language.code == lang_code)
@@ -151,10 +151,10 @@ def _create_bible_book(lang_code: str, booknum: Union[int, str], bookname: str) 
 
 def query_or_create_bible_book(**kwargs) -> BibleBook:
     return _query_bible_book(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
     ) or _create_bible_book(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['bookname']
     )
@@ -179,7 +179,7 @@ def _get_bible_chapter(
 
 def get_bible_chapter(**kwargs) -> Optional[BibleChapter]:
     return _get_bible_chapter(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter']
     )
@@ -205,11 +205,12 @@ def touch_checksum(
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str]
-    ) -> Optional[Tuple[BibleChapter, List[SentVerse]]]:
+    ) -> Optional[Tuple[BibleChapter, List[SentVerse], str]]:
     bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
     if bible_chapter is None:
         return
     fake_checksum = f'FAKE CHECKSUM: {now()}'
+    checksum = bible_chapter.checksum
     sent_verses = query_sent_verses(lang_code, booknum, chapter, checksum=bible_chapter.checksum)
     for sent_verse in sent_verses:
         sent_verse.checksum = fake_checksum
@@ -217,7 +218,7 @@ def touch_checksum(
     bible_chapter.checksum = fake_checksum
     SESSION.add(bible_chapter)
     SESSION.commit()
-    return (bible_chapter, sent_verses)
+    return (bible_chapter, sent_verses, checksum)
 
 
 def _query_video_marker(
@@ -242,7 +243,7 @@ def _query_video_marker(
 
 def get_videomarker(**kwargs) -> VideoMarker:
     return _query_video_marker(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -251,7 +252,7 @@ def get_videomarker(**kwargs) -> VideoMarker:
 
 def get_videomarkers(**kwargs) -> List[Optional[VideoMarker]]:
     return _query_video_marker(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -281,7 +282,7 @@ def _get_all_versenumbers(
 
 def get_all_versenumbers(**kwargs) -> List[Optional[int]]:
     return _get_all_versenumbers(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -304,7 +305,7 @@ def _manage_video_markers(
             SESSION.commit()
             bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
         else:
-            logger.info('Coinciden checksum')
+            logger.info(f'Coinciden checksum {checksum!r}')
     else:
         logger.info('No se ha registrado capitulo. Ahora lo registro')
         bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
@@ -331,7 +332,7 @@ def _manage_video_markers(
 def manage_video_markers(function_get_markers, **kwargs) -> None:
     _manage_video_markers(
         function_get_markers,
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum']
@@ -365,7 +366,7 @@ def _query_sent_verse(
 
 def query_sent_verse(**kwargs) -> Optional[SentVerse]:
     return _query_sent_verse(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],
@@ -427,7 +428,7 @@ def _add_sent_verse(
 
 def add_sent_verse(**kwargs) -> SentVerse:
     return _add_sent_verse(
-        kwargs['sign_lang_code'],
+        kwargs['language'],
         kwargs['booknum'],
         kwargs['chapter'],
         kwargs['checksum'],

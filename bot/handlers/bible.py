@@ -14,8 +14,9 @@ from telegram.error import TelegramError
 
 from bot import CHANNEL_ID, MyCommand, get_logger
 from bot import ADMIN
-from bot.jw.jwpubmedia import JWBible
-from bot.jw.jwlanguage import JWLanguage
+from bot.jw.pubmedia import SignsBible
+from bot.jw.epub import Epub
+from bot.jw.language import JWLanguage
 from bot.utils import video
 from bot.database import localdatabase as db
 from bot.database.schemedb import SentVerse, Language
@@ -77,9 +78,9 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
         return all_fallback(update, context)
 
     context.user_data['msg'] = None
-    jw = JWBible(sign_lang_code, book.booknum, chapter, verses, JWLanguage(locale=db_user.bot_lang))
+    jw = SignsBible(sign_lang_code, book.booknum, chapter, verses)
     kwargs = context.user_data['kwargs'] = {
-        'sign_lang_code': sign_lang_code,
+        'language': sign_lang_code,
         'booknum': book.booknum,
         'chapter': chapter,
         'verses': verses,
@@ -122,7 +123,7 @@ def parse_bible(update: Update, context: CallbackContext, likely_bible_citation=
 
 
 def show_chapters(update: Update, context: CallbackContext):
-    jw = JWBible(**context.user_data['kwargs'])
+    jw = SignsBible(**context.user_data['kwargs'])
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     buttons = list_of_lists(
         [InlineKeyboardButton(
@@ -145,19 +146,19 @@ def show_chapters(update: Update, context: CallbackContext):
 def get_chapter(update: Update, context: CallbackContext):
     _, sign_lang_code, booknum, chapter, checksum = update.callback_query.data.split('|')
     context.user_data['kwargs'] = {
-        'sign_lang_code': sign_lang_code,
+        'language': sign_lang_code,
         'booknum': booknum,
         'chapter': chapter,
         'checksum': checksum,
     }
-    jw = JWBible(**context.user_data['kwargs'])
+    jw = SignsBible(**context.user_data['kwargs'])
     db.manage_video_markers(jw.get_markers, **context.user_data['kwargs'])
     update.callback_query.answer()
     show_verses(update, context)
 
 
 def show_verses(update: Update, context: CallbackContext):
-    jw = JWBible(**context.user_data['kwargs'])
+    jw = SignsBible(**context.user_data['kwargs'])
     bible_chapter = db.get_bible_chapter(**context.user_data['kwargs'])
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
 
@@ -193,7 +194,7 @@ def get_verse(update: Update, context: CallbackContext):
     update.callback_query.answer()
     _, sign_lang_code, booknum, chapter, checksum, verse = update.callback_query.data.split('|')
     context.user_data['kwargs'] = {
-        'sign_lang_code': sign_lang_code,
+        'language': sign_lang_code,
         'booknum': booknum,
         'chapter': chapter,
         'checksum': checksum,
@@ -210,10 +211,10 @@ def manage_verses(update: Update, context: CallbackContext):
     db_user = db.get_user(update.effective_user.id)
     kwargs = context.user_data['kwargs']
     kwargs.update({
-        'lang_locale_written': db_user.bot_lang,
         'bookname': db.get_bookname(db_user.bot_lang, kwargs['booknum']).full_name
     })
-    jw = context.user_data['jw'] = JWBible(**kwargs)
+    jw = context.user_data['jw'] = SignsBible(**kwargs)
+    context.user_data['epub'] = Epub(db.get_language(lang_locale=db_user.bot_lang).code, jw.booknum, jw.chapter, jw.verses)
     kwargs.update(dict(quality=jw.get_best_quality()))
     t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
     logger.info('(%s) %s', update.effective_user.name, jw.citation())
@@ -245,7 +246,7 @@ def manage_verses(update: Update, context: CallbackContext):
     return
 
 
-def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVerse, jw: JWBible):
+def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVerse, jw: SignsBible):
     logger.info('Sending by file_id')
     bookname = context.user_data['kwargs']['bookname']
     if context.user_data.get('msg'):
@@ -254,13 +255,13 @@ def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVer
         msgverse = context.bot.send_video(
             chat_id=update.effective_chat.id,
             video=sent_verse.telegram_file_id,
-            caption=f'<a href="{jw.wol_discover()}"><b>{jw.citation(bookname)} - {jw.lang.code}</b></a>',
+            caption=f'<a href="{jw.wol_discover()}">{jw.citation(bookname)} - {jw.lang.code}</a>',
             parse_mode=ParseMode.HTML
         )
         context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=jw.nwt.passages(),
+            text=context.user_data['epub'].get_text(),
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True
         )
@@ -302,7 +303,7 @@ def send_single_verse(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=versepath.read_bytes(),
         filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-        caption=f'<a href="{jw.wol_discover()}"><b>{citation} - {jw.lang.code}</b></a>',
+        caption=f'<a href="{jw.wol_discover()}">{citation} - {jw.lang.code}</a>',
         width=streams['width'],
         height=streams['height'],
         duration=round(float(streams['duration'])),
@@ -313,7 +314,7 @@ def send_single_verse(update: Update, context: CallbackContext):
     context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
     context.bot.send_message(
         chat_id=chat.id,
-        text=jw.nwt.passages(),
+        text=context.user_data['epub'].get_text(),
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -388,7 +389,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=finalpath.read_bytes(),
         filename=finalpath.name,
-        caption=f'<a href="{jw.wol_discover()}"><b>{citation} - {jw.lang.code}</b></a>',
+        caption=f'<a href="{jw.wol_discover()}">{citation} - {jw.lang.code}</a>',
         width=stream['width'],
         height=stream['height'],
         duration=round(float(stream['duration'])),
@@ -399,7 +400,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
     context.bot.send_message(
         chat_id=chat.id,
-        text=jw.nwt.passages(),
+        text=context.user_data['epub'].get_text(),
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -421,7 +422,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
             filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-            caption=f'<a href="{jw.wol_discover()}"><b>{jw.citation(verses=verse)} - {jw.lang.code}</b></a>',
+            caption=f'<a href="{jw.wol_discover()}">{jw.citation(verses=verse)} - {jw.lang.code}</a>',
             parse_mode=ParseMode.HTML,
             width=stream['width'],
             height=stream['height'],

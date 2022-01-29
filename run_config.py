@@ -6,7 +6,7 @@ from bot.database import report
 from bot.database import localdatabase as db
 from bot.database.schemedb import Language
 from bot.database import SESSION
-from bot.jw.jwlanguage import JWLanguage
+from bot.jw.language import JWLanguage
 
 
 

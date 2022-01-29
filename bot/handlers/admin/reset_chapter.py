@@ -26,9 +26,9 @@ def reset_chapter(update: Update, context: CallbackContext) -> None:
         assert chapter is not None
     except (BooknumNotFound, BibleCitationNotFound, AssertionError):
         return
-    bible_chapter, sent_verses = db.touch_checksum(db_user.signlanguage.code, book.booknum, chapter)
+    bible_chapter, sent_verses, old_checksum = db.touch_checksum(db_user.signlanguage.code, book.booknum, chapter)
     if bible_chapter is not None:
-        text = f'{book.full_name} {chapter}\n' + '\n'.join([s.citation for s in sent_verses])
+        text = f'{book.full_name} {chapter} {old_checksum}\n' + '\n'.join([s.citation for s in sent_verses])
         update.effective_message.reply_text(t.checksum_touched.format(text))
     else:
         update.effective_message.reply_text(t.checksum_failed.format(book.full_name, chapter))

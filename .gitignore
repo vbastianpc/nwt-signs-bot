@@ -10,6 +10,7 @@ SECRETS.json
 *.bk
 *.ipynb
 *.db
+bible-epub/
 
 .DS_Store
 .vscode/
