@@ -376,9 +376,9 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     msg.edit_text(f'🎥 {t.splicing}', parse_mode=ParseMode.MARKDOWN)
     finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
-        outname=f'{safechars(jw.citation())} - {jw.lang.code}',
-        title_chapters=[jw.citation(verses=verse) for verse in jw.verses],
-        title=jw.citation(),
+        outname=f'{safechars(citation)} - {jw.lang.code}',
+        title_chapters=[jw.citation(bookname, verses=verse) for verse in jw.verses],
+        title=citation,
     )
     logger.info('Sending concatenated video %s', finalpath)
     msg.edit_text(f'📦 {t.sending} {citation}', parse_mode=ParseMode.MARKDOWN)
@@ -408,7 +408,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     msg.delete()
     forward_to_channel(context.bot, chat.id, msgverse.message_id)
     kwargs.update({
-        'citation': jw.citation(),
+        'citation': citation,
         'telegram_file_id': msgverse.video.file_id,
         'size': finalpath.stat().st_size,
         'raw_verses': raw_verses,
@@ -422,7 +422,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
             filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-            caption=f'<a href="{jw.wol_discover()}">{jw.citation(verses=verse)} - {jw.lang.code}</a>',
+            caption=f'<a href="{jw.wol_discover()}">{jw.citation(bookname, verses=verse)} - {jw.lang.code}</a>',
             parse_mode=ParseMode.HTML,
             width=stream['width'],
             height=stream['height'],
@@ -432,7 +432,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         )
         thumbnail.unlink()
         kwargs.update({
-            'citation': jw.citation(verses=verse),
+            'citation': jw.citation(bookname, verses=verse),
             'telegram_file_id': msgverse.video.file_id,
             'size': versepath.stat().st_size,
             'raw_verses': str(verse)
