@@ -91,6 +91,5 @@ class JWLanguage:
         else:
             return value
 
-    def __str__(self):
-        return f"JWLanguage(code={self.code!r}, locale={self.locale!r}, name={self.name!r}, " \
-            f"vernacular={self.vernacular!r}, rsconf={self.rsconf!r}, lib={self.lib!r})"
+    def __repr__(self):
+        return f"JWLanguage(code={self.code!r})"
