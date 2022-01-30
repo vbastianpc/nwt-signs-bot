@@ -25,8 +25,9 @@ def SHARE_URL(lang_code, booknum, chapter, first_verse=0, last_verse=0, is_sign_
         wtlocale=lang_code,
         prefer='lang',
         bible=f'{booknum:0=2}{chapter:0=3}{first_verse:0=3}' + ('' if first_verse == last_verse or last_verse == 0 else f'-{booknum:0=2}{chapter:0=3}{last_verse:0=3}'),
-        pub="nwt" if is_sign_language else "nwtsty"
     )
+    if is_sign_language:
+        query.update(dict(pub="nwt"))
     return urlunsplit((scheme, netloc, path, urlencode(query), ''))
 
 
