@@ -1,6 +1,7 @@
 from typing import Optional, Union, List
 
 from bot.jw.language import JWLanguage
+from bot.jw import SHARE_URL
 
 
 class BaseBible:
@@ -99,6 +100,18 @@ class BaseBible:
         if last != verses[-1]:
             pv += f'{sep}{verses[-1]}'
         return f'{bookname} {chapter}:{pv}' if bookname else f'{chapter}:{pv}'
+    
+    def share_url(self, verse=None, is_sign_language=True):
+        assert not None in [self.lang, self.booknum, self.chapter]
+        return SHARE_URL(
+            self.lang.code,
+            self.booknum,
+            self.chapter,
+            verse if verse else self.verses[0] if self.verses else 0,
+            self.verses[-1] if self.verses else 0,
+            is_sign_language
+        )
+
     
     def __repr__(self):
         return f'{self.__class__.__name__}(language={self.lang}, booknum={self.booknum}, ' \

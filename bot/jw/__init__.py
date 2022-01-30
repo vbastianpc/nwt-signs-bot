@@ -1,3 +1,4 @@
+from urllib.parse import urlunsplit, urlencode
 
 
 # URL Principal. bookname, chapters, qualities, url videos, markers
@@ -14,13 +15,20 @@ URL_WOLBIBLE = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{
 
 
 # citas de biblia, solo si hay wol. No se ocupa
-URL_CITATION = 'https://wol.jw.org/wol/api/v1/citation/{rsconf}/{lib}/bible/{startBook}/{startChapter}/{startVerse}/{endBook}/{endChapter}/{endVerse}?pub=nwtst'
+URL_CITATION = 'https://wol.jw.org/wol/api/v1/citation/{rsconf}/{lib}/bible/{startBook}/{startChapter}/{startVerse}/{endBook}/{endChapter}/{endVerse}?pub=nwtsty'
 
-def SHARE_URL(lang_code, booknum, chapter, first_verse=0, last_verse=0):
-    if first_verse and last_verse:
-        return f'https://www.jw.org/finder?wtlocale={lang_code}&bible={booknum:0=2}{chapter:0=3}{first_verse:0=3}-{booknum:0=2}{chapter:0=3}{last_verse:0=3}'
-    else: 
-        return f'https://www.jw.org/finder?wtlocale={lang_code}&bible={booknum:0=2}{chapter:0=3}{first_verse:0=3}'
+def SHARE_URL(lang_code, booknum, chapter, first_verse=0, last_verse=0, is_sign_language=True):
+    scheme = 'https'
+    netloc = 'www.jw.org'
+    path = 'finder'
+    query = dict(
+        wtlocale=lang_code,
+        prefer='lang',
+        bible=f'{booknum:0=2}{chapter:0=3}{first_verse:0=3}' + ('' if first_verse == last_verse or last_verse == 0 else f'-{booknum:0=2}{chapter:0=3}{last_verse:0=3}'),
+        pub="nwt" if is_sign_language else "nwtsty"
+    )
+    return urlunsplit((scheme, netloc, path, urlencode(query), ''))
+
 
 URL_WOL_DISCOVER = 'https://wol.jw.org/{locale}/wol/b/{rsconf}/{lib}/nwt/{booknum}/{chapter}#v={booknum}:{chapter}:{first_verse}-{booknum}:{chapter}:{last_verse}'
 # others

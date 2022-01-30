@@ -8,7 +8,6 @@ from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag, PageElement
 
-from bot.jw import SHARE_URL
 from bot.jw.bible import BaseBible
 from bot.jw.language import JWLanguage
 
@@ -76,8 +75,7 @@ class Epub(BaseBible):
     
     
     def get_text(self) -> str:
-        url = SHARE_URL(self.lang.code, self.booknum, self.chapter, self.verses[0], self.verses[-1])
-        return f'<a href="{url}">{self.bookname} {self.chapter}</a>\n' + \
+        return f'<a href="{self.share_url(is_sign_language=False)}">{self.bookname} {self.chapter}</a>\n' + \
             "".join(self.verse_text())
 
 
@@ -95,7 +93,7 @@ class Epub(BaseBible):
         return verses
 
     def _format_verse(self, e: PageElement, versenum: int):
-        text = f'<a href="{SHARE_URL(self.lang.code, self.booknum, self.chapter, versenum)}">{versenum}</a> '
+        text = f'<a href="{self.share_url(versenum, False)}">{versenum}</a> '
         i = 0
         while True:
             i += 1

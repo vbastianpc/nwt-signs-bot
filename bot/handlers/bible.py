@@ -255,7 +255,7 @@ def send_by_fileid(update: Update, context: CallbackContext, sent_verse: SentVer
         msgverse = context.bot.send_video(
             chat_id=update.effective_chat.id,
             video=sent_verse.telegram_file_id,
-            caption=f'<a href="{jw.wol_discover()}">{jw.citation(bookname)} - {jw.lang.code}</a>',
+            caption=f'<a href="{jw.share_url()}">{jw.citation(bookname)}</a> - <a href="{jw.wol_discover()}">{jw.lang.code}</a>',
             parse_mode=ParseMode.HTML
         )
         context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
@@ -303,7 +303,7 @@ def send_single_verse(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=versepath.read_bytes(),
         filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-        caption=f'<a href="{jw.wol_discover()}">{citation} - {jw.lang.code}</a>',
+        caption=f'<a href="{jw.share_url()}">{citation}</a> - <a href="{jw.wol_discover()}">{jw.lang.code}</a>',
         width=streams['width'],
         height=streams['height'],
         duration=round(float(streams['duration'])),
@@ -389,7 +389,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=finalpath.read_bytes(),
         filename=finalpath.name,
-        caption=f'<a href="{jw.wol_discover()}">{citation} - {jw.lang.code}</a>',
+        caption=f'<a href="{jw.share_url()}">{citation}</a> - <a href="{jw.wol_discover()}">{jw.lang.code}</a>',
         width=stream['width'],
         height=stream['height'],
         duration=round(float(stream['duration'])),
@@ -422,7 +422,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             chat_id=CHANNEL_ID,
             video=versepath.read_bytes(),
             filename=f'{versepath.stem} - {jw.lang.code}.mp4',
-            caption=f'<a href="{jw.wol_discover()}">{jw.citation(bookname, verses=verse)} - {jw.lang.code}</a>',
+            caption=f'<a href="{jw.share_url(verse)}">{jw.citation(bookname, verses=verse)}</a> - <a href="{jw.wol_discover()}">{jw.lang.code}</a>',
             parse_mode=ParseMode.HTML,
             width=stream['width'],
             height=stream['height'],

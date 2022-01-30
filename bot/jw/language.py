@@ -12,6 +12,7 @@ logger = get_logger(__name__)
 
 
 class JWLanguage:
+    wol_browser = LazyBrowser()
     browser = LazyBrowser()
 
     def __init__(self, code=None, locale=None):
@@ -47,6 +48,10 @@ class JWLanguage:
         return self._get_lang_data('vernacular', code=self._code, locale=self._locale)
 
     @property
+    def is_sign_language(self) -> Optional[bool]:
+        return self._get_lang_data('isSignLanguage', code=self._code, locale=self._locale)
+
+    @property
     def rsconf(self) -> Optional[str]:
         return self._get_tag_attribute('data-rsconf', self.code)
     
@@ -55,15 +60,15 @@ class JWLanguage:
         return self._get_tag_attribute('data-lib', self.code)
 
     def is_wol_available(self, code=None) -> bool:
-        self.browser.open(URL_LIBRARIES)
-        if self.browser.page.find('a', {'data-meps-symbol': code or self.code}):
+        self.wol_browser.open(URL_LIBRARIES)
+        if self.wol_browser.page.find('a', {'data-meps-symbol': code or self.code}):
             return True
         else:
             return False
     
     @LazyProperty
     def all_langs(self) -> List[Dict]:
-        return requests.get(URL_LANGUAGES).json()['languages']
+        return self.browser.open(URL_LANGUAGES).json()['languages']
     
     @property
     def signs_languages(self) -> List[Dict]:
@@ -78,9 +83,9 @@ class JWLanguage:
             raise TypeError('Missing required argument: code or locale')
 
     def _get_tag_attribute(self, attribute_name, code) -> Optional[str]:
-        self.browser.open(URL_LIBRARIES)
+        self.wol_browser.open(URL_LIBRARIES)
         try:
-            value = self.browser.page.find('a', {'data-meps-symbol': code}).get(attribute_name)
+            value = self.wol_browser.page.find('a', {'data-meps-symbol': code}).get(attribute_name)
         except:
             return None
         else:
