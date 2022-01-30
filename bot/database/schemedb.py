@@ -24,7 +24,7 @@ class Language(Base):
     users = relationship('User', back_populates='signlanguage')
 
     def __repr__(self):
-        return f"<Language(code={self.code!r}, locale={self.locale!r}, name={self.name!r}"\
+        return f"<Language(code={self.code!r}, locale={self.locale!r}, name={self.name!r}, "\
             f"vernacular={self.vernacular!r}, rsconf={self.rsconf!r}, lib={self.lib!r})>"
 
 
