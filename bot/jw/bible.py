@@ -108,7 +108,7 @@ class BaseBible:
             self.booknum,
             self.chapter,
             verse if verse else self.verses[0] if self.verses else 0,
-            self.verses[-1] if self.verses else 0,
+            0 if verse else self.verses[-1] if self.verses else 0,
             is_sign_language
         )
 
