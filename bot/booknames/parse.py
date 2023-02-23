@@ -9,7 +9,7 @@ from bot.database.schemedb import BookNamesAbbreviation
 logger = get_logger(__name__)
 
 
-BIBLE_PATTERN = fr"^/?(.*?) *(\d+)? *:? *(\d+(?:(?: *, *| +|-)\d+)*)?$"
+BIBLE_PATTERN = fr"^(.*?) *(\d+)? *:? *(\d+(?:[ \-,\d]+)*)?$"
 
 
 class BooknumNotFound(Exception):
@@ -36,7 +36,7 @@ def parse_bible_citation(text: str, preference_lang_locale=None) -> Tuple[BookNa
     chapter = int(likely_chapter) if likely_chapter else None
 
     verses = []
-    groups = [i.split() for i in likely_verses.split(',')] if likely_verses else []
+    groups = [i.replace(' ', '').split() for i in likely_verses.split(',')] if likely_verses else []
     groups = [i for group in groups for i in group]
     for group in groups:
         if '-' in group:

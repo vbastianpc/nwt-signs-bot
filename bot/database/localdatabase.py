@@ -291,6 +291,8 @@ def get_all_versenumbers(**kwargs) -> List[Optional[int]]:
 
 def _manage_video_markers(
         function_get_markers,
+        # method1 get markers
+        # method2 get markers
         lang_code: str,
         booknum: Union[int, str],
         chapter: Union[int, str],
@@ -299,13 +301,13 @@ def _manage_video_markers(
     bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
     if bible_chapter:
         logger.info('Tengo %s marcadores', len(bible_chapter.video_markers))
-        if bible_chapter.checksum != checksum:
-            logger.info(f'No coinciden checksum. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.checksum} != {checksum} new')
+        if bible_chapter.checksum == checksum: # TODO and db.count_markers == len(method1_get_markers) evitar consultar ffmpeg
+            logger.info(f'Coinciden checksum {checksum!r}')
+        else:
+            logger.info(f'No coinciden checksum o hay nuevos marcadores. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.checksum} != {checksum} new')
             SESSION.delete(bible_chapter)
             SESSION.commit()
             bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
-        else:
-            logger.info(f'Coinciden checksum {checksum!r}')
     else:
         logger.info('No se ha registrado capitulo. Ahora lo registro')
         bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)

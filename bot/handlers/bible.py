@@ -220,11 +220,8 @@ def manage_verses(update: Update, context: CallbackContext):
     logger.info('(%s) %s', update.effective_user.name, jw.citation())
 
     not_available = [verse for verse in kwargs['verses'] if int(verse) not in db.get_all_versenumbers(**kwargs)]
-    if len(not_available) == 1:
-        v = not_available[0]
-    elif len(not_available) > 1:
-        v = ", ".join(map(str, not_available))
     if not_available:
+        v = not_available[0] if len(not_available) == 1 else ", ".join(map(str, not_available))
         update.effective_message.reply_text(
             text=t.unavailable.format(f'{jw.bookname} {jw.chapter}:{v}', jw.lang.code) + ' ' + t.optional_verse,
             parse_mode=ParseMode.MARKDOWN
@@ -461,4 +458,4 @@ parse_bible_text_handler = MessageHandler(Filters.text, parse_bible)
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
 parse_lang_bible_handler = CommandHandler(SIGN_LANGCODES, parse_lang_bible)
-# parse_lang_bible_handler = MessageHandler(Filters.command, parse_lang_bible)
+# parse_lang_bible_handler = MessageHandler(Filters.command, parse_lang_bible) # TODO add lang locale

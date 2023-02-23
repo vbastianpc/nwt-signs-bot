@@ -4,25 +4,6 @@ from datetime import datetime
 import pytz
 
 
-TOKEN = os.getenv('TOKEN_NWT')
-if TOKEN is None:
-    raise Exception('You must define the environment variable TOKEN_NWT')
-
-try:
-    ADMIN = int(os.getenv('USER_ID_ADMIN'))
-except TypeError:
-    raise Exception('You must define the environment variable USER_ID_ADMIN')
-except ValueError:
-    raise Exception('Environment variable ADMIN must be a integer')
-
-try:
-    CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
-except TypeError:
-    raise Exception('You must define the environment variable CHANNEL_ID')
-except ValueError:
-    raise Exception('Environment variable CHANNEL_ID must be a integer')
-
-
 class MyCommand:
     START = 'start'
     SIGNLANGUAGE = 'signlanguage'
@@ -63,6 +44,7 @@ class Formatter(logging.Formatter):
             s = dt.isoformat(timespec='seconds')
         return s
 
+
 def get_logger(name, level=logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
     console_handler = logging.StreamHandler()
@@ -72,3 +54,18 @@ def get_logger(name, level=logging.INFO) -> logging.Logger:
     logger.addHandler(console_handler)
     logger.setLevel(level)
     return logger
+
+logger = get_logger(__name__)
+
+
+TOKEN = os.getenv('TOKEN_NWT')
+ADMIN = int(os.getenv('USER_ID_ADMIN', 0))
+CHANNEL_ID = int(os.getenv('CHANNEL_ID', 0))
+
+
+if TOKEN is None:
+    logger.warning('Missing environment variable TOKEN_NWT')
+if ADMIN == 0:
+    logger.warning('Missing environment variable USER_ID_ADMIN')
+if CHANNEL_ID == 0:
+    logger.warning('Missing environment variable CHANNEL_ID')

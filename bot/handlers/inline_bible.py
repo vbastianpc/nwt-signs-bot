@@ -35,13 +35,13 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
             booknum=booknum,
             chapter=chapter,
             raw_verses=' '.join(verses) or None,
-        )
+        ) # TODO muestra las versiones antiguas también. quedarse solo con la última versión
         results += [
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
                 video_file_id=sent_verse.telegram_file_id,
-                title=f'{sent_verse.citation} - {db_user.signlanguage.code}',
-                caption=f'{sent_verse.citation} - {db_user.signlanguage.code}',
+                title=f'{sent_verse.citation} - {db_user.signlanguage.code}', # TODO falta agregar libro en idioma de bot language
+                caption=f'{sent_verse.citation} - {db_user.signlanguage.code}', # TODO falta agregar libro en idioma de bot language
             )
             for sent_verse in sent_verses
         ]
