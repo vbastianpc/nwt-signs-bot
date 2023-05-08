@@ -1,0 +1,110 @@
+Table "Language" {
+  "LanguageId" INTEGER [pk, not null]
+  "LanguageCode" VARCHAR [unique, not null]
+  "LanguageLocale" VARCHAR [unique, not null]
+  "LanguageName" VARCHAR
+  "LanguageVernacular" VARCHAR
+  "RsConfigSymbol" VARCHAR
+  "LibrarySymbol" VARCHAR
+  "IsSignLanguage" BOOLEAN
+}
+
+Table "Bible" {
+  "BibleId" INTEGER [pk, not null]
+  "LanguageId" INTEGER [unique, not null]
+  "BookCount" INTEGER
+  "Name" VARCHAR
+  "Abbreviation" VARCHAR
+  "URL" VARCHAR
+}
+
+Table "User" {
+  "UserId" INTEGER [pk, not null]
+  "TelegramUserId" INTEGER [unique]
+  "FullName" VARCHAR
+  "SignLanguageId" INTEGER
+  "BotLanguageId" INTEGER
+  "OverlayLanguageId" INTEGER
+  "Status" INTEGER
+  "AddedDatetime" VARCHAR
+}
+
+Table "Book" {
+  "BookId" INTEGER [pk, not null]
+  "BibleId" INTEGER [unique, not null]
+  "BookNumber" INTEGER [unique]
+  "ChapterCount" INTEGER
+  "StandardName" VARCHAR
+  "StandardAbbreviation" VARCHAR
+  "OfficialAbbreviation" VARCHAR
+  "StandardSingularBookName" VARCHAR
+  "StandardSingularAbbreviation" VARCHAR
+  "OfficialSingularAbbreviation" VARCHAR
+  "StandardPluralBookName" VARCHAR
+  "StandardPluralAbbreviation" VARCHAR
+  "OfficialPluralAbbreviation" VARCHAR
+  "BookDisplayTitle" VARCHAR
+  "ChapterDisplayTitle" VARCHAR
+}
+
+Table "Chapter" {
+  "ChapterId" INTEGER [pk, not null]
+  "BookId" INTEGER [unique, not null]
+  "ChapterNumber" INTEGER [unique]
+  "Checksum" VARCHAR [unique]
+  "ModifiedDatetime" VARCHAR
+  "URL" VARCHAR
+  "Title" VARCHAR
+}
+
+Table "File" {
+  "FileId" INTEGER [pk, not null]
+  "ChapterId" INTEGER [not null]
+  "TelegramFileId" VARCHAR [unique]
+  "TelegramFileUniqueId" VARCHAR [unique]
+  "Duration" INTEGER
+  "FileName" VARCHAR
+  "RawVerseNumbers" VARCHAR
+  "FileSize" INTEGER
+  "AddedDatetime" VARCHAR
+  "OverlayLanguageId" INTEGER
+}
+
+Table "VideoMarker" {
+  "VideoMarkerId" INTEGER [pk, not null]
+  "ChapterId" INTEGER [not null]
+  "Label" VARCHAR
+  "StartTime" VARCHAR
+  "Duration" VARCHAR
+  "VerseNumber" INTEGER
+  "EndTransitionDuration" VARCHAR
+}
+
+Table "File2User" {
+  "File2UserId" INTEGER [pk, not null]
+  "FileId" INTEGER [not null]
+  "UserId" INTEGER [not null]
+  "Datetime" VARCHAR
+}
+
+Ref:"Language"."LanguageId" < "Bible"."LanguageId"
+
+Ref:"Language"."LanguageId" < "User"."SignLanguageId"
+
+Ref:"Language"."LanguageId" < "User"."BotLanguageId"
+
+Ref:"Language"."LanguageId" < "User"."OverlayLanguageId"
+
+Ref:"Bible"."BibleId" < "Book"."BibleId"
+
+Ref:"Book"."BookId" < "Chapter"."BookId"
+
+Ref:"Chapter"."ChapterId" < "File"."ChapterId"
+
+Ref:"Language"."LanguageId" < "File"."OverlayLanguageId"
+
+Ref:"Chapter"."ChapterId" < "VideoMarker"."ChapterId"
+
+Ref:"File"."FileId" < "File2User"."FileId"
+
+Ref:"User"."UserId" < "File2User"."UserId"

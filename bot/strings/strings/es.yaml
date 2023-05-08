@@ -10,6 +10,7 @@ commands:
   botlanguage: Cambia el idioma del bot
   booknames: Índice de los Libros de la Biblia
   help: ¿Necesitas ayuda?
+  overlay: Superposión de texto
   settings: Muestra tus ajustes actuales
   feedback: Envía un comentario al desarrollador
 
@@ -43,6 +44,8 @@ greetings: |-
   Pero primero usa /{} para elegir una lengua de señas.
   Haz click en /{} para más detalles
 
+yes: Sí
+no: No
 
 # Bible
 choose_signlang: Primero usa el comando /{} y elige una lengua de señas
@@ -53,8 +56,8 @@ optional_book: Cambia la lengua de señas con el comando /{} o intenta con otro 
 optional_chapter: Pero puedes elegir otro capítulo.
 optional_verse: Pero puedes elegir otro versículo.
 
-choose_chapter: "*Elige un capítulo*"
-choose_verse: "*Elige un versículo*"
+choose_chapter: "Elige un capítulo"
+choose_verse: "Elige un versículo"
 
 downloading: Descargando
 trimming: Recortando
@@ -115,9 +118,17 @@ wrong_signlanguage_code: No existe ese código de lengua de señas
 ok_signlanguage_code: Has elegido *{} - {}*
 
 choose_botlang: Escoge un idioma para la interfaz del bot.
-wrong_botlang: El idioma {} no existe
+wrong_botlang: El idioma `{}` no existe
 ok_botlang: Ahora puedes pedirme libros bíblicos en *{}*.
 
+# Overlay
+overlay_description: |-
+  La *superposición de texto* permite entender de qué versículo se trata cuando el idioma del video es muy diferente al tuyo.
+  
+  *¿Quieres activar esta función?*
+
+overlay_activated: Actualmente tienes *activada* la función superposición de texto.
+overlay_deactivated: Actualmente tienes *desactivada* la función superposición de texto.
 
 # Feedback
 feedback_1: ¿Tienes alguna sugerencia? ¿Algo anda mal? Puedes cancelar esta conversación cuando quieras /{}

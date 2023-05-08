@@ -1,83 +1,90 @@
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Union, Iterable
 from datetime import datetime
-import pytz
-from sqlalchemy.util.langhelpers import NoneType
 
-from bot import get_logger
+
+from sqlalchemy.exc import IntegrityError
+from telegram import Video
+
+from bot.logs import get_logger
+from bot.utils.browser import LazyBrowser
+from bot.utils import dt_now
 from bot.database import SESSION
 from bot.database.schemedb import Language
-from bot.database.schemedb import BibleBook
-from bot.database.schemedb import BibleChapter
+from bot.database.schemedb import Bible
+from bot.database.schemedb import Book
+from bot.database.schemedb import Chapter
 from bot.database.schemedb import VideoMarker
-from bot.database.schemedb import SentVerse
-from bot.database.schemedb import SentVerseUser
+from bot.database.schemedb import File
+from bot.database.schemedb import File2User
 from bot.database.schemedb import User
-from bot.database.schemedb import BookNamesAbbreviation
+from bot.jw.pubmedia import SignsBible
+from bot.jw.language import JWLanguage
 
 
 logger = get_logger(__name__)
 
+# region Language
 
-def query_sign_language(lang_code) -> Optional[Language]:
-    return (
-        SESSION.query(Language)
-        .filter(Language.code == lang_code)
-        .one_or_none()
-    )
-
-
-def insert_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang) -> Language:
-    sign_language = Language(
-        code=lang_code,
-        locale=locale,
-        name=name,
-        vernacular=vernacular,
-        rsconf=rsconf,
-        lib=lib,
-        is_sign_lang=is_sign_lang
-    )
-    SESSION.add(sign_language)
+def fetch_languages():
+    jw = JWLanguage()
+    languages = []
+    for lang in JWLanguage().all_langs:
+        if not get_language(meps_symbol=lang['code']):
+            jw.meps_symbol = lang['code']
+            languages.append(
+                Language(
+                    meps_symbol=jw.meps_symbol,
+                    code=jw.code,
+                    name=jw.name,
+                    vernacular=jw.vernacular,
+                    rsconf=jw.rsconf,
+                    lib=jw.lib,
+                    is_sign_language=jw.is_sign_language,
+                    script=jw.script,
+                    is_rtl=jw.is_rtl,
+                )
+            )
+    SESSION.add_all(languages)
     SESSION.commit()
-    return sign_language
 
-
-def insert_or_update_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang) -> Language:
-    sign_language = query_sign_language(lang_code)
-    if sign_language:
-        return sign_language
-    else:
-        return insert_language(lang_code, locale, name, vernacular, rsconf, lib, is_sign_lang)
 
 def get_sign_languages() -> List[Language]:
-    return SESSION.query(Language).filter(Language.is_sign_lang == True).order_by(Language.code.asc()).all()
+    return SESSION.query(Language).filter(Language.is_sign_language == True).order_by(Language.meps_symbol.asc()).all()
 
 def get_languages() -> List[Language]:
-    return SESSION.query(Language).order_by(Language.code.asc()).all()
+    return SESSION.query(Language).order_by(Language.meps_symbol.asc()).all()
 
-def get_language(lang_code=None, lang_locale=None) -> Optional[Language]:
-    if all([lang_locale, lang_code]):
-        raise TypeError('lang_code and lang_locale are mutually exclusive arguments')
+def get_language(
+        id: Optional[int] = None,
+        meps_symbol: Optional[str] = None,
+        code: Optional[str] = None
+    ) -> Optional[Language]:
     q = SESSION.query(Language)
-    if lang_code:
-        q = q.filter(Language.code == lang_code)
-    elif lang_locale:
-        q = q.filter(Language.locale == lang_locale)
+    if id is not None:
+        q = q.filter(Language.id == id)
+    elif meps_symbol is not None:
+        q = q.filter(Language.meps_symbol == meps_symbol)
+    elif code is not None:
+        q = q.filter(Language.code == code)
     else:
         raise TypeError('get_language expected one argument')
     return q.one_or_none()
 
-def get_sign_language_codes() -> List[str]:
+def get_sign_languages_meps_symbol() -> List[str]:
     return [
         lang[0] for lang in
-        SESSION.query(Language.code)
-        .filter(Language.is_sign_lang == True)
+        SESSION.query(Language.meps_symbol)
+        .filter(Language.is_sign_language == True)
         .all()
     ]
+
+# endregion
+# region User
 
 def get_user(telegram_user_id) -> Optional[User]:
     return SESSION.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
 
-def get_all_users() -> List[User]:
+def get_users() -> List[User]:
     return SESSION.query(User).all()
 
 def get_banned_users() -> Optional[List[User]]:
@@ -86,405 +93,383 @@ def get_banned_users() -> Optional[List[User]]:
 def get_waiting_users() -> Optional[List[User]]:
     return SESSION.query(User).filter(User.status == 0).all()
 
-def get_active_users() -> Optional[List[User]]:
+def get_accepted_users() -> Optional[List[User]]:
     return SESSION.query(User).filter(User.status == 1).all()
 
 def set_user(
-        telegram_user_id,
-        lang_code=None,
-        full_name=None,
-        bot_lang=None,
-        waiting=False,
-        blocked=False,
-        brother=False,
+        telegram_user_id: int,
+        sign_language_code: str = None,
+        full_name: str = None,
+        bot_language: Language = None,
+        waiting: bool = False,
+        blocked: bool = False,
+        brother: bool = False,
+        overlay_language: Language = None,
+        added_datetime: datetime = None
     ) -> User:
     if [waiting, blocked, brother].count(True) > 1:
         raise TypeError('waiting, blocked and brother are mutually exclusive arguments')
     user = get_user(telegram_user_id)
     if not user:
         user = User(telegram_user_id=telegram_user_id)
-    if lang_code:
-        user.sign_language_id = query_sign_language(lang_code).id
+    if sign_language_code:
+        try:
+            user.sign_language_id = get_language(code=sign_language_code).id
+        except AttributeError:
+            raise TypeError(f'sign language code: {sign_language_code!r} does not exists')
     if full_name:
         user.full_name = full_name
-    if bot_lang:
-        user.bot_lang = bot_lang
+    if added_datetime:
+        user.added_datetime = added_datetime
+    if bot_language:
+        user.bot_language_id = bot_language.id
+    if overlay_language:
+        user.overlay_language_id = user.bot_language.id
+    elif overlay_language is False:
+        user.overlay_language_id = None
     user.status = -1 if blocked else 0 if waiting else 1 if brother else user.status
     SESSION.add(user)
     SESSION.commit()
     return user
 
-def add_waiting_user(telegram_user_id, full_name, bot_lang) -> None:
-    user = get_user(telegram_user_id)
-    if not user:
-        SESSION.add(User(
-            telegram_user_id=telegram_user_id,
-            full_name=full_name,
-            status=0,
-            added_datetime=now(),
-            bot_lang=bot_lang,
-        ))
+# endregion
+
+# region Bible
+def fetch_bible_editions():
+    browser = LazyBrowser()
+    data = browser.open("https://www.jw.org/en/library/bible/json/").json()
+    for d in data['langs'].values():
+        language_meps_symbol = d['lang']['langcode']
+        language = get_language(meps_symbol=language_meps_symbol)
+        try:
+            assert language is not None
+        except AssertionError:
+            continue
+        for e in d['editions']:
+            bible = Bible(
+                language_id=language.id,
+                name=e['title'],
+                symbol=e['symbol'],
+                url=e.get('contentAPI')
+            )
+            SESSION.add(bible)
+            try:
+                SESSION.commit()
+            except IntegrityError:
+                SESSION.rollback()
+
+def fetch_bible_books(language_meps_symbol):
+    bible = get_bible(language_meps_symbol)
+    browser = LazyBrowser()
+    data = browser.open(bible.url).json()
+    for booknum, bookdata in data['editionData']['books'].items():
+        SESSION.add(
+            Book(
+                bible_id=bible.id,
+                number=int(booknum),
+                chapter_count=int(bookdata['chapterCount']),
+                name=bookdata['standardName'].strip('.'),
+                standard_abbreviation=bookdata['standardAbbreviation'].strip('.'),
+                official_abbreviation=bookdata['officialAbbreviation'].strip('.'),
+                standard_singular_bookname=bookdata['standardSingularBookName'].strip('.'),
+                standard_singular_abbreviation=bookdata['standardSingularAbbreviation'].strip('.'),
+                official_singular_abbreviation=bookdata['officialSingularAbbreviation'].strip('.'),
+                standard_plural_bookname=bookdata['standardPluralBookName'].strip('.'),
+                standard_plural_abbreviation=bookdata['standardPluralAbbreviation'].strip('.'),
+                official_plural_abbreviation=bookdata['officialPluralAbbreviation'].strip('.'),
+                book_display_title=bookdata['bookDisplayTitle'].strip('.'),
+                chapter_display_title=bookdata['chapterDisplayTitle'].strip('.')
+            )
+        )
+    try:
         SESSION.commit()
+    except IntegrityError as e:
+        logger.warning("%s", e)
+        SESSION.rollback()
+    return
+
+def get_bible(language_meps_symbol: str) -> Optional[Bible]:
+    return SESSION.query(Bible).join(Language).filter(Language.meps_symbol == language_meps_symbol).order_by(Bible.id.asc()).limit(1).one_or_none()
+
+# endregion
+# region Book
+
+def get_books(
+        language_id: int = None,
+        booknum: int = None,
+    ) -> List[Book]:
+    q = SESSION.query(Book)
+    if language_id:
+        q = q.join(Bible, Bible.id == Book.bible_id).join(Language, Language.id == Bible.language_id)
+    if language_id:
+        q = q.filter(Language.id == language_id)
+    if booknum is not None:
+        q = q.filter(Book.number == booknum)
+    return q.order_by(Book.number.asc()).all()
 
 
-def _query_bible_book(lang_code: str, booknum: Union[int, str]) -> Optional[BibleBook]:
+def get_book(language: Language,
+             booknum: Union[int, str]) -> Optional[Book]:
     return (
-        SESSION.query(BibleBook)
-        .join(Language)
+        SESSION.query(Book)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Language, Language.id == Bible.language_id)
         .filter(
-            BibleBook.booknum == int(booknum),
-            Language.code == lang_code,
+            Book.number == int(booknum),
+            Language.id == language.id,
         ).one_or_none()
     )
 
-def _create_bible_book(lang_code: str, booknum: Union[int, str], bookname: str) -> BibleBook:
-    sign_language = query_sign_language(lang_code)
-    bible_book = BibleBook(
-        sign_language_id=sign_language.id,
-        booknum=int(booknum),
-        bookname=bookname
-    )
-    SESSION.add(bible_book)
-    SESSION.commit()
-    return bible_book
+# endregion
 
-
-def query_or_create_bible_book(**kwargs) -> BibleBook:
-    return _query_bible_book(
-        kwargs['language'],
-        kwargs['booknum'],
-    ) or _create_bible_book(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['bookname']
-    )
-
-
-def _get_bible_chapter(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-    ) -> Optional[BibleChapter]:
-    return (
-        SESSION.query(BibleChapter)
-        .join(Language, Language.id == BibleBook.sign_language_id)
-        .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
+# region Chapter
+def get_chapter(jw: Optional[SignsBible] = None) -> Optional[Chapter]:
+    q = (
+        SESSION.query(Chapter)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Language, Language.id == Bible.language_id)
         .filter(
-            Language.code == lang_code,
-            BibleBook.booknum == int(booknum),
-            BibleChapter.chapter == int(chapter),
+            Language.meps_symbol == jw.language_meps_symbol,
+            Book.number == jw.booknum,
+            Chapter.number == jw.chapternum,
+            Chapter.checksum == jw.get_checksum()
         )
-        .one_or_none()
     )
+    return q.one_or_none()
 
-def get_bible_chapter(**kwargs) -> Optional[BibleChapter]:
-    return _get_bible_chapter(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter']
-    )
 
-def _add_bible_chapter(
-        lang_code: str,
+def _add_chapter(
+        language: Language,
         booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str
-    ) -> BibleChapter:
-    bible_book = _query_bible_book(lang_code, booknum)
-    bible_chapter = BibleChapter(
-        bible_book_id=bible_book.id,
-        chapter=int(chapter), 
+        chapternum: Union[int, str],
+        checksum: str,
+        modified_datetime: Union[datetime, str],
+        url: str,
+        title: str,
+    ) -> Chapter:
+    book = get_book(language, booknum)
+    chapter = Chapter(
+        book_id=book.id,
+        number=int(chapternum), 
         checksum=checksum,
+        modified_datetime=modified_datetime,
+        url=url,
+        title=title,
     )
-    SESSION.add(bible_chapter)
+    SESSION.add(chapter)
     SESSION.commit()
-    return bible_chapter
+    return chapter
 
+# endregion
 
-def touch_checksum(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str]
-    ) -> Optional[Tuple[BibleChapter, List[SentVerse], str]]:
-    bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
-    if bible_chapter is None:
-        return
-    fake_checksum = f'FAKE CHECKSUM: {now()}'
-    checksum = bible_chapter.checksum
-    sent_verses = query_sent_verses(lang_code, booknum, chapter, checksum=bible_chapter.checksum)
-    for sent_verse in sent_verses:
-        sent_verse.checksum = fake_checksum
-    SESSION.add_all(sent_verses)
-    bible_chapter.checksum = fake_checksum
-    SESSION.add(bible_chapter)
-    SESSION.commit()
-    return (bible_chapter, sent_verses, checksum)
+# def touch_checksum(
+#         sign_language_meps_symbol: str,
+#         booknum: Union[int, str],
+#         chapternum: Union[int, str],
+#         **kwargs
+#     ) -> Optional[Tuple[Chapter, List[File], str]]:
+#     bible_chapter = get_chapter(sign_language_meps_symbol, booknum, chapternum)
+#     if bible_chapter is None:
+#         return
+#     fake_checksum = f'FAKE CHECKSUM: {dt_now()}'
+#     checksum = bible_chapter.checksum
+#     files = get_files(sign_language_meps_symbol, booknum, chapternum, checksum=bible_chapter.checksum)
+#     for file in files:
+#         file.checksum = fake_checksum
+#     SESSION.add_all(files)
+#     bible_chapter.checksum = fake_checksum
+#     SESSION.add(bible_chapter)
+#     SESSION.commit()
+#     return (bible_chapter, files, checksum)
 
+# region VideoMarker
 
-def _query_video_marker(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str,
-        ):
-    return (
+def get_videomarker(jw: SignsBible):
+    assert len(jw.verses) == 1
+    q = (
         SESSION.query(VideoMarker)
-        .join(Language, Language.id == BibleBook.sign_language_id)
-        .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
-        .join(BibleChapter, BibleChapter.id == VideoMarker.bible_chapter_id)
+        .join(Language, Language.id == Bible.language_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Chapter, Chapter.id == VideoMarker.chapter_id)
         .filter(
-            Language.code == lang_code,
-            BibleBook.booknum == int(booknum),
-            BibleChapter.chapter == int(chapter),
-            BibleChapter.checksum == checksum,
+            Language.meps_symbol == jw.language_meps_symbol,
+            Book.number == jw.booknum,
+            Chapter.number == jw.chapternum,
+            Chapter.checksum == jw.get_checksum(),
+            VideoMarker.versenum == jw.verses[0],
         )
     )
+    return q.one_or_none()
 
 
-def get_videomarker(**kwargs) -> VideoMarker:
-    return _query_video_marker(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum'],
-    ).filter(VideoMarker.versenum == int(kwargs['versenum'])).one_or_none()
 
-
-def get_videomarkers(**kwargs) -> List[Optional[VideoMarker]]:
-    return _query_video_marker(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum'],
-    ).order_by(VideoMarker.versenum.asc()).all()
-
-
-def _get_all_versenumbers(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str,
-    ) -> List[Optional[int]]:
-    return [versenum for versenum, in (
-        SESSION.query(VideoMarker.versenum)
-        .join(Language, Language.id == BibleBook.sign_language_id)
-        .join(BibleBook, BibleBook.id == BibleChapter.bible_book_id)
-        .join(BibleChapter, BibleChapter.id == VideoMarker.bible_chapter_id)
+def get_videomarkers(jw: SignsBible):
+    q = (
+        SESSION.query(VideoMarker)
+        .join(Language, Language.id == Bible.language_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Chapter, Chapter.id == VideoMarker.chapter_id)
         .filter(
-            Language.code == lang_code,
-            BibleBook.booknum == int(booknum),
-            BibleChapter.chapter == int(chapter),
-            BibleChapter.checksum == checksum,
+            Language.meps_symbol == jw.language_meps_symbol,
+            Book.number == jw.booknum,
+            Chapter.number == jw.chapternum,
+            Chapter.checksum == jw.get_checksum(),
+        )
+        .order_by(VideoMarker.versenum.asc())
+    )
+    # print(q.statement.compile(compile_kwargs={"literal_binds": True}))
+    return q.all()
+
+
+def get_all_versenumbers(jw: SignsBible = None) -> List[Optional[int]]:
+    return [row[0] for row in (
+        SESSION.query(VideoMarker.versenum)
+        .join(Chapter, Chapter.id == VideoMarker.chapter_id)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Language, Language.id == Bible.language_id)
+        .filter(
+            Language.meps_symbol == jw.language_meps_symbol,
+            Book.number == jw.booknum,
+            Chapter.number == jw.chapternum,
+            Chapter.checksum == jw.get_checksum(),
         )
         .all()
     )]
 
-
-def get_all_versenumbers(**kwargs) -> List[Optional[int]]:
-    return _get_all_versenumbers(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum'],
+def manage_video_markers(jw: SignsBible) -> None:
+    chapter = get_chapter(jw)
+    language = get_language(meps_symbol=jw.language_meps_symbol)
+    video_markers = get_videomarkers(jw)
+    data = (
+        language,
+        jw.booknum,
+        jw.chapternum,
+        jw.get_checksum(),
+        jw.get_modified_datetime(),
+        jw.get_video_url(),
+        jw.get_title(),
     )
-
-
-def _manage_video_markers(
-        function_get_markers,
-        # method1 get markers
-        # method2 get markers
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str,
-    ) -> None:
-    bible_chapter = _get_bible_chapter(lang_code, booknum, chapter)
-    if bible_chapter:
-        logger.info('Tengo %s marcadores', len(bible_chapter.video_markers))
-        if bible_chapter.checksum == checksum: # TODO and db.count_markers == len(method1_get_markers) evitar consultar ffmpeg
-            logger.info(f'Coinciden checksum {checksum!r}')
-        else:
-            logger.info(f'No coinciden checksum o hay nuevos marcadores. Intentaré borrar capítulo y sus respectivos marcadores. old {bible_chapter.checksum} != {checksum} new')
-            SESSION.delete(bible_chapter)
-            SESSION.commit()
-            bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
-    else:
-        logger.info('No se ha registrado capitulo. Ahora lo registro')
-        bible_chapter = _add_bible_chapter(lang_code, booknum, chapter, checksum)
-
-    if not bible_chapter.video_markers:
-        logger.info('No existían marcadores para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, checksum)
-        for marker in function_get_markers():
-            bible_chapter.video_markers.append(
-                VideoMarker(
-                    versenum=int(marker['verseNumber']),
-                    start_time=marker['startTime'],
-                    duration=marker['duration'],
-                    end_transition_duration=marker['endTransitionDuration'],
-                    label=marker['label']
-                )
-            )
-        SESSION.add(bible_chapter)
+    print(f'{data=}')
+    if video_markers:
+        return
+    elif chapter and chapter.checksum == jw.get_checksum():
+        _add_video_markers(chapter, jw.get_markers())
+    elif chapter and chapter.checksum != jw.get_checksum():
+        logger.info(f'Hay versión actualizada.')
+        SESSION.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
         SESSION.commit()
-        logger.info('Marcadores guardados en db')
-    else:
-        logger.info('Ya existían marcadores en db para %s booknum=%s chapter=%s %s', lang_code, booknum, chapter, checksum)
+        chapter = _add_chapter(*data)
+        _add_video_markers(chapter, jw.get_markers())
+    elif not chapter:
+        if not get_bible(jw.language_meps_symbol):
+            fetch_bible_editions()
+        fetch_bible_books(jw.language_meps_symbol)
+        chapter = _add_chapter(*data)
+        _add_video_markers(chapter, jw.get_markers())
 
 
-def manage_video_markers(function_get_markers, **kwargs) -> None:
-    _manage_video_markers(
-        function_get_markers,
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum']
-    )
+def _add_video_markers(chapter: Chapter, markers: Iterable):
+    for marker in markers:
+        chapter.video_markers.append(
+            VideoMarker(
+                versenum=int(marker['verseNumber']),
+                label=marker['label'],
+                duration=marker['duration'],
+                start_time=marker['startTime'],
+                end_transition_duration=marker['endTransitionDuration'],
+            )
+        )
+    SESSION.add(chapter)
+    SESSION.commit()
 
 
-def _query_sent_verse(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str,
-        quality: str,
-        raw_verses: Optional[str] = None
-    ) -> Optional[SentVerse]:
+
+# endregion
+#region File
+
+def get_file(
+        jw: SignsBible = None,
+        overlay_language_id: Optional[int] = None,
+    ) -> Optional[File]:
     q = (
-        SESSION.query(SentVerse)
-        .join(Language, Language.id == BibleBook.sign_language_id)
-        .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
+        SESSION.query(File)
+        .join(Chapter, Chapter.id == File.chapter_id)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Language, Language.id == Bible.language_id)
         .filter(
-            Language.code == lang_code,
-            BibleBook.booknum == int(booknum),
-            SentVerse.chapter == int(chapter),
-            SentVerse.checksum == checksum,
-            SentVerse.quality == quality,
-            SentVerse.raw_verses == raw_verses
+            Language.meps_symbol == jw.language_meps_symbol,
+            Book.number == jw.booknum,
+            Chapter.number == jw.chapternum,
+            Chapter.checksum == jw.get_checksum(),
+            File.raw_verses == jw.raw_verses,
+            File.overlay_language_id == overlay_language_id
         )
     )
     # print(q.statement.compile(compile_kwargs={"literal_binds": True}))
     return q.one_or_none()
 
 
-def query_sent_verse(**kwargs) -> Optional[SentVerse]:
-    return _query_sent_verse(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum'],
-        kwargs['quality'],
-        kwargs['raw_verses']
-    )
-
-def query_sent_verses(
-        lang_code: str = None,
+def get_files(
+        sign_language_meps_symbol: str = None,
         booknum: int = None,
-        chapter: int = None,
+        chapternum: int = None,
         raw_verses: str = None,
         checksum: str = None,
-    ) -> List[Optional[SentVerse]]:
+        overlay_language_id: int = None,
+    ) -> List[Optional[File]]:
     q = (
-        SESSION.query(SentVerse)
-        .join(Language, Language.id == BibleBook.sign_language_id)
-        .join(BibleBook, BibleBook.id == SentVerse.bible_book_id)
+        SESSION.query(File)
+        .join(Chapter, Chapter.id == File.chapter_id)
+        .join(Book, Book.id == Chapter.book_id)
+        .join(Bible, Bible.id == Book.bible_id)
+        .join(Language, Language.id == Bible.language_id)
     )
-    if lang_code is not None:
-        q = q.filter(Language.code == lang_code)
+    if sign_language_meps_symbol is not None:
+        q = q.filter(Language.meps_symbol == sign_language_meps_symbol)
     if booknum is not None:
-        q = q.filter(BibleBook.booknum == int(booknum))
-    if chapter is not None:
-        q = q.filter(SentVerse.chapter == int(chapter))
+        q = q.filter(Book.number == booknum)
+    if chapternum is not None:
+        q = q.filter(File.chapter == chapternum)
     if raw_verses is not None:
-        q = q.filter(SentVerse.raw_verses == raw_verses)
+        q = q.filter(File.raw_verses == raw_verses)
     if checksum is not None:
-        q = q.filter(SentVerse.checksum == checksum)
+        q = q.filter(File.checksum == checksum)
+    if overlay_language_id is not None:
+        q = q.filter(File.overlay_language_id == overlay_language_id)
     return q.all()
 
-def _add_sent_verse(
-        lang_code: str,
-        booknum: Union[int, str],
-        chapter: Union[int, str],
-        checksum: str,
-        raw_verses: str,
-        citation: str,
-        quality: str,
-        telegram_file_id: str,
-        size: int
-    ) -> SentVerse:
-    bible_book = _query_bible_book(lang_code, booknum)
-    sent_verse = SentVerse(
-        checksum=checksum,
-        chapter=int(chapter),
-        raw_verses=raw_verses,
-        citation=citation,
-        quality=quality,
-        telegram_file_id=telegram_file_id,
-        size=size,
-        added_datetime=now(),
+def add_file(
+        tg_video: Video,
+        jw: SignsBible,
+        overlay_language_id: Optional[int],
+    ) -> File:
+    chapter = get_chapter(jw)
+    file = File(
+        telegram_file_id=tg_video.file_id,
+        telegram_file_unique_id=tg_video.file_unique_id,
+        duration=tg_video.duration,
+        name=tg_video.file_name,
+        size=tg_video.file_size,
+        added_datetime=dt_now(),
+        raw_verses=jw.raw_verses,
+        overlay_language_id=overlay_language_id,
+        is_single_verse=True if len(jw.verses) == 1 else False
     )
-    bible_book.sent_verses.append(sent_verse)
-    SESSION.add(bible_book)
+    chapter.files.append(file)
+    SESSION.add(chapter)
     SESSION.commit()
-    return sent_verse
+    return file
 
 
-def add_sent_verse(**kwargs) -> SentVerse:
-    return _add_sent_verse(
-        kwargs['language'],
-        kwargs['booknum'],
-        kwargs['chapter'],
-        kwargs['checksum'],
-        kwargs['raw_verses'],
-        kwargs['citation'],
-        kwargs['quality'],
-        kwargs['telegram_file_id'],
-        kwargs['size'],
-    )
 
-
-def add_sent_verse_user(sent_verse: SentVerse, telegram_user_id: int) -> None:
+def add_file2user(file: File, telegram_user_id: int) -> None:
     user = get_user(telegram_user_id)
-    SESSION.add(SentVerseUser(sent_verse_id=sent_verse.id, user_id=user.id, datetime=now()))
+    SESSION.add(File2User(file_id=file.id, user_id=user.id, datetime=dt_now()))
     SESSION.commit()
 
-
-def add_bookname_abbr(lang_locale: str, booknum: int, fullname: str, long_abbr_name: str, abbr_name: str):
-    SESSION.add(
-        BookNamesAbbreviation(
-            lang_locale=lang_locale,
-            booknum=booknum,
-            full_name=fullname,
-            long_abbr_name=long_abbr_name,
-            abbr_name=abbr_name,
-        )
-    )
-    try:
-        SESSION.flush()
-    except:
-        SESSION.rollback()
-    SESSION.commit()
-
-
-def get_booknames(lang_locale=None) -> List[BookNamesAbbreviation]:
-    q = SESSION.query(BookNamesAbbreviation)
-    if lang_locale:
-        q = q.filter(BookNamesAbbreviation.lang_locale == lang_locale)
-    return q.order_by(BookNamesAbbreviation.booknum.asc()).all()
-
-def get_bookname(lang_locale, booknum) -> BookNamesAbbreviation:
-    q = (
-        SESSION.query(BookNamesAbbreviation)
-        .filter(
-            BookNamesAbbreviation.lang_locale == lang_locale,
-            BookNamesAbbreviation.booknum == int(booknum)
-        )
-    )
-    return q.one()
-
-
-def now() -> str:
-    # TODO CONFIG server timezone, local timezone. database name. 
-    tzinfo = pytz.timezone('UTC')
-    tzinfo.localize(datetime.now())
-    return tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago')).isoformat(sep=' ', timespec="seconds")
-
+# endregion

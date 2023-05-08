@@ -7,16 +7,17 @@ from bot.jw import SHARE_URL
 class BaseBible:
     def __init__(
             self,
-            language: Optional[Union[JWLanguage, str]] = None,
+            language_meps_symbol: str = None,
             booknum: Optional[int] = None,
-            chapter: Optional[int] = None,
+            chapternum: Optional[int] = None,
             verses: Union[int, str, List[str], List[int]] = [],
-            **kwargs):
+            ):
+        self.language_meps_symbol = language_meps_symbol
+        self.language = language_meps_symbol
         self.booknum = booknum
-        self.chapter = chapter
+        self.chapternum = chapternum
         self.verses = verses
-        self.lang = language
-        
+
     @property
     def booknum(self) -> Optional[int]:
         return self._booknum
@@ -31,11 +32,11 @@ class BaseBible:
             raise ValueError('booknum must be between 1 and 66')
 
     @property
-    def chapter(self) -> Optional[int]:
+    def chapternum(self) -> Optional[int]:
         return self._chapter
     
-    @chapter.setter
-    def chapter(self, value):
+    @chapternum.setter
+    def chapternum(self, value):
         if isinstance(value, (str, int)):
             self._chapter = int(value)
         else:
@@ -49,37 +50,35 @@ class BaseBible:
     def verses(self, value):
         if isinstance(value, list):
             self._verses = [int(verse) for verse in value]
-        elif isinstance(value, (int, str)):
-            self._verses = [int(value)]
+        elif isinstance(value, int):
+            self._verses = [value]
+        elif isinstance(value, str): # it could be '14' or '14 15 18' etc
+            self._verses = [int(i) for i in value.split()]
         elif value is None:
             self._verses = []
         else:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
     
     @property
-    def lang(self) -> Optional[JWLanguage]:
-        return self._lang
+    def raw_verses(self):
+        return ' '.join(map(str, self.verses))
+
+    @property
+    def language(self) -> JWLanguage:
+        return self._language
     
-    @lang.setter
-    def lang(self, value) -> None:
-        if isinstance(value, str):
-            self._lang = JWLanguage(value)
-        elif isinstance(value, JWLanguage):
-            self._lang = value
-        elif value is None:
-            self._lang = None
-        else:
-            raise ValueError(f'language value {value!r} is not valid arg')
+    @language.setter
+    def language(self, language_meps_symbol) -> None:
+        self._language = JWLanguage(language_meps_symbol)
 
-
-    def citation(self, bookname=None, chapter=None, verses=None) -> str:
+    def citation(self, bookname=None, chapternum=None, verses=None) -> str:
         """low level function for citation verses
-        chapter=3 verses=[1, 2, 3, 5, 6]
+        chapternum=3 verses=[1, 2, 3, 5, 6]
         3:1-3, 5, 6
         """
-        chapter = chapter if isinstance(chapter, (int, str)) else self.chapter
+        chapternum = chapternum if isinstance(chapternum, (int, str)) else self.chapternum
         verses = (self.__class__(verses=verses).verses or self.verses)
-        assert all([chapter, verses]), f'Debes definir chapter, verses  -->  ({self})'
+        assert all([chapternum, verses]), f'Debes definir chapternum, verses  -->  ({self})'
         pv = str(verses[0])
         last = verses[0]
         sep = ', '
@@ -99,14 +98,14 @@ class BaseBible:
             pv += temp
         if last != verses[-1]:
             pv += f'{sep}{verses[-1]}'
-        return f'{bookname} {chapter}:{pv}' if bookname else f'{chapter}:{pv}'
+        return f'{bookname} {chapternum}:{pv}' if bookname else f'{chapternum}:{pv}'
     
-    def share_url(self, verse=None, is_sign_language=True):
-        assert not None in [self.lang, self.booknum, self.chapter]
+    def share_url(self, verse=None, is_sign_language=True, language_meps_symbol=None):
+        assert not None in [self.language_meps_symbol, self.booknum, self.chapternum]
         return SHARE_URL(
-            self.lang.code,
+            language_meps_symbol or self.language_meps_symbol,
             self.booknum,
-            self.chapter,
+            self.chapternum,
             verse if verse else self.verses[0] if self.verses else 0,
             0 if verse else self.verses[-1] if self.verses else 0,
             is_sign_language
@@ -114,5 +113,5 @@ class BaseBible:
 
     
     def __repr__(self):
-        return f'{self.__class__.__name__}(language={self.lang}, booknum={self.booknum}, ' \
-            f'chapter={self.chapter}, verses={self.verses})'
+        return f'{self.__class__.__name__}(language_meps_symbol={self.language_meps_symbol}, booknum={self.booknum}, ' \
+            f'chapternum={self.chapternum}, verses={self.verses})'

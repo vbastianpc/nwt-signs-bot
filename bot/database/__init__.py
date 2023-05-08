@@ -9,7 +9,8 @@ from bot.database.schemedb import Base
 from bot.database.views import views
 
 
-PATH_DB = 'database.db'
+PATH_DB = 'newlanguages.db'
+# PATH_DB = 'test_database.db'
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):

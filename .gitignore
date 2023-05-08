@@ -11,6 +11,7 @@ SECRETS.json
 *.ipynb
 *.db
 bible-epub/
+bot/utils/fonts/
 
 .DS_Store
 .vscode/

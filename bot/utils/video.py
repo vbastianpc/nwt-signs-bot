@@ -2,29 +2,33 @@ from pathlib import Path
 from subprocess import run
 import shlex
 import time
-from typing import Dict
+from typing import Dict, Optional, List
 import json
 
-from bot import get_logger
+import numpy as np
+from PIL import Image
+
+from bot.logs import get_logger
 from bot.utils import safechars
+from bot.utils.fonts import select_font
 from bot.database.schemedb import VideoMarker
 
 
 logger = get_logger(__name__)
 
-
-def split(inputvideo, marker: VideoMarker, height=None) -> Path:
+def split(marker: VideoMarker, overlay_text: str = None, script: str = None) -> Path:
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
     output = Path(safechars(marker.label) + ".mp4")
+    if overlay_text:
+        logger.info('Add overlay to ffmpeg')
     cmd = (
-        'ffmpeg -v warning -hide_banner -y '
+        'ffmpeg -hide_banner -v warning -y '
         f'-ss {marker.start_time} '
-        f'-i "{inputvideo}" '
-        f'-t {end} ' + 
-        ( f'-vf scale=-2:{height}' if height else '' ) + 
+        f'-i "{marker.chapter.url}" '
+        f'-t {end} '
         f' -map_chapters -1 -metadata title="{marker.label}" -metadata comment=t.me/nwtsigns_bot '
-        '-preset veryfast '
-        f'"{output}"'
+        '-preset veryfast ' + drawtext(marker.chapter.url, overlay_text, script, marker.start_time) +
+        f' "{output}"'
     )
     logger.info(cmd)
     run(shlex.split(cmd), capture_output=True)
@@ -40,13 +44,14 @@ def show_streams(video) -> Dict:
     return streams[0]
 
 
-def concatenate(inputvideos, outname=None, title_chapters=None, title=None) -> Path:
+def concatenate(inputvideos: List[Path], outname: str=None, title_chapters: List[str]=None, title:str=None) -> Path:
     intermediates = []
     metadata = ';FFMETADATA1\n'
     offset = 0
     metapath = Path('metadata.txt')
     output = Path((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
 
+    assert len(inputvideos) == len(title_chapters)
     for i, video in enumerate(inputvideos):
         out = f'{time.time()}.ts'
         intermediates.append(out)
@@ -87,10 +92,68 @@ def parse_time(stamptime) -> float:
         hours, minutes, seconds = stamptime.split(':')
         return int(hours)*60*60 + int(minutes)*60 + float(seconds)
 
-def make_thumbnail(inputvideo: Path) -> Path:
-    thumb = inputvideo.parent / (inputvideo.stem + '.jpg')
+def make_thumbnail(inputvideo: Path, name=None) -> Path:
+    thumb = inputvideo.parent / ((name or inputvideo.stem) + '.jpg')
     run(
-        shlex.split(f'ffmpeg -v error -stats -y -i "{inputvideo}" -vframes 1 -vf scale=240:-2 -q:v 2 "{thumb}"'),
+        shlex.split(f'ffmpeg -v error -stats -y -i "{inputvideo}" -vframes 1 -vf scale=320:-2 -q:v 2 "{thumb}"'),
         capture_output=True, check=True
     )
     return thumb
+
+
+def drawtext(
+        inputvideo: str,
+        overlay_text: Optional[str] = None,
+        script: str = None,
+        start_time: int = 0
+    ) -> str:
+    if not overlay_text:
+        return ''
+    overlay_text = overlay_text.replace(':', '\:')
+    frame = Path(__file__).parent / 'frame.png'
+    run(
+        shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
+        capture_output=True, check=True
+    )
+    image = Image.open(frame) # already mode L, grayscale because edgedetect
+    # frame.unlink()
+    r720P = image.size[1] == 720
+    box = (0, 120, 150, 121) if r720P else (0, 90, 150, 91)
+    line = np.array(image.crop(box))[0]
+    has_hebrew = np.where(line > 120)[0].size > 0
+
+    if r720P and has_hebrew:
+        y = 160
+    elif r720P and not has_hebrew:
+        y = 107
+    elif not r720P and has_hebrew:
+        y = 120
+    elif not r720P and not has_hebrew:
+        y = 90
+    params = {
+        'fontfile': f"'{select_font(script)}'",
+        'text': f"'{overlay_text}'",
+        'fontcolor': '0xD7D7D7' if r720P else '0xA2A2A2',
+        'fontsize': 32 if r720P else 22,
+        'x': 93 if r720P else 65,
+        'y': y
+    }
+
+    return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
+
+"""
+720p
+image.crop((0, 67, 150, 68)).convert('L').filter(ImageFilter.FIND_EDGES)
+fontsize=32
+fontcolor=0xD7D7D7
+    Normal: x=93 y=107
+    Con letras hebreas: x=93 y=160
+
+    
+480p
+image.crop((0, 62, 150, 63)).convert('L').filter(ImageFilter.FIND_EDGES)
+fontsize=22
+fontcolor=0xA2A2A2
+x=65 y=90
+
+"""

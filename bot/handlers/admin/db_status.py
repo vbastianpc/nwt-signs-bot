@@ -11,7 +11,7 @@ from bot.strings import TextGetter
 
 @admin
 def database_status(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     update.message.reply_text(
         t.db_summary.format(
             rdb.count_videomarker(),

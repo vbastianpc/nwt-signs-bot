@@ -1,11 +1,12 @@
 from pathlib import Path
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 import json
 from subprocess import run
 import shlex
+from datetime import datetime
 
-from bot import get_logger
+from bot.logs import get_logger
 from bot.utils.browser import LazyBrowser
 from bot.jw.language import JWLanguage
 from bot.jw.bible import BaseBible
@@ -26,14 +27,24 @@ def clean(func):
 class SignsBible(BaseBible):
     browser_pubmedia = LazyBrowser()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            sign_language_meps_symbol: str = None,
+            booknum: Optional[int] = None,
+            chapternum: Optional[int] = None,
+            verses: Union[int, str, List[str], List[int]] = [],
+            **kwargs):
+        super().__init__(sign_language_meps_symbol, booknum, chapternum, verses)
+    
+    @property
+    def api_url(self):
+        return URL_PUBMEDIA.format(language_meps_symbol=self.language_meps_symbol, booknum=self.booknum, track=self.chapternum or '')
 
     @property
     def _rawdata(self) -> Dict:
-        assert all([self.lang.code, self.booknum]), f'Debes definir lang.code y booknum ({self.lang.code} {self.booknum})'
-        url_1 = URL_PUBMEDIA.format(lang_code=self.lang.code, booknum=self.booknum, track=self.chapter or '')
-        url_2 = URL_PUBMEDIA.format(lang_code=self.lang.code, booknum=self.booknum, track='')
+        assert all([self.language_meps_symbol, self.booknum]), f'Debes definir language_code y booknum ({self.language_meps_symbol} {self.booknum})'
+        url_1 = self.api_url
+        url_2 = URL_PUBMEDIA.format(language_meps_symbol=self.language_meps_symbol, booknum=self.booknum, track='')
 
         if self.browser_pubmedia.url in [url_1, url_2]:
             # print('cached track or without track')
@@ -41,10 +52,10 @@ class SignsBible(BaseBible):
 
         r = self.browser_pubmedia.open(url_1)
         if r.status_code == 200:
-            # print(f'exists rawdata with track {self.chapter}')
+            # print(f'exists rawdata with track {self.chapternum}')
             return r.json()
     
-        # print(f'doesnt exists rawdata with track {self.chapter}. Trying without track')
+        # print(f'doesnt exists rawdata with track {self.chapternum}. Trying without track')
         r = self.browser_pubmedia.open(url_2)
         if r.status_code == 200:
             # print('exists rawdata without track')
@@ -55,16 +66,16 @@ class SignsBible(BaseBible):
             return {}
 
     def files(self) -> Dict:
-        for files in self._rawdata['files'][self.lang.code].values():
+        for files in self._rawdata['files'][self.language_meps_symbol].values():
             for file in files:
                 yield file
 
-    def _match(self, chapter=None, quality=None) -> Dict:
-        chapter = int(chapter) if isinstance(chapter, (int, str)) else self.chapter
+    def _match(self, chapternum=None, quality=None) -> Dict:
+        chapternum = int(chapternum) if chapternum is not None else self.chapternum
         quality = quality or self.get_best_quality()
-        assert isinstance(chapter, (int, str)), f'Debes definir capítulo {self.chapter}'
+        assert isinstance(chapternum, (int, str)), f'Debes definir capítulo {self.chapternum}'
         for file in self.files():
-            if (file['label'] == quality and file['track'] == chapter):
+            if (file['label'] == quality and file['track'] == chapternum):
                 return file
         else:
             raise Exception(f'No hay coincidencias')
@@ -77,14 +88,17 @@ class SignsBible(BaseBible):
     def bookname(self) -> str:
         return self._rawdata['pubName']
     
-    def get_video_url(self, chapter=None, quality=None) -> str:
-        return self._match(chapter, quality)['file']['url']
+    def get_video_url(self, chapternum=None, quality=None) -> str:
+        return self._match(chapternum, quality)['file']['url']
 
-    def get_checksum(self, chapter=None, quality=None) -> str:
-        return self._match(
-            quality=quality or self.get_best_quality(),
-            chapter=chapter if isinstance(chapter, (int, str)) else self.chapter
-        )['file']['checksum']
+    def get_checksum(self, chapternum=None, quality=None) -> str:
+        return self._match(chapternum, quality)['file']['checksum']
+
+    def get_modified_datetime(self, chapternum=None, quality=None) -> datetime:
+        return datetime.fromisoformat(self._match(chapternum, quality)['file']['modifiedDatetime'])
+    
+    def get_title(self):
+        return next(self.files())['title']
 
     def get_available_qualities(self) -> List[str]:
         qualities = set()
@@ -97,12 +111,12 @@ class SignsBible(BaseBible):
 
     def check_chapternumber(self) -> bool:
         try:
-            return self.chapter in (int(file['track']) for file in self.files()) or self.chapter in (int(file['track']) for file in self.__class__(self.lang, self.booknum).files())
+            return self.chapternum in (int(file['track']) for file in self.files()) or self.chapternum in (int(file['track']) for file in self.__class__(self.language_meps_symbol, self.booknum).files())
         except KeyError:
             return False
     
     def get_all_chapternumber(self) -> List[int]:
-        chapters = set((int(item['track'])) for item in self.__class__(self.lang, self.booknum).files() if item['hasTrack'])
+        chapters = set((int(item['track'])) for item in self.__class__(self.language_meps_symbol, self.booknum).files() if item['hasTrack'])
         return sorted(chapters)
     
 
@@ -118,7 +132,7 @@ class SignsBible(BaseBible):
         logger.info('Getting JW-API markers')
         for item in self.files():
             if (item['markers'] and
-                chapter_from_url(item['file']['url']) == self.chapter):
+                chapter_from_url(item['file']['url']) == self.chapternum):
                 markers = item['markers']['markers']
                 break
         else:
@@ -134,12 +148,12 @@ class SignsBible(BaseBible):
         ) for marker in markers]
 
     def wol_discover(self, verse=None) -> Optional[str]:
-        if self.lang.is_wol_available():
-            return URL_WOL_DISCOVER.format(locale=self.lang.locale,
-                                        rsconf=self.lang.rsconf,
-                                        lib=self.lang.lib,
+        if self.language.is_wol_available():
+            return URL_WOL_DISCOVER.format(language_code=self.language.code,
+                                        rsconf=self.language.rsconf,
+                                        lib=self.language.lib,
                                         booknum=self.booknum,
-                                        chapter=self.chapter,
+                                        chapter=self.chapternum,
                                         first_verse=verse or self.verses[0],
                                         last_verse=verse or self.verses[-1]
                                         )

@@ -14,8 +14,8 @@ from telegram.parsemode import ParseMode
 from bot.database import localdatabase as db
 from bot.utils.decorators import admin
 from bot import AdminCommand, MyCommand
-from bot import ADMIN
-from bot import get_logger
+from bot.secret import LOG_CHANNEL_ID
+from bot.logs import get_logger
 from bot.strings import TextGetter
 
 
@@ -43,7 +43,7 @@ def test_data(update: Update, context: CallbackContext) -> None:
 
 @admin
 def notify(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     if not context.args:
         update.message.reply_text(
             text=t.wrong_notify.format(AdminCommand.NOTIFY),
@@ -70,7 +70,7 @@ def send_notification(update: Update, context: CallbackContext):
                 from_chat_id=update.effective_user.id,
                 message_id=msg.message_id,
             )
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     update.message.reply_text(t.notify_success)
     del context.user_data['advice_note']
     del context.user_data['user_ids']
@@ -78,7 +78,7 @@ def send_notification(update: Update, context: CallbackContext):
 
 
 def cancel(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     update.message.reply_text(t.notify_cancel)
     del context.user_data['advice_note']
     return -1
@@ -90,7 +90,7 @@ def logs(update: Update, context: CallbackContext):
         with open('./log.log', 'r', encoding='utf-8') as f:
             data = f.read()
     except FileNotFoundError:
-        t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+        t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
     else:
         update.message.reply_markdown_v2(f'```{data[-MAX_MESSAGE_LENGTH::]}```')
@@ -105,7 +105,7 @@ def logfile(update: Update, context: CallbackContext):
             document=open('./log.log', 'rb'),
         )
     except FileNotFoundError:
-        t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+        t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
 
 
@@ -124,8 +124,8 @@ def error_handler(update: object, context: CallbackContext) -> None:
         f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
     )
 
-    context.bot.send_message(chat_id=ADMIN, text=message, parse_mode=ParseMode.HTML)
-    context.bot.send_message(chat_id=ADMIN, text=tb_string, parse_mode=ParseMode.HTML)
+    context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=message, parse_mode=ParseMode.HTML)
+    context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=tb_string, parse_mode=ParseMode.HTML)
 
 
 

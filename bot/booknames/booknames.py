@@ -1,54 +1,28 @@
 from unidecode import unidecode
-from typing import Tuple, List, Callable, Iterator, Union
+from typing import List, Callable, Iterator
 
 from telegram import BotCommand
 
-from bot import get_logger
-from bot.utils.browser import LazyBrowser
-from bot.jw.language import JWLanguage
+from bot.logs import get_logger
 from bot.database import localdatabase as db
-from bot.database.schemedb import BookNamesAbbreviation, Language
+from bot.database.schemedb import Book
 
 
 logger = get_logger(__name__)
 
 
-browser = LazyBrowser()
-lang = JWLanguage()
 
-def add_booknames(lang_locale) -> Language:
-    db_language = db.get_language(lang_locale=lang_locale)
-    if not db_language:
-        raise ValueError(f"Language {lang_locale!r} doesn't exist")
-    lang.locale = lang_locale
-    url = f'https://wol.jw.org/wol/finder?pub=nwt&wtlocale={lang.code}'
-    # https://www.jw.org/en/library/bible/json/ entrar aqui para obtener link de abajo TODO
-    # https://www.jw.org/en/library/bible/study-bible/books/json/
-    browser.open(url)
-
-    booklinks = browser.page.find_all('a', class_='bookLink')
-    for booklink in booklinks:
-        db.add_bookname_abbr(
-            lang_locale,
-            int(booklink.get('data-bookid')),
-            booklink.find('span', class_='title ellipsized name').text.strip('.'),
-            booklink.find('span', class_='title ellipsized abbreviation').text.strip('.'),
-            booklink.find('span', class_='title ellipsized official').text.strip('.'),
-        )
-    return db_language
-
-
-def search_bookname(likely_bookname: str, lang_locale: str = None) -> BookNamesAbbreviation:
+def search_bookname(likely_bookname: str, language_id: int = None) -> Book:
     # search case insensitive
-    likely_bookname = likely_bookname.lower()
-    def variations(book: BookNamesAbbreviation) -> List[str]:
+    likely_bookname = likely_bookname.lower().strip()
+    def variations(book: Book) -> List[str]:
         return [
-            book.full_name.lower(),
-            book.long_abbr_name.lower(),
-            book.abbr_name.lower(),
-            book.full_name.lower().replace(' ', ''),
-            book.long_abbr_name.lower().replace(' ', ''),
-            book.abbr_name.lower().replace(' ', '')
+            book.name.lower(),
+            book.standard_abbreviation.lower(),
+            book.official_abbreviation.lower(),
+            book.name.lower().replace(' ', ''),
+            book.standard_abbreviation.lower().replace(' ', ''),
+            book.official_abbreviation.lower().replace(' ', '')
         ]
 
     def strict(bookname: str):
@@ -69,17 +43,17 @@ def search_bookname(likely_bookname: str, lang_locale: str = None) -> BookNamesA
     def contains_unidecode(bookname: str):
         return unidecode(likely_bookname) in unidecode(bookname).lower()
 
-    db_booknames = db.get_booknames(lang_locale)
-    def find_bookname(*funcs: Callable[[str], bool]) -> Iterator[BookNamesAbbreviation]:
+    books = db.get_books(language_id)
+    def find_bookname(*funcs: Callable[[str], bool]) -> Iterator[Book]:
         i = 0
         for func in funcs:
-            for book in db_booknames:
+            for book in books:
                 i += 1
                 if any(map(func, variations(book))):
                     logger.info("%s iterations to found '%s' (%s %s %s %s '%s') by '%s' mode",
-                        i, likely_bookname, book.full_name, book.long_abbr_name, book.abbr_name, book.booknum, book.lang_locale, func.__name__)
+                        i, likely_bookname, book.name, book.standard_abbreviation, book.official_abbreviation, book.number, book.bible.language.code, func.__name__)
                     yield book
-        logger.info("Total iterations searching '%s' in %s: %s", likely_bookname, (f"'{lang_locale}' language" if lang_locale else 'all languages'), i)
+        logger.info("Total iterations searching '%s' in %s: %s", likely_bookname, (f"'{language_id}' language id" if language_id else 'all languages'), i)
     
     for book in find_bookname(
             strict,
@@ -90,28 +64,17 @@ def search_bookname(likely_bookname: str, lang_locale: str = None) -> BookNamesA
             contains_unidecode):
         return book
 
-    if lang_locale:
-        logger.info(f'{likely_bookname} not found in {lang_locale!r}. Trying in all languages')
+    if language_id:
+        logger.info(f'{likely_bookname} not found in {language_id=}. Trying in all languages')
         return search_bookname(likely_bookname, None)
     else:
         logger.info(f'{likely_bookname!r} not found in any language')
         raise Exception
 
-def get_commands(lang_locale) -> List[BotCommand]:
-    db_booknames = db.get_booknames(lang_locale)
-    return [BotCommand(unidecode(b.abbr_name).lower(), b.full_name) for b in db_booknames]
+def get_botcommands(language_id) -> List[BotCommand]:
+    books = db.get_books(language_id=language_id)
+    return [BotCommand(unidecode(book.standard_abbreviation).lower().replace(' ', ''), book.full_name) for book in books]
 
-
-def testing_bible_booknames_commands():
-    logger.info('Init testing...')
-    db_booknames = db.get_booknames()
-    def check(book: BookNamesAbbreviation):
-        assert search_bookname(book.abbr_name, book.lang_locale)[0] == book.booknum, f"abbr_name doesn't match {book.abbr_name!r} {book.lang_locale!r}"
-        assert search_bookname(book.long_abbr_name, book.lang_locale)[0] == book.booknum, f"long_abbr_name doesn't match {book.long_abbr_name!r} {book.lang_locale!r}"
-        assert search_bookname(book.full_name, book.lang_locale)[0] == book.booknum, f"full_name doesn't match {book.full_name!r} {book.lang_locale!r}"
-    for book in db_booknames:
-        check(book)
-    logger.info('All booknames checked')
-
-if __name__ == '__main__':
-    testing_bible_booknames_commands()
+def get_commands(language_id) -> List[str]:
+    books = db.get_books(language_id=language_id)
+    return [unidecode(book.standard_abbreviation).lower().replace(' ', '') for book in books]

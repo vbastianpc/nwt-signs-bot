@@ -3,7 +3,7 @@ from telegram.ext import CallbackContext
 from telegram import ParseMode
 from telegram.ext import CommandHandler
 
-from bot import get_logger
+from bot.logs import get_logger
 from bot.utils.decorators import vip, forw
 from bot import MyCommand
 from bot.strings import TextGetter
@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 @forw
 @vip
 def help(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     update.message.reply_text(
         text=t.help.format(
             MyCommand.SIGNLANGUAGE,

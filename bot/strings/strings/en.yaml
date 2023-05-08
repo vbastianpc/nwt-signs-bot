@@ -54,8 +54,8 @@ optional_book: Change sign language with the command /{} or try another book.
 optional_chapter: But you can choose another chapter.
 optional_verse: But you can choose another verse.
 
-choose_chapter: "*Choose a chapter*"
-choose_verse: "*Choose a verse*"
+choose_chapter: "Choose a chapter"
+choose_verse: "Choose a verse"
 
 downloading: Downloading
 trimming: Trimming

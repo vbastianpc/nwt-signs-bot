@@ -6,12 +6,13 @@ from telegram.utils.helpers import mention_markdown
 from telegram.error import Unauthorized
 from telegram import BotCommandScopeChat
 
+from bot.utils import now
 from bot.utils.decorators import admin
 from bot.database import localdatabase as db
 from bot.database import PATH_DB
 from bot.handlers.start import start
 from bot import AdminCommand
-from bot import get_logger
+from bot.logs import get_logger
 from bot import strings
 from bot.strings import TextGetter
 from bot.strings import botlangs
@@ -29,7 +30,7 @@ def autorizacion(update: Update, context: CallbackContext):
         new_member_id = int(context.args[0])
     except:
         return
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
 
     if not db.get_user(new_member_id):
         update.message.reply_text(t.warn_user)
@@ -46,15 +47,9 @@ def autorizacion(update: Update, context: CallbackContext):
         text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
         parse_mode=ParseMode.MARKDOWN,
     )
-    if new_db_user.bot_lang not in botlangs():
-        booknames.add_booknames(new_db_user.bot_lang)
-        context.bot.set_my_commands(
-            commands=(
-                strings.get_commands('en') +
-                booknames.get_commands(new_db_user.bot_lang)
-            ),
-            scope=BotCommandScopeChat(new_member_id)
-        )
+    if not db.get_bible(new_db_user.bot_language.meps_symbol):
+        db.fetch_bible_books(new_db_user.bot_language)
+
     start(
         update,
         context,
@@ -65,7 +60,7 @@ def autorizacion(update: Update, context: CallbackContext):
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     try:
         user_id = int(context.args[0])
     except IndexError:
@@ -85,8 +80,8 @@ def sending_users(update: Update, context: CallbackContext):
         for i, user in enumerate(users, 1):
             text += (
                 f'\n{mention_markdown(user.telegram_user_id, user.full_name.split()[0])} '
-                f'{user.signlanguage.code if user.signlanguage else None} '
-                f'{user.bot_lang} '
+                f'{user.signlanguage.meps_symbol if user.signlanguage else None} '
+                f'{user.bot_language.name} '
                 f'`{user.telegram_user_id}`'
                 )
             if i % 10 == 0:
@@ -94,7 +89,7 @@ def sending_users(update: Update, context: CallbackContext):
                 text = ''
         if text:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    print_users(db.get_active_users(), "ACTIVE")
+    print_users(db.get_accepted_users(), "ACCEPTED")
     print_users(db.get_banned_users(), 'BANNED')
     print_users(db.get_waiting_users(), 'WAITING')
 
@@ -103,7 +98,7 @@ def backup(update: Update, context: CallbackContext):
     context.bot.send_document(
         chat_id=update.effective_chat.id,
         document=open(PATH_DB, 'rb'),
-        filename= f'{db.now()} {PATH_DB}'
+        filename= f'{now()} {PATH_DB}'
     )
 
 

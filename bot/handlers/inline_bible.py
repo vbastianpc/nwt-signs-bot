@@ -5,10 +5,11 @@ from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import InlineQueryHandler
 
-from bot import get_logger
+from bot.logs import get_logger
 from bot.utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
 from bot.utils.decorators import vip
-from bot.utils.utils import parse_booknum, parse_verses
+from bot.utils.utils import parse_verses
+from bot.jw.pubmedia import BaseBible
 import bot.database.localdatabase as db
 
 
@@ -19,31 +20,28 @@ logger = get_logger(__name__)
 def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
     try:
-        booknums = [parse_booknum(update.inline_query.query)]
+        booknums = [] # type function herre
     except BooknumNotFound:
         booknums = [None]
     except MultipleBooknumsFound as e:
         booknums = e.booknums
     finally:
         chapter = parse_chapter(update.inline_query.query)
-        verses = parse_verses(update.inline_query.query)
+        # verses = parse_verses(update.inline_query.query)
     db_user = db.get_user(update.effective_user.id)
+    citation = BaseBible().citation
     results = []
     for booknum in booknums:
-        sent_verses = db.query_sent_verses(
-            lang_code=db_user.signlanguage.code,
-            booknum=booknum,
-            chapter=chapter,
-            raw_verses=' '.join(verses) or None,
-        ) # TODO muestra las versiones antiguas también. quedarse solo con la última versión
+        files = db.get_files() # TODO muestra las versiones antiguas también. quedarse solo con la última versión
+        bookname = db.get_book(db_user.bot_language, booknum).name
         results += [
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
-                video_file_id=sent_verse.telegram_file_id,
-                title=f'{sent_verse.citation} - {db_user.signlanguage.code}', # TODO falta agregar libro en idioma de bot language
-                caption=f'{sent_verse.citation} - {db_user.signlanguage.code}', # TODO falta agregar libro en idioma de bot language
+                video_file_id=file.telegram_file_id,
+                title=f'{citation(bookname, chapter, file.raw_verses)} - {db_user.signlanguage.meps_symbol}',
+                caption=f'{citation(bookname, chapter, file.raw_verses)} - {db_user.signlanguage.meps_symbol}',
             )
-            for sent_verse in sent_verses
+            for file in files
         ]
     update.inline_query.answer(results, auto_pagination=True, cache_time=5)
 

@@ -3,8 +3,11 @@ dependencies:
   - python=3.9
   - pip:
     - python-telegram-bot==13.7
-    - SQLAlchemy
+    - SQLAlchemy<2.0
     - requests
     - Unidecode
     - mechanicalsoup
     - ruamel.yaml
+    - numpy
+    - Pillow
+    - fonttools

@@ -52,8 +52,8 @@ optional_book: Hãy đổi ngôn ngữ ký hiệu bằng /{} hoặc chọn một
 optional_chapter: Nhưng bạn có thể chọn một chương khác.
 optional_verse: Nhưng bạn có thể chọn một câu khác.
 
-choose_chapter: "*Chọn chương*"
-choose_verse: "*Chọn câu*"
+choose_chapter: "Chọn chương"
+choose_verse: "Chọn câu"
 
 downloading: Đang tải
 trimming: Đang cắt

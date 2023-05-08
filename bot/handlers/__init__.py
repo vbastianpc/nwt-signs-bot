@@ -1,7 +1,6 @@
-from bot.handlers.bible import parse_bible_text_handler
 from bot.handlers.bible import chapter_handler
 from bot.handlers.bible import verse_handler
-from bot.handlers.bible import parse_lang_bible_handler
+from bot.handlers.bible import parse_bible_handler
 from bot.handlers.settings import show_settings_handler
 from bot.handlers.settings import showlangs_handler
 from bot.handlers.settings import setlang_handler
@@ -14,6 +13,7 @@ from bot.handlers.feedback import feedback_handler
 from bot.handlers.start import start_handler
 from bot.handlers.start import all_fallback_handler
 from bot.handlers.booknames import bookname_handler
+from bot.handlers.overlay import overlay_handler
 from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
@@ -42,6 +42,7 @@ handlers = [
     bookname_handler,
     help_handler,
     show_settings_handler,
+    overlay_handler,
 
     # inline
     inline_handler,
@@ -58,10 +59,9 @@ handlers = [
     reset_chapter_handler,
 
     # parse bible citation
-    parse_lang_bible_handler, # fallback commands
+    parse_bible_handler,
     chapter_handler,
     verse_handler,
-    parse_bible_text_handler,
 
     # fallback all
     all_fallback_handler,
