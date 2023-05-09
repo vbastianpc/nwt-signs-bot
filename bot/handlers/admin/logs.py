@@ -10,7 +10,10 @@ from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
+from sqlalchemy.exc import PendingRollbackError
+from sqlalchemy.exc import OperationalError
 
+from bot.database import SESSION
 from bot.database import localdatabase as db
 from bot.utils.decorators import admin
 from bot import AdminCommand, MyCommand
@@ -109,11 +112,19 @@ def logfile(update: Update, context: CallbackContext):
         update.message.reply_text(t.logfile_notfound)
 
 
-def error_handler(update: object, context: CallbackContext) -> None:
+def error_handler(update: Update, context: CallbackContext) -> None:
+    logger.error(f'Type Error: {type(context.error)}')
+    if isinstance(context.error, OperationalError) and context.error.orig.args[0] == 'database is locked':
+        logger.error('database is locked')
+        context.bot.send_message(chat_id=LOG_CHANNEL_ID, text='<pre>database is locked</pre>', parse_mode=ParseMode.HTML)
+        log_error(update, context)
+    else:
+        log_error(update, context)
+
+
+def log_error(update: Update, context: CallbackContext) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    tb_string = ''.join(tb_list)
-    tb_string = f'<pre>{html.escape(tb_string)}</pre>'
 
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
     message = (
@@ -125,9 +136,9 @@ def error_handler(update: object, context: CallbackContext) -> None:
     )
 
     context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=message, parse_mode=ParseMode.HTML)
-    context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=tb_string, parse_mode=ParseMode.HTML)
-
-
+    for tb_string in tb_list:
+        tb_string = f'<pre>{html.escape(tb_string)}</pre>'
+        context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=tb_string, parse_mode=ParseMode.HTML, disable_notification=True)
 
 test_handler = CommandHandler(AdminCommand.TEST, test_data)
 

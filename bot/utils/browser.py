@@ -1,5 +1,5 @@
+import time
 import mechanicalsoup
-
 from bot.logs import get_logger
 
 logger = get_logger(__name__)
@@ -17,7 +17,7 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
             return self.response
         else:
             self.last_url = url
-            logger.info('Opening %s', url)
+            t0 = time.time()
             self.response = super().open(url)
-            logger.info('Ok      %s', url)
+            logger.info(f'{time.time() - t0:.3f}s loaded {url}')
             return self.response

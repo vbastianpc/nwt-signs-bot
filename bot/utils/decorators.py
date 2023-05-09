@@ -57,12 +57,13 @@ def forw(func):
                     chat_id=LOG_CHANNEL_ID,
                     text=f'{update.effective_user.mention_html()}\n{update.callback_query.data}',
                     parse_mode=ParseMode.HTML
-                    )
+                )
             else:
                 try:
                     context.bot.forward_message(LOG_CHANNEL_ID, user.id, update.effective_message.message_id)
                 except telegram.error.BadRequest:
-                    context.bot.send_message(LOG_CHANNEL_ID, update.effective_user.mention_html(), parse_mode=ParseMode.HTML)
+                    context.bot.send_message(
+                        LOG_CHANNEL_ID, update.effective_user.mention_html(), parse_mode=ParseMode.HTML)
                     context.bot.copy_message(LOG_CHANNEL_ID, user.id, update.effective_message.message_id)
 
         return func(update, context, *args, **kwargs)

@@ -31,14 +31,15 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None) -> 
         f' "{output}"'
     )
     logger.info(cmd)
-    run(shlex.split(cmd), capture_output=True)
+    run(shlex.split(cmd), capture_output=True, check=True)
     return output
 
 
 def show_streams(video) -> Dict:
     console = run(
         shlex.split(f'ffprobe -v quiet -show_streams -print_format json -i "{video}"'),
-        capture_output=True
+        capture_output=True,
+        check=True
     )
     streams = json.loads(console.stdout.decode())['streams']
     return streams[0]
@@ -56,7 +57,7 @@ def concatenate(inputvideos: List[Path], outname: str=None, title_chapters: List
         out = f'{time.time()}.ts'
         intermediates.append(out)
         ts = f'ffmpeg -v warning -hide_banner -y -i "{video}" -c copy "{out}"'
-        run(shlex.split(ts))
+        run(shlex.split(ts),capture_output=True , check=True)
         stream = show_streams(video)
         metadata += (
             '[CHAPTER]\n'
@@ -66,9 +67,9 @@ def concatenate(inputvideos: List[Path], outname: str=None, title_chapters: List
             f'title={title_chapters[i] if title_chapters else Path(video).stem}\n'
         )
         offset += float(stream['duration'])
-    
+
     concat = '|'.join(intermediates)
-    metapath.write_text(metadata)
+    metapath.write_text(metadata, encoding='utf-8')
     cmd = (
         'ffmpeg -v warning -hide_banner -y '
         f'-i "concat:{concat}"  '
@@ -77,7 +78,7 @@ def concatenate(inputvideos: List[Path], outname: str=None, title_chapters: List
         '-metadata comment=t.me/nwtsigns_bot '
         f'-c copy "{output}"' 
     )
-    run(shlex.split(cmd), capture_output=True)
+    run(shlex.split(cmd), capture_output=True, check=True)
     for i in intermediates:
         Path(i).unlink()
     metapath.unlink()
@@ -109,7 +110,7 @@ def drawtext(
     ) -> str:
     if not overlay_text:
         return ''
-    overlay_text = overlay_text.replace(':', '\:')
+    overlay_text = overlay_text.replace(':', r'\:')
     frame = Path(__file__).parent / 'frame.png'
     run(
         shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
@@ -134,26 +135,22 @@ def drawtext(
         'fontfile': f"'{select_font(script)}'",
         'text': f"'{overlay_text}'",
         'fontcolor': '0xD7D7D7' if r720P else '0xA2A2A2',
-        'fontsize': 32 if r720P else 22,
-        'x': 93 if r720P else 65,
+        'fontsize': 30 if r720P else 22,
+        'x': 95 if r720P else 65,
         'y': y
     }
 
     return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
 
-"""
-720p
-image.crop((0, 67, 150, 68)).convert('L').filter(ImageFilter.FIND_EDGES)
-fontsize=32
-fontcolor=0xD7D7D7
-    Normal: x=93 y=107
-    Con letras hebreas: x=93 y=160
 
-    
-480p
-image.crop((0, 62, 150, 63)).convert('L').filter(ImageFilter.FIND_EDGES)
-fontsize=22
-fontcolor=0xA2A2A2
-x=65 y=90
-
-"""
+# 720p
+# image.crop((0, 67, 150, 68)).convert('L').filter(ImageFilter.FIND_EDGES)
+# fontsize=32
+# fontcolor=0xD7D7D7
+#     Normal: x=93 y=107
+#     Con letras hebreas: x=93 y=160
+# 480p
+# image.crop((0, 62, 150, 63)).convert('L').filter(ImageFilter.FIND_EDGES)
+# fontsize=22
+# fontcolor=0xA2A2A2
+# x=65 y=90

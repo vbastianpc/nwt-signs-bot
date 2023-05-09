@@ -14,6 +14,7 @@ from bot.jw.language import JWLanguage
 
 EPUB_PATH = Path('bible-epub')
 
+
 class Epub(BaseBible):
     def __init__(
             self,
@@ -22,7 +23,7 @@ class Epub(BaseBible):
             chapternum: Optional[int] = None,
             verses: Union[int, str, List[str], List[int]] = [],
             download=True,
-            ):
+    ):
         super().__init__(language_code, booknum, chapternum, verses)
         if download and not self.epub_file:
             self.download()
@@ -43,7 +44,7 @@ class Epub(BaseBible):
         api_url = "https://b.jw-cdn.org/apis/pub-media/GETPUBMEDIALINKS"
         params = {
             "output": "json",
-            "pub": pub, 
+            "pub": pub,
             "fileformat": "EPUB",
             "alllangs": 0,
             "langwritten": self.language_meps_symbol,
@@ -69,7 +70,7 @@ class Epub(BaseBible):
 
     def unzip(self):
         directory_to_extract = Path(self.epub_file).parent / self.epub_file.stem
-        directory_to_extract.mkdir(exist_ok=True)    
+        directory_to_extract.mkdir(exist_ok=True)
         with ZipFile(self.epub_file, 'r') as zip_ref:
             zip_ref.extractall(directory_to_extract)
 
@@ -78,25 +79,24 @@ class Epub(BaseBible):
         for file in EPUB_PATH.glob(f'*_{self.language_meps_symbol}.epub'):
             if file.is_file():
                 return file
-    
+
     @property
     def bookname(self) -> Optional[str]:
         file = self.dirpath() / f'OEBPS/bibleversenav{self.booknum}_1.xhtml'
         nav_soup = BeautifulSoup(file.read_bytes(), 'html.parser')
         return nav_soup.title.text
-    
-    
+
     def get_text(self) -> str:
         return f'<a href="{self.share_url(is_sign_language=False)}">{self.bookname} {self.chapternum}</a>\n' + self.verse_text()
-
 
     def verse_text(self) -> List[str]:
         versenav = self.dirpath() / f'OEBPS/bibleversenav{self.booknum}_{self.chapternum}.xhtml'
         nav_soup = BeautifulSoup(versenav.read_bytes(), 'html.parser')
         verses = []
         for versenum in self.verses:
-            target_file, id_ = nav_soup.body.table.find('a', href=re.compile(f'xhtml#chapter{self.chapternum}_verse{versenum}')).get('href').split('#')
-            target_file = (self.dirpath() / 'OEBPS') /target_file
+            target_file, id_ = nav_soup.body.table.find('a', href=re.compile(
+                f'xhtml#chapter{self.chapternum}_verse{versenum}')).get('href').split('#')
+            target_file = (self.dirpath() / 'OEBPS') / target_file
             b = BeautifulSoup(target_file.read_bytes(), 'html.parser')
             span = b.find('span', id=id_)
             text = self._format_verse(span.next, versenum)
@@ -111,7 +111,7 @@ class Epub(BaseBible):
             if (e is None or
                (e.name == 'div' and '' in 'groupFootnote' in e.get('class')) or
                (isinstance(e, Tag) and e.get('id') and e.get('id').startswith('chapter'))
-            ):
+                    ):
                 break
 
             if e.name == 'p':
@@ -149,5 +149,3 @@ if __name__ == '__main__':
     bot = Bot(TOKEN)
     # bot.send_message(chat_id=ADMIN, text=epub.get_text(), parse_mode='HTML', disable_web_page_preview=True)
     print('Enviado')
-    
-

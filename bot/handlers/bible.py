@@ -39,37 +39,29 @@ SELECTING_CHAPTERS, SELECTING_VERSES = 'C', 'V'
 
 
 @vip
-def parse_bible(update: Update, context: CallbackContext) -> None:
+def parse_query(update: Update, context: CallbackContext) -> None:
     logger.info(f'{context.args=}, {update.message.text}')
-    command = re.match('/(\w+)', update.message.text)
-    command = command.group(1) if command else None
-    args = update.message.text.split()[1:] if len(update.message.text.split()) > 1 else None
-    if command and not args:
-        language = db.get_language(code=command.lower())
-        language2 = db.get_language(meps_symbol=command.upper())
-        if language and language.is_sign_language:
-            set_sign_language(update, context, sign_language_code=language.code)
-        elif language and not language.is_sign_language:
-            set_bot_language(update, context, bot_language_code=language.code)
-        elif language2 and language2.is_sign_language:
-            set_sign_language(update, context, sign_language_code=language2.code)
-        elif language2 and not language2.is_sign_language:
-            set_bot_language(update, context, bot_language_code=language2.code)
-        return
     original_sign_language_code = db.get_user(update.effective_user.id).sign_language.code
-    logger.info(original_sign_language_code)
-    for line in update.message.text.splitlines()[:5]: # new feature: 5 batch text
+    lines = update.message.text.splitlines()[:5]
+    for line in lines:  # new feature: query 5 batch bible
         logger.info("line: %s", line)
-        if not line.startswith('/'):
-            parse_query_bible(update, context, line)
-        else:
-            command = line.split()[0][1:]
-            try:
-                db.set_user(update.effective_user.id, sign_language_code=command.lower())
-            except:
-                continue
-            if len(line.split()) > 1:
-                parse_query_bible(update, context, ' '.join(line.split()[1:]))
+        command = re.match(r'/(\w+)', line).group(1) if line.startswith('/') else ''
+        query = re.search(f'{command}(.*)', line).group(1) if ' ' in line else None
+        if command:
+            language = db.get_language(code=command.lower())
+            language2 = db.get_language(meps_symbol=command.upper())
+            if language and language.is_sign_language:
+                set_sign_language(update, context, sign_language_code=language.code)
+            elif language and not language.is_sign_language:
+                set_bot_language(update, context, bot_language_code=language.code)
+            elif language2 and language2.is_sign_language:
+                set_sign_language(update, context, sign_language_code=language2.code)
+            elif language2 and not language2.is_sign_language:
+                set_bot_language(update, context, bot_language_code=language2.code)
+            if not query and len(lines) == 1:
+                return
+        if query:
+            parse_query_bible(update, context, query)
     db.set_user(
         update.effective_user.id,
         sign_language_code=original_sign_language_code,
@@ -94,14 +86,16 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
     context.user_data['msg'] = None
     if not jw.pubmedia_exists():
         update.message.reply_text(
-            text=t.unavailable.format(book.name, db_user.sign_language.meps_symbol) + " " + t.optional_book.format(MyCommand.SIGNLANGUAGE),
-            parse_mode=ParseMode.MARKDOWN    
+            text=t.unavailable.format(book.name, db_user.sign_language.meps_symbol) +
+            " " + t.optional_book.format(MyCommand.SIGNLANGUAGE),
+            parse_mode=ParseMode.MARKDOWN
         )
         return
 
     if jw.chapternum and not jw.check_chapternumber():
         update.message.reply_text(
-            text=t.unavailable.format(f'{jw.bookname} {jw.chapternum}', db_user.sign_language.meps_symbol) + ' ' + t.optional_chapter,
+            text=t.unavailable.format(f'{jw.bookname} {jw.chapternum}',
+                                      db_user.sign_language.meps_symbol) + ' ' + t.optional_chapter,
             parse_mode=ParseMode.MARKDOWN
         )
         show_chapters(update, context)
@@ -121,7 +115,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
 
 
 def show_chapters(update: Update, context: CallbackContext):
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     buttons = list_of_lists(
         [InlineKeyboardButton(
@@ -138,7 +132,8 @@ def show_chapters(update: Update, context: CallbackContext):
         'reply_markup': InlineKeyboardMarkup(buttons),
         'parse_mode': ParseMode.MARKDOWN,
     }
-    context.user_data['msg'] = context.bot.edit_message_text(**kwargs) if update.callback_query else context.bot.send_message(**kwargs)
+    context.user_data['msg'] = context.bot.edit_message_text(
+        **kwargs) if update.callback_query else context.bot.send_message(**kwargs)
 
 
 @forw
@@ -151,7 +146,7 @@ def get_chapter(update: Update, context: CallbackContext):
 
 
 def show_verses(update: Update, context: CallbackContext):
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     bible_chapter = db.get_chapter(jw)
     t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
 
@@ -168,7 +163,7 @@ def show_verses(update: Update, context: CallbackContext):
         message_id = context.user_data['msg'].message_id
     else:
         message_id = None
-    
+
     db_user = db.get_user(update.effective_user.id)
     book = db.get_book(db_user.bot_language.code, jw.booknum)
     kwargs = {
@@ -194,7 +189,7 @@ def get_verse(update: Update, context: CallbackContext):
 
 def manage_verses(update: Update, context: CallbackContext):
     db_user = db.get_user(update.effective_user.id)
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     context.user_data['epub'] = Epub(db_user.bot_language.meps_symbol, jw.booknum, jw.chapternum, jw.verses)
     t = TextGetter(db_user.bot_language.code)
     logger.info('(%s) %s', update.effective_user.name, jw.citation())
@@ -203,7 +198,8 @@ def manage_verses(update: Update, context: CallbackContext):
     if not_available:
         v = not_available[0] if len(not_available) == 1 else ", ".join(map(str, not_available))
         update.effective_message.reply_text(
-            text=t.unavailable.format(f'{jw.bookname} {jw.chapternum}:{v}', jw.language_meps_symbol) + ' ' + t.optional_verse,
+            text=t.unavailable.format(f'{jw.bookname} {jw.chapternum}:{v}',
+                                      jw.language_meps_symbol) + ' ' + t.optional_verse,
             parse_mode=ParseMode.MARKDOWN
         )
         return show_verses(update, context)
@@ -228,7 +224,7 @@ def manage_verses(update: Update, context: CallbackContext):
 
 def send_by_fileid(update: Update, context: CallbackContext, file: File):
     logger.info('Sending by file_id')
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     if context.user_data.get('msg'):
         context.user_data.get('msg').delete()
     db_user = db.get_user(update.effective_user.id)
@@ -239,13 +235,15 @@ def send_by_fileid(update: Update, context: CallbackContext, file: File):
         msgverse = context.bot.send_video(
             chat_id=update.effective_chat.id,
             video=file.telegram_file_id,
-            caption=f'<a href="{jw.share_url()}">{citation}</a> - <a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>',
+            caption=(f'<a href="{jw.share_url()}">{citation}</a> - '
+                     f'<a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>'),
             parse_mode=ParseMode.HTML
         )
         context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
         context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text=f'<a href="{jw.share_url(is_sign_language=False)}">{citation}</a>\n' + context.user_data['epub'].verse_text(),
+            text=f'<a href="{jw.share_url(is_sign_language=False)}">{citation}</a>\n' +
+            context.user_data['epub'].verse_text(),
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True
         )
@@ -263,7 +261,7 @@ def send_by_fileid(update: Update, context: CallbackContext, file: File):
 def send_single_verse(update: Update, context: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     msg = context.user_data.get('msg')
     t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     db_user = db.get_user(update.effective_user.id)
@@ -273,9 +271,13 @@ def send_single_verse(update: Update, context: CallbackContext):
     citation = f'{book.standard_singular_bookname} {jw.chapternum}:{jw.verses[0]}'
     logger.info("Splitting %s", citation)
     if msg:
-        msg.edit_text(f'✂️ {t.trimming} {citation}')
+        msg.edit_text(f'✂️ {t.trimming} *{citation}*', parse_mode=ParseMode.MARKDOWN)
     else:
-        msg = message.reply_text(f'✂️ {t.trimming} {citation}', disable_notification=True)
+        msg = message.reply_text(
+            f'✂️ {t.trimming} *{citation}*',
+            disable_notification=True,
+            parse_mode=ParseMode.MARKDOWN
+        )
     context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
     marker = db.get_videomarker(jw)
     versepath = video.split(
@@ -285,16 +287,19 @@ def send_single_verse(update: Update, context: CallbackContext):
     )
     streams = video.show_streams(versepath)
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO)
-    msg.edit_text(f'📦 {t.sending} {citation}', parse_mode=ParseMode.MARKDOWN)
+    msg.edit_text(f'📦 {t.sending} *{citation}*', parse_mode=ParseMode.MARKDOWN)
     thumbnail = video.make_thumbnail(versepath)
     logger.info('%s', thumbnail)
     sign_book = db.get_book(db_user.sign_language.code, jw.booknum)
     sign_citation = jw.citation(sign_book.standard_singular_bookname)
+    name = f'{safechars(sign_citation)} - {jw.language_meps_symbol}.mp4'
     msgverse = context.bot.send_video(
         chat_id=chat.id,
         video=versepath.read_bytes(),
-        filename=f'{safechars(sign_citation)} - {jw.language_meps_symbol}.mp4',
-        caption=f'<a href="{jw.share_url()}">{citation}</a> - <a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>', # TODO no usar jw.share_url
+        filename=name,
+        # TODO no usar jw.share_url
+        caption=(f'<a href="{jw.share_url()}">{citation}</a> - '
+                 f'<a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>'),
         width=streams['width'],
         height=streams['height'],
         duration=round(float(streams['duration'])),
@@ -322,7 +327,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     chat = update.effective_chat
     message = update.effective_message
     db_user = db.get_user(update.effective_user.id)
-    jw = context.user_data['jw'] # type: SignsBible
+    jw = context.user_data['jw']  # type: SignsBible
     book = db.get_book(db_user.bot_language.code, jw.booknum)
     book_sign = db.get_book(db_user.sign_language.code, jw.booknum)
     with_overlay = db_user.overlay_language_id is not None and book.name != book_sign.name
@@ -338,21 +343,21 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         citation = f'{book.standard_singular_bookname} {jw.chapternum}:{verse}'
         if file:
             logger.info('Downloading verse %s from telegram servers', citation)
-            text = f'⬇️ {t.downloading} {citation}'
+            text = f'⬇️ {t.downloading} *{citation}*'
             if msg:
                 msg.edit_text(text, parse_mode=ParseMode.MARKDOWN)
             else:
                 msg = message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-            versepath = Path(f'{file.id}.mp4') # cualquier nombre sirve
+            versepath = Path(f'{file.id}.mp4')  # cualquier nombre sirve
             context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
             context.bot.get_file(file.telegram_file_id, timeout=120).download(custom_path=versepath)
             paths_to_concatenate.append(versepath)
         else:
             logger.info("Splitting %s", citation)
             if msg:
-                msg.edit_text(f'✂️ {t.trimming} {citation}', parse_mode=ParseMode.MARKDOWN)
+                msg.edit_text(f'✂️ {t.trimming} *{citation}*', parse_mode=ParseMode.MARKDOWN)
             else:
-                msg = message.reply_text(f'✂️ {t.trimming} {citation}', parse_mode=ParseMode.MARKDOWN)
+                msg = message.reply_text(f'✂️ {t.trimming} *{citation}*', parse_mode=ParseMode.MARKDOWN)
             context.bot.send_chat_action(chat.id, ChatAction.RECORD_VIDEO_NOTE)
             marker = db.get_videomarker(jw)
             versepath = video.split(
@@ -375,7 +380,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     )
     logger.info('Sending concatenated video %s', finalpath)
     citation = jw.citation(book.standard_plural_bookname)
-    msg.edit_text(f'📦 {t.sending} {citation}', parse_mode=ParseMode.MARKDOWN)
+    msg.edit_text(f'📦 {t.sending} *{citation}*', parse_mode=ParseMode.MARKDOWN)
     context.bot.send_chat_action(chat.id, ChatAction.UPLOAD_VIDEO)
     stream = video.show_streams(finalpath)
     thumbnail = video.make_thumbnail(finalpath)
@@ -383,7 +388,9 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
         chat_id=chat.id,
         video=finalpath.read_bytes(),
         filename=safechars(finalpath.name),
-        caption=f'<a href="{jw.share_url()}">{citation}</a> - <a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>', # TODO no usar metodo jw.share_url
+        # TODO no usar metodo jw.share_url
+        caption=(f'<a href="{jw.share_url()}">{citation}</a> - '
+                 f'<a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>'),
         width=stream['width'],
         height=stream['height'],
         duration=round(float(stream['duration'])),
@@ -394,7 +401,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
     context.bot.send_message(
         chat_id=chat.id,
-        text=f'<a href="{jw.share_url(is_sign_language=False)}">{citation}</a>\n' + context.user_data['epub'].verse_text(),
+        text=f'<a href="{jw.share_url(is_sign_language=False)}">{citation}</a>\n' +
+        context.user_data['epub'].verse_text(),
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
@@ -412,7 +420,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             chat_id=BACKUP_CHANNEL_ID,
             video=versepath.read_bytes(),
             filename=f'{safechars(versepath.stem)} - {jw.language_meps_symbol}.mp4',
-            caption=f'<a href="{jw.share_url(verse)}">{jw.citation(book.standard_singular_bookname)}</a> - <a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>',
+            caption=(f'<a href="{jw.share_url(verse)}">{jw.citation(book.standard_singular_bookname)}</a> - '
+                     f'<a href="{jw.wol_discover()}">{jw.language_meps_symbol}</a>'),
             parse_mode=ParseMode.HTML,
             width=stream['width'],
             height=stream['height'],
@@ -429,4 +438,4 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
 
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECTING_CHAPTERS)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECTING_VERSES)
-parse_bible_handler = MessageHandler(Filters.text, parse_bible)
+parse_bible_handler = MessageHandler(Filters.text, parse_query)

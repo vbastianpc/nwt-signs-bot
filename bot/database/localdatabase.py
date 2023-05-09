@@ -55,7 +55,7 @@ def get_languages() -> List[Language]:
     return SESSION.query(Language).order_by(Language.meps_symbol.asc()).all()
 
 def get_language(
-        id: Optional[int] = None,
+        id: Optional[int] = None, # pylint: disable=redefined-builtin
         meps_symbol: Optional[str] = None,
         code: Optional[str] = None
     ) -> Optional[Language]:
@@ -112,8 +112,8 @@ def set_user(
     if sign_language_code:
         try:
             user.sign_language_id = get_language(code=sign_language_code).id
-        except AttributeError:
-            raise TypeError(f'sign language code: {sign_language_code!r} does not exists')
+        except AttributeError as exc:
+            raise TypeError(f'sign language code: {sign_language_code!r} does not exists') from exc
     if full_name:
         user.full_name = full_name
     if added_datetime:
@@ -188,7 +188,14 @@ def fetch_bible_books(language_code):
     return
 
 def get_bible(language_code: str) -> Optional[Bible]:
-    return SESSION.query(Bible).join(Language).filter(Language.code == language_code).order_by(Bible.id.asc()).limit(1).one_or_none()
+    return (SESSION
+            .query(Bible)
+            .join(Language)
+            .filter(Language.code == language_code)
+            .order_by(Bible.id.asc())
+            .limit(1)
+            .one_or_none()
+    )
 
 # endregion
 # region Book
@@ -199,7 +206,11 @@ def get_books(
     ) -> List[Book]:
     q = SESSION.query(Book)
     if language_code:
-        q = q.join(Bible, Bible.id == Book.bible_id).join(Language, Language.id == Bible.language_id).filter(Language.code == language_code)
+        q = (q
+             .join(Bible, Bible.id == Book.bible_id)
+             .join(Language, Language.id == Bible.language_id)
+             .filter(Language.code == language_code)
+        )
     if booknum is not None:
         q = q.filter(Book.number == booknum)
     return q.order_by(Book.number.asc()).all()
@@ -248,7 +259,7 @@ def _add_chapter(
     book = get_book(language.code, booknum)
     chapter = Chapter(
         book_id=book.id,
-        number=int(chapternum), 
+        number=int(chapternum),
         checksum=checksum,
         modified_datetime=modified_datetime,
         url=url,
@@ -356,7 +367,7 @@ def manage_video_markers(jw: SignsBible) -> None:
     elif chapter and chapter.checksum == jw.get_checksum():
         _add_video_markers(chapter, jw.get_markers())
     elif chapter and chapter.checksum != jw.get_checksum():
-        logger.info(f'Hay versión actualizada.')
+        logger.info('Hay versión actualizada.')
         SESSION.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
         SESSION.commit()
         chapter = _add_chapter(*data)
@@ -364,7 +375,8 @@ def manage_video_markers(jw: SignsBible) -> None:
     elif not chapter:
         if not get_bible(language_code=language.code):
             fetch_bible_editions()
-        fetch_bible_books(language_code=language.code)
+        if not get_books(language_code=language.code):
+            fetch_bible_books(language_code=language.code)
         chapter = _add_chapter(*data)
         _add_video_markers(chapter, jw.get_markers())
 
@@ -437,7 +449,11 @@ def get_files(
     if checksum is not None:
         q = q.filter(File.checksum == checksum)
     if overlay_language_code is not None:
-        q = q.filter(File.overlay_language_id == get_language(code=overlay_language_code).id if overlay_language_code else None)
+        q = (q
+             .filter(
+            File.overlay_language_id == get_language(code=overlay_language_code).id if overlay_language_code else None
+            )
+        )
     return q.all()
 
 def add_file(
