@@ -25,6 +25,7 @@ from bot.booknames.parse import parse_bible_citation
 from bot.booknames.parse import BooknumNotFound, BibleCitationNotFound
 from bot.handlers.start import all_fallback
 from bot.handlers.settings import set_sign_language
+from bot.handlers.settings import set_bot_language
 from bot.utils import list_of_lists
 from bot.utils import safechars
 from bot.utils.decorators import vip
@@ -44,10 +45,16 @@ def parse_bible(update: Update, context: CallbackContext) -> None:
     command = command.group(1) if command else None
     args = update.message.text.split()[1:] if len(update.message.text.split()) > 1 else None
     if command and not args:
-        if db.get_language(code=command.lower()):
-            set_sign_language(update, context, sign_language_code=command.lower())
-        elif db.get_language(meps_symbol=command.upper()):
-            set_sign_language(update, context, sign_language_code=db.get_language(meps_symbol=command.upper()).code)
+        language = db.get_language(code=command.lower())
+        language2 = db.get_language(meps_symbol=command.upper())
+        if language and language.is_sign_language:
+            set_sign_language(update, context, sign_language_code=language.code)
+        elif language and not language.is_sign_language:
+            set_bot_language(update, context, bot_language_code=language.code)
+        elif language2 and language2.is_sign_language:
+            set_sign_language(update, context, sign_language_code=language2.code)
+        elif language2 and not language2.is_sign_language:
+            set_bot_language(update, context, bot_language_code=language2.code)
         return
     original_sign_language_code = db.get_user(update.effective_user.id).sign_language.code
     logger.info(original_sign_language_code)

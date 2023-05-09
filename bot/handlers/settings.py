@@ -199,18 +199,22 @@ def set_new_botlang(update: Update, context: CallbackContext) -> None:
 
 @forw
 @log
-def set_botlang(update: Update, context: CallbackContext) -> None:
-    context.user_data['msgbotlang'].edit_reply_markup()
-    del context.user_data['msgbotlang']
-    botlang = update.callback_query.data.split('|')[1]
-    t = TextGetter(botlang)
-    language = db.get_language(code=botlang)
+def set_bot_language(update: Update, context: CallbackContext, bot_language_code=None) -> None:
+    if update.callback_query:
+        context.user_data['msgbotlang'].edit_reply_markup()
+        del context.user_data['msgbotlang']
+        bot_language_code = update.callback_query.data.split('|')[1]
+    else:
+        bot_language_code = bot_language_code or context.args[0].lower()
+    t = TextGetter(bot_language_code)
+    language = db.get_language(code=bot_language_code)
     db_user = db.get_user(update.effective_user.id)
     db.set_user(update.effective_user.id,
                 bot_language=language,
                 overlay_language=language if db_user.overlay_language else None)
     set_my_commands(update.effective_user, language)
-    update.callback_query.answer(f'{language.vernacular} - {language.code}')
+    if update.callback_query:
+        update.callback_query.answer(f'{language.vernacular} - {language.code}')
     update.effective_message.reply_text(
         text=t.ok_botlang.format(language.vernacular),
         parse_mode=ParseMode.MARKDOWN,
@@ -257,8 +261,7 @@ pagelang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIG
 botlang_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.BOTLANGUAGE, show_botlangs)],
     states={
-        1: [MessageHandler(Filters.text & (~ Filters.command), set_new_botlang),
-            CallbackQueryHandler(set_botlang, pattern=SELECTING_BOTLANGUAGE),
+        1: [CallbackQueryHandler(set_bot_language, pattern=SELECTING_BOTLANGUAGE),
             CallbackQueryHandler(prev_next_botlang, pattern=PAGE_BOTLANGUAGE)]
     },
     fallbacks=[MessageHandler(Filters.command, lambda u, c: -1)]
