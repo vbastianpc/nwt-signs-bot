@@ -20,14 +20,15 @@ from bot.jw.pubmedia import SignsBible
 from bot.jw.epub import Epub
 from bot.utils import video
 from bot.database import localdatabase as db
-from bot.database.schemedb import File
+from bot.database.schema import File
 from bot.booknames.parse import parse_bible_citation
 from bot.booknames.parse import BooknumNotFound, BibleCitationNotFound
 from bot.handlers.start import all_fallback
 from bot.handlers.settings import set_sign_language
 from bot.utils import list_of_lists
 from bot.utils import safechars
-from bot.utils.decorators import vip, forw
+from bot.utils.decorators import vip
+from bot.utils.decorators import forw
 from bot.strings import TextGetter
 
 

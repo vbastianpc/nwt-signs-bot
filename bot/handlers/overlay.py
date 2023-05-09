@@ -3,9 +3,6 @@ from telegram import Update
 from telegram import InlineKeyboardButton
 from telegram import InlineKeyboardMarkup
 from telegram import ParseMode
-from telegram import Message
-from telegram import User
-from telegram import BotCommandScopeChat
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.ext import CallbackQueryHandler
@@ -13,16 +10,10 @@ from telegram.ext import CallbackQueryHandler
 from telegram.ext import ConversationHandler
 from telegram.ext import MessageHandler
 from telegram.ext.filters import Filters
-import telegram.error
 
 from bot.database import localdatabase as db
-from bot.database import report as rdb
-from bot.database.schemedb import Language
-from bot.utils import list_of_lists
-from bot.utils.decorators import vip, forw, log
-from bot.secret import ADMIN
-from bot import strings
-from bot.logs import get_logger
+from bot.utils.decorators import vip
+from bot.utils.decorators import forw
 from bot import MyCommand
 from bot.strings import TextGetter
 

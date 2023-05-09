@@ -2,23 +2,13 @@ from datetime import datetime
 import json
 
 import pytest
-from telegram import Bot
 
 from bot.secret import ADMIN
-from bot.secret import TOKEN
-from bot.utils import video, dt_now
-from bot.database import SESSION
-from bot.database.schemedb import Language
-from bot.database.schemedb import Bible
-from bot.database.schemedb import Book
-from bot.database.schemedb import Chapter
-from bot.database.schemedb import VideoMarker
-from bot.database.schemedb import File
-from bot.database.schemedb import File2User
-from bot.database.schemedb import User
+from bot.utils import dt_now
+from bot.database.schema import Language
+from bot.database.schema import Book
+from bot.database.schema import User
 from bot.database import localdatabase as db
-from bot.jw.bible import BaseBible
-from bot.jw.language import JWLanguage
 from bot.jw.pubmedia import SignsBible
 
 

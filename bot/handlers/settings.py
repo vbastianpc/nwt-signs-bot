@@ -19,7 +19,7 @@ import telegram.error
 
 from bot.database import localdatabase as db
 from bot.database import report as rdb
-from bot.database.schemedb import Language
+from bot.database.schema import Language
 from bot.utils import list_of_lists
 from bot.utils.decorators import vip, forw, log
 from bot.secret import ADMIN
@@ -184,7 +184,7 @@ def set_new_botlang(update: Update, context: CallbackContext) -> None:
         db.fetch_bible_editions()
     if not db.get_books(language.code):
         # TODO reply text fetching bible booknames language_code
-        db.fetch_bible_books(language.meps_symbol)
+        db.fetch_bible_books(language.code)
     db.set_user(
         update.effective_user.id,
         bot_language=language,
@@ -218,7 +218,7 @@ def set_botlang(update: Update, context: CallbackContext) -> None:
     if not db.get_bible(language_code=language.code):
         db.fetch_bible_editions()
     if not db.get_books(language.code):
-        db.fetch_bible_books(language.meps_symbol)
+        db.fetch_bible_books(language.code)
     return ConversationHandler.END
 
 

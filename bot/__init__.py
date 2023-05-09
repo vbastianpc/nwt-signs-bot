@@ -1,8 +1,3 @@
-import os
-import logging
-from datetime import datetime
-import pytz
-
 class MyCommand:
     START = 'start'
     SIGNLANGUAGE = 'signlanguage'

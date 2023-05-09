@@ -1,11 +1,7 @@
 
 import pytest
 
-
-from bot.database import SESSION
-from bot.database.schemedb import Language
-from bot.database.schemedb import Bible
-from bot.database.schemedb import Book
+from bot.database.schema import Language
 from bot.database import localdatabase as db
 from bot.booknames.parse import parse_bible_citation
 

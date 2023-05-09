@@ -2,14 +2,14 @@ from sqlalchemy import func
 
 from bot.logs import get_logger
 from bot.database import SESSION
-from bot.database.schemedb import Language
-from bot.database.schemedb import Bible
-from bot.database.schemedb import Book
-from bot.database.schemedb import Chapter
-from bot.database.schemedb import VideoMarker
-from bot.database.schemedb import File
-from bot.database.schemedb import File2User
-from bot.database.schemedb import User
+from bot.database.schema import Language
+from bot.database.schema import Bible
+from bot.database.schema import Book
+from bot.database.schema import Chapter
+from bot.database.schema import VideoMarker
+from bot.database.schema import File
+from bot.database.schema import File2User
+from bot.database.schema import User
 
 
 logger = get_logger(__name__)

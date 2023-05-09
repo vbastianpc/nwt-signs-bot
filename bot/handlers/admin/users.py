@@ -4,21 +4,17 @@ from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.utils.helpers import mention_markdown
 from telegram.error import Unauthorized
-from telegram import BotCommandScopeChat
 
 from bot.utils import now
 from bot.utils.decorators import admin
 from bot.database import localdatabase as db
 from bot.database import PATH_DB
-from bot.database.schemedb import User
+from bot.database.schema import User
 from bot.handlers.start import start
 from bot import AdminCommand
 from bot.logs import get_logger
-from bot import strings
 from bot.strings import TextGetter
-from bot.strings import botlangs
-from bot.booknames import booknames
-from bot.database.schemedb import User
+from bot.database.schema import User
 
 
 
@@ -49,7 +45,7 @@ def autorizacion(update: Update, context: CallbackContext):
         parse_mode=ParseMode.MARKDOWN,
     )
     if not db.get_bible(new_db_user.bot_language.code):
-        db.fetch_bible_books(new_db_user.bot_language)
+        db.fetch_bible_books(new_db_user.bot_language.code)
 
     start(
         update,

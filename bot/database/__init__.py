@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.engine import Engine
 
-from bot.database.schemedb import Base
+from bot.database.schema import Base
 from bot.database.views import views
 
 

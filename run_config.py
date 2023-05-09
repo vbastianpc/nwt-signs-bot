@@ -6,7 +6,7 @@ from bot.secret import TOKEN
 from bot.utils import dt_now
 from bot.database import report
 from bot.database import localdatabase as db
-from bot.database.schemedb import User
+from bot.database.schema import User
 from bot.utils.fonts import fetch_fonts, download_fonts
 
 logger = get_logger(__name__)

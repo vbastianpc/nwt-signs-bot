@@ -5,7 +5,7 @@ from telegram import BotCommand
 
 from bot.logs import get_logger
 from bot.database import localdatabase as db
-from bot.database.schemedb import Book
+from bot.database.schema import Book
 
 
 logger = get_logger(__name__)

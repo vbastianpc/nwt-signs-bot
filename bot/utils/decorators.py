@@ -1,5 +1,4 @@
 from functools import wraps
-import json
 
 from telegram import User
 from telegram import Update

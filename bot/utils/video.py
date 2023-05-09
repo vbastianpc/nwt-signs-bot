@@ -11,7 +11,7 @@ from PIL import Image
 from bot.logs import get_logger
 from bot.utils import safechars
 from bot.utils.fonts import select_font
-from bot.database.schemedb import VideoMarker
+from bot.database.schema import VideoMarker
 
 
 logger = get_logger(__name__)

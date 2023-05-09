@@ -8,7 +8,6 @@ from telegram.ext import InlineQueryHandler
 from bot.logs import get_logger
 from bot.utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
 from bot.utils.decorators import vip
-from bot.utils.utils import parse_verses
 from bot.jw.pubmedia import BaseBible
 import bot.database.localdatabase as db
 

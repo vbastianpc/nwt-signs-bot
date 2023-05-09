@@ -3,8 +3,6 @@ from typing import Any, List, Optional
 from datetime import datetime
 import pytz
 
-from unidecode import unidecode
-
 
 class BooknumNotFound(Exception):
     pass

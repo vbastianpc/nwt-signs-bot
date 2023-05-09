@@ -5,7 +5,6 @@ from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 
 from bot.utils.decorators import admin
-from bot.booknames import booknames
 from bot import strings
 from bot import AdminCommand
 from bot.logs import get_logger
