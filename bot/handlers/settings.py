@@ -59,7 +59,7 @@ def build_signlangs():
     return list_of_lists(
         [{
             'text': f'{sign_language.code} - {sign_language.vernacular}',
-            'callback_data': f'{SELECTING_SIGNLANGUAGE}|{sign_language.meps_symbol}'
+            'callback_data': f'{SELECTING_SIGNLANGUAGE}|{sign_language.code}'
         } for sign_language in sorted(db.get_sign_languages(), key=lambda x: x.code)
         ],
         columns=1
@@ -132,6 +132,10 @@ def set_sign_language(update: Update, context: CallbackContext, sign_language_co
     except:
         update.message.reply_text(t.wrong_signlanguage_code)
     else:
+        if not db.get_bible(language_code=sign_language_code):
+            db.fetch_bible_editions()
+        if not db.get_books(sign_language_code):
+            db.fetch_bible_books(language_code=sign_language_code)
         text = t.ok_signlanguage_code.format(sign_language_code, db_user.sign_language.vernacular)
         if update.callback_query:
             update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
@@ -174,11 +178,11 @@ def set_new_botlang(update: Update, context: CallbackContext) -> None:
         t = TextGetter(db_user.bot_language.code)
         update.message.reply_text(t.wrong_botlang.format(likely_langcode))
         return -1
-    if not db.get_bible(language.meps_symbol):
+    if not db.get_bible(language_code=language.code):
         context.bot.send_chat_action(update.message.chat_id, ChatAction.TYPING)
         # TODO reply_text fetching bible edition pub language_code
         db.fetch_bible_editions()
-    if not db.get_books(language.id):
+    if not db.get_books(language.code):
         # TODO reply text fetching bible booknames language_code
         db.fetch_bible_books(language.meps_symbol)
     db.set_user(
@@ -211,9 +215,9 @@ def set_botlang(update: Update, context: CallbackContext) -> None:
         text=t.ok_botlang.format(language.vernacular),
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not db.get_bible(language.meps_symbol):
+    if not db.get_bible(language_code=language.code):
         db.fetch_bible_editions()
-    if not db.get_books(language.id):
+    if not db.get_books(language.code):
         db.fetch_bible_books(language.meps_symbol)
     return ConversationHandler.END
 

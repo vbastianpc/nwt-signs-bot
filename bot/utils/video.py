@@ -118,7 +118,7 @@ def drawtext(
     image = Image.open(frame) # already mode L, grayscale because edgedetect
     # frame.unlink()
     r720P = image.size[1] == 720
-    box = (0, 120, 150, 121) if r720P else (0, 90, 150, 91)
+    box = (0, 115, 150, 116) if r720P else (0, 90, 150, 91)
     line = np.array(image.crop(box))[0]
     has_hebrew = np.where(line > 120)[0].size > 0
 

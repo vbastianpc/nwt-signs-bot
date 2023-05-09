@@ -42,7 +42,7 @@ class SignsBible(BaseBible):
 
     @property
     def _rawdata(self) -> Dict:
-        assert all([self.language_meps_symbol, self.booknum]), f'Debes definir language_code y booknum ({self.language_meps_symbol} {self.booknum})'
+        assert all([self.language_meps_symbol, self.booknum]), f'Debes definir language_meps_symbol y booknum ({self.language_meps_symbol} {self.booknum})'
         url_1 = self.api_url
         url_2 = URL_PUBMEDIA.format(language_meps_symbol=self.language_meps_symbol, booknum=self.booknum, track='')
 

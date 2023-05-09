@@ -4,12 +4,10 @@
 # exclude patterns (uncomment them if you want to use them):
 # *.[oa]
 # *~
-video/
 *.mp4
-SECRETS.json
-*.bk
 *.ipynb
 *.db
+**/*.png
 bible-epub/
 bot/utils/fonts/
 

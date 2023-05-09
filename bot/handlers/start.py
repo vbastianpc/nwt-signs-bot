@@ -35,12 +35,12 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
             parse_mode=ParseMode.MARKDOWN
         )
     
-    if db_user is None or not db_user.is_accepted():
+    if db_user is None or not db_user.is_authorized():
         db.set_user(
             update.effective_user.id,
             full_name=update.effective_user.full_name,
             bot_language=db.get_language(code=update.effective_user.language_code),
-            waiting=True
+            status=db_user.WAITING
         )
         context.bot.send_message(
             chat_id=ADMIN,

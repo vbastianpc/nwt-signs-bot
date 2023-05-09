@@ -101,14 +101,11 @@ def set_user(
         sign_language_code: str = None,
         full_name: str = None,
         bot_language: Language = None,
-        waiting: bool = False,
-        blocked: bool = False,
-        brother: bool = False,
+        status: int = None,
         overlay_language: Language = None,
-        added_datetime: datetime = None
+        added_datetime: datetime = None,
+        last_active_datetime: datetime = None
     ) -> User:
-    if [waiting, blocked, brother].count(True) > 1:
-        raise TypeError('waiting, blocked and brother are mutually exclusive arguments')
     user = get_user(telegram_user_id)
     if not user:
         user = User(telegram_user_id=telegram_user_id)
@@ -127,7 +124,9 @@ def set_user(
         user.overlay_language_id = user.bot_language.id
     elif overlay_language is False:
         user.overlay_language_id = None
-    user.status = -1 if blocked else 0 if waiting else 1 if brother else user.status
+    if last_active_datetime:
+        user.last_active_datetime = last_active_datetime
+    user.status = status if status is not None else user.status
     SESSION.add(user)
     SESSION.commit()
     return user
@@ -158,8 +157,8 @@ def fetch_bible_editions():
             except IntegrityError:
                 SESSION.rollback()
 
-def fetch_bible_books(language_meps_symbol):
-    bible = get_bible(language_meps_symbol)
+def fetch_bible_books(language_code):
+    bible = get_bible(language_code)
     browser = LazyBrowser()
     data = browser.open(bible.url).json()
     for booknum, bookdata in data['editionData']['books'].items():
@@ -188,27 +187,25 @@ def fetch_bible_books(language_meps_symbol):
         SESSION.rollback()
     return
 
-def get_bible(language_meps_symbol: str) -> Optional[Bible]:
-    return SESSION.query(Bible).join(Language).filter(Language.meps_symbol == language_meps_symbol).order_by(Bible.id.asc()).limit(1).one_or_none()
+def get_bible(language_code: str) -> Optional[Bible]:
+    return SESSION.query(Bible).join(Language).filter(Language.code == language_code).order_by(Bible.id.asc()).limit(1).one_or_none()
 
 # endregion
 # region Book
 
 def get_books(
-        language_id: int = None,
+        language_code: str = None,
         booknum: int = None,
     ) -> List[Book]:
     q = SESSION.query(Book)
-    if language_id:
-        q = q.join(Bible, Bible.id == Book.bible_id).join(Language, Language.id == Bible.language_id)
-    if language_id:
-        q = q.filter(Language.id == language_id)
+    if language_code:
+        q = q.join(Bible, Bible.id == Book.bible_id).join(Language, Language.id == Bible.language_id).filter(Language.code == language_code)
     if booknum is not None:
         q = q.filter(Book.number == booknum)
     return q.order_by(Book.number.asc()).all()
 
 
-def get_book(language: Language,
+def get_book(language_code: str,
              booknum: Union[int, str]) -> Optional[Book]:
     return (
         SESSION.query(Book)
@@ -216,14 +213,14 @@ def get_book(language: Language,
         .join(Language, Language.id == Bible.language_id)
         .filter(
             Book.number == int(booknum),
-            Language.id == language.id,
+            Language.code == language_code,
         ).one_or_none()
     )
 
 # endregion
 
 # region Chapter
-def get_chapter(jw: Optional[SignsBible] = None) -> Optional[Chapter]:
+def get_chapter(jw: SignsBible) -> Optional[Chapter]:
     q = (
         SESSION.query(Chapter)
         .join(Book, Book.id == Chapter.book_id)
@@ -248,7 +245,7 @@ def _add_chapter(
         url: str,
         title: str,
     ) -> Chapter:
-    book = get_book(language, booknum)
+    book = get_book(language.code, booknum)
     chapter = Chapter(
         book_id=book.id,
         number=int(chapternum), 
@@ -365,9 +362,9 @@ def manage_video_markers(jw: SignsBible) -> None:
         chapter = _add_chapter(*data)
         _add_video_markers(chapter, jw.get_markers())
     elif not chapter:
-        if not get_bible(jw.language_meps_symbol):
+        if not get_bible(language_code=language.code):
             fetch_bible_editions()
-        fetch_bible_books(jw.language_meps_symbol)
+        fetch_bible_books(language_code=language.code)
         chapter = _add_chapter(*data)
         _add_video_markers(chapter, jw.get_markers())
 
@@ -392,8 +389,8 @@ def _add_video_markers(chapter: Chapter, markers: Iterable):
 #region File
 
 def get_file(
-        jw: SignsBible = None,
-        overlay_language_id: Optional[int] = None,
+        jw: SignsBible,
+        overlay_language_code: Optional[int] = 0,
     ) -> Optional[File]:
     q = (
         SESSION.query(File)
@@ -407,7 +404,7 @@ def get_file(
             Chapter.number == jw.chapternum,
             Chapter.checksum == jw.get_checksum(),
             File.raw_verses == jw.raw_verses,
-            File.overlay_language_id == overlay_language_id
+            File.overlay_language_id == get_language(code=overlay_language_code).id if overlay_language_code else None
         )
     )
     # print(q.statement.compile(compile_kwargs={"literal_binds": True}))
@@ -415,12 +412,12 @@ def get_file(
 
 
 def get_files(
-        sign_language_meps_symbol: str = None,
+        sign_language_code: str = None,
         booknum: int = None,
         chapternum: int = None,
         raw_verses: str = None,
         checksum: str = None,
-        overlay_language_id: int = None,
+        overlay_language_code: int = None,
     ) -> List[Optional[File]]:
     q = (
         SESSION.query(File)
@@ -429,8 +426,8 @@ def get_files(
         .join(Bible, Bible.id == Book.bible_id)
         .join(Language, Language.id == Bible.language_id)
     )
-    if sign_language_meps_symbol is not None:
-        q = q.filter(Language.meps_symbol == sign_language_meps_symbol)
+    if sign_language_code is not None:
+        q = q.filter(Language.code == sign_language_code)
     if booknum is not None:
         q = q.filter(Book.number == booknum)
     if chapternum is not None:
@@ -439,8 +436,8 @@ def get_files(
         q = q.filter(File.raw_verses == raw_verses)
     if checksum is not None:
         q = q.filter(File.checksum == checksum)
-    if overlay_language_id is not None:
-        q = q.filter(File.overlay_language_id == overlay_language_id)
+    if overlay_language_code is not None:
+        q = q.filter(File.overlay_language_id == get_language(code=overlay_language_code).id if overlay_language_code else None)
     return q.all()
 
 def add_file(

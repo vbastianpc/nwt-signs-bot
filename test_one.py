@@ -69,5 +69,5 @@ def test_jw(jw_bible):
     assert db.get_chapter(jw)
 
 def test_user(español, señas_chilena):
-    user = db.get_user(ADMIN) or db.set_user(ADMIN, sign_language_code=señas_chilena.code, full_name='Bastian Palavecino', bot_language=español, brother=True, added_datetime=dt_now())
+    user = db.get_user(ADMIN) or db.set_user(ADMIN, sign_language_code=señas_chilena.code, full_name='Bastian Palavecino', bot_language=español, status=User.AUTHORIZED, added_datetime=dt_now())
     assert user.telegram_user_id == ADMIN

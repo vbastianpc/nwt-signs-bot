@@ -4,41 +4,40 @@ from sqlalchemy.sql import text
 views = ['''
 CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
 SELECT
-    BibleBook.BibleBookId,
-    Chapter.BibleChapterId,
+    Language.LanguageMepsSymbol,
     Language.LanguageCode,
-    BibleBook.BookNumber,
-    BibleBook.BookName,
-    Chapter.ChapterNumber,
-    Chapter.Checksum,
-    count(*) AS CountVideoMarkers
+    Bible.SymbolEdition,
+    Book.BookNumber,
+    Book.StandardName || " " || Chapter.ChapterNumber AS Chapter,
+    count(*) AS CountVideoMarkers,
+    Chapter.Checksum
 FROM
     VideoMarker
-INNER JOIN Chapter ON Chapter.BibleChapterId = VideoMarker.BibleChapterId
-INNER JOIN BibleBook ON BibleBook.BibleBookId = Chapter.BibleBookId
-INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
-GROUP BY Chapter.BibleChapterId
+INNER JOIN Chapter ON Chapter.ChapterId = VideoMarker.ChapterId
+INNER JOIN Book ON Book.BookId = Chapter.BookId
+INNER JOIN Bible ON Bible.BibleId = Book.BibleId
+INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+GROUP BY Chapter.ChapterId
 ORDER BY
     Language.LanguageCode ASC,
-    BibleBook.BookNumber ASC,
+    Book.BookNumber ASC,
     Chapter.ChapterNumber ASC
 ;''',
 '''
-CREATE VIEW IF NOT EXISTS "ViewCountSentVersesByCitation" AS
+CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByCitation" AS
 SELECT
-    count(*) AS CountSentVersesByCitation,
-    BibleBook.BookNumber,
-    BibleBook.BookName,
-    File.ChapterNumber,
-    File.RawVerseNumbers
+    Book.BookNumber,
+    Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+    count(*) AS CountVerseHistoricByCitation
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
-INNER JOIN BibleBook ON BibleBook.BibleBookId = File.BibleBookId
-GROUP BY BibleBook.BookNumber, File.ChapterNumber, File.RawVerseNumbers
-ORDER BY BibleBook.BookNumber ASC, File.ChapterNumber ASC, File.RawVerseNumbers ASC
+INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
+INNER JOIN Book ON Book.BookId = Chapter.BookId
+GROUP BY Book.BookNumber, Chapter.ChapterNumber, File.RawVerseNumbers
+ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
 ;''',
 '''
-CREATE VIEW IF NOT EXISTS "ViewCountSentVersesByUser" AS
+CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByUser" AS
 SELECT
     User.TelegramUserId,
     User.FullName,
@@ -49,65 +48,76 @@ GROUP BY User.UserId
 ORDER BY User.TelegramUserId ASC
 ;''',
 '''
-CREATE VIEW IF NOT EXISTS "ViewCountSentVerseByLang" AS
+CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByLang" AS
 SELECT
-    Language.LanguageCode,
-    Language.LanguageName,
-    Language.LanguageVernacular,
-    count(*) AS CountSentVerseByLang,
-    Historic.CountSentVerseHistoricByLang
-FROM File
-INNER JOIN BibleBook ON BibleBook.BibleBookId = File.BibleBookId
-INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
-INNER JOIN (
-    SELECT
-        Language.LanguageId,
-        count(*) AS CountSentVerseHistoricByLang
-    FROM File2User
-    INNER JOIN File ON File.FileId = File2User.FileId
-    INNER JOIN BibleBook ON BibleBook.BibleBookId = File.BibleBookId
-    INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
-    GROUP BY Language.LanguageId
-) AS Historic ON Historic.LanguageId = Language.LanguageId
-GROUP BY Language.LanguageId
+	Language.LanguageCode,
+	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+	count(*) AS CountVerseHistoricByLang
+FROM File2User
+INNER JOIN File ON File.FileId = File2User.FileId
+INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
+INNER JOIN Book ON Book.BookId = Chapter.BookId
+INNER JOIN Bible ON Bible.BibleId = Book.BibleId
+INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+GROUP BY Language.LanguageCode, Book.BookNumber, Chapter.ChapterNumber , File.RawVerseNumbers
+ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
 ;''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewUser" AS
 SELECT
     User.TelegramUserId,
+	(CASE
+		WHEN User.Status = 1 THEN "Allowed"
+		WHEN User.Status = 0 THEN "Waiting"
+		WHEN User.Status = -1 THEN "Banned"
+		ELSE "Unknown" END
+	) AS Status,
     User.FullName,
-    User.BotLanguageId,
-    Language.LanguageCode,
-    Language.LanguageVernacular
+    SignLanguage.LanguageCode AS SignLanguageCode,
+	BotLanguage.LanguageCode AS BotLanguageCode,
+	OverlayLanguage.LanguageCode AS OverlayLanguageCode
 FROM User
-INNER JOIN Language ON Language.LanguageId = User.LanguageId
+LEFT JOIN Language AS SignLanguage ON SignLanguage.LanguageId = User.SignLanguageId
+LEFT JOIN Language AS BotLanguage ON BotLanguage.LanguageId = User.BotLanguageId
+LEFT JOIN Language AS OverlayLanguage ON OverlayLanguage.LanguageId = User.OverlayLanguageId
 ;''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
 SELECT
-    File2User.File2UserId,
+	User.TelegramUserId,
     User.FullName,
-    Language.LanguageCode,
-    File2User.Datetime
+	Language.LanguageCode,
+    OverlayLanguage.LanguageCode AS OverlayLanguageCode,
+	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+    File2User.Datetime,
+    File.FileId
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
 INNER JOIN User ON User.UserId = File2User.UserId
-INNER JOIN BibleBook ON BibleBook.BibleBookId = File.BibleBookId
-INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
+INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
+INNER JOIN Book ON Book.BookId = Chapter.BookId
+INNER JOIN Bible ON Bible.BibleId = Book.BibleId
+INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File2User.Datetime DESC
 ;
 ''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewSentVerse" AS
 SELECT
-    File.FileId,
     Language.LanguageCode,
-	BibleBook.BookNumber,
-	File.Quality,
-	File.AddedDatetime
+	OverlayLanguage.LanguageCode AS OverlayLanguageCode,
+	Book.BookNumber,
+	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+	File.AddedDatetime,
+	File.TelegramFileId,
+    File.FileId
 FROM File
-INNER JOIN BibleBook ON BibleBook.BibleBookId = File.BibleBookId
-INNER JOIN Language ON Language.LanguageId = BibleBook.LanguageId
+INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
+INNER JOIN Book ON Book.BookId = Chapter.BookId
+INNER JOIN Bible ON Bible.BibleId = Book.BibleId
+INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File.FileId DESC
 ;'''
 ]

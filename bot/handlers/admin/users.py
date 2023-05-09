@@ -10,6 +10,7 @@ from bot.utils import now
 from bot.utils.decorators import admin
 from bot.database import localdatabase as db
 from bot.database import PATH_DB
+from bot.database.schemedb import User
 from bot.handlers.start import start
 from bot import AdminCommand
 from bot.logs import get_logger
@@ -42,12 +43,12 @@ def autorizacion(update: Update, context: CallbackContext):
         update.message.reply_text(t.user_stopped_bot)
         return
     
-    new_db_user = db.set_user(new_member_id, brother=True)
+    new_db_user = db.set_user(new_member_id, status=User.AUTHORIZED)
     update.message.reply_text(
         text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not db.get_bible(new_db_user.bot_language.meps_symbol):
+    if not db.get_bible(new_db_user.bot_language.code):
         db.fetch_bible_books(new_db_user.bot_language)
 
     start(
@@ -69,7 +70,7 @@ def delete_user(update: Update, context: CallbackContext):
     if not db.get_user(user_id):
         update.message.reply_text(t.warn_user)
         return
-    db.set_user(user_id, blocked=True)
+    db.set_user(user_id, status=User.DENIED)
     update.message.reply_text(t.user_banned)
 
 

@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 @vip
 def send_booknames(update: Update, _: CallbackContext) -> None:
     db_user = db.get_user(update.effective_user.id)
-    books = db.get_books(db_user.bot_language.id)
+    books = db.get_books(db_user.bot_language.code)
     width = max(map(lambda x: len(x.official_abbreviation), books)) + 1
     text = '\n'.join([
         f'{book.official_abbreviation:>{width}} {book.name}'

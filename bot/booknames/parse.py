@@ -24,7 +24,7 @@ class BibleCitationNotFound(Exception):
     pass
 
 
-def parse_bible_citation(text: str, prefer_language_id=None) -> Tuple[Book, Optional[int], List[Optional[int]]]:
+def parse_bible_citation(text: str, prefer_language_code=None) -> Tuple[Book, Optional[int], List[Optional[int]]]:
     match = re.match(BIBLE_PATTERN, text)
     try:
         likely_bookname = match.group(1) + match.group(2)
@@ -34,7 +34,7 @@ def parse_bible_citation(text: str, prefer_language_id=None) -> Tuple[Book, Opti
         raise BibleCitationNotFound
 
     try:
-        book = search_bookname(likely_bookname, prefer_language_id)
+        book = search_bookname(likely_bookname, prefer_language_code)
     except:
         if not likely_chapter:
             raise BibleCitationNotFound

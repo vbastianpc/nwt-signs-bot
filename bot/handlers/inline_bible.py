@@ -33,7 +33,7 @@ def inlineBibleReady(update: Update, context: CallbackContext) -> None:
     results = []
     for booknum in booknums:
         files = db.get_files() # TODO muestra las versiones antiguas también. quedarse solo con la última versión
-        bookname = db.get_book(db_user.bot_language, booknum).name
+        bookname = db.get_book(db_user.bot_language.code, booknum).name
         results += [
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),

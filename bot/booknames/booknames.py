@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 
 
-def search_bookname(likely_bookname: str, language_id: int = None) -> Book:
+def search_bookname(likely_bookname: str, language_code: int = None) -> Book:
     # search case insensitive
     likely_bookname = likely_bookname.lower().strip()
     def variations(book: Book) -> List[str]:
@@ -43,7 +43,7 @@ def search_bookname(likely_bookname: str, language_id: int = None) -> Book:
     def contains_unidecode(bookname: str):
         return unidecode(likely_bookname) in unidecode(bookname).lower()
 
-    books = db.get_books(language_id)
+    books = db.get_books(language_code=language_code)
     def find_bookname(*funcs: Callable[[str], bool]) -> Iterator[Book]:
         i = 0
         for func in funcs:
@@ -53,7 +53,7 @@ def search_bookname(likely_bookname: str, language_id: int = None) -> Book:
                     logger.info("%s iterations to found '%s' (%s %s %s %s '%s') by '%s' mode",
                         i, likely_bookname, book.name, book.standard_abbreviation, book.official_abbreviation, book.number, book.bible.language.code, func.__name__)
                     yield book
-        logger.info("Total iterations searching '%s' in %s: %s", likely_bookname, (f"'{language_id}' language id" if language_id else 'all languages'), i)
+        logger.info("Total iterations searching '%s' in %s: %s", likely_bookname, (f"'{language_code}' language id" if language_code else 'all languages'), i)
     
     for book in find_bookname(
             strict,
@@ -64,17 +64,17 @@ def search_bookname(likely_bookname: str, language_id: int = None) -> Book:
             contains_unidecode):
         return book
 
-    if language_id:
-        logger.info(f'{likely_bookname} not found in {language_id=}. Trying in all languages')
+    if language_code:
+        logger.info(f'{likely_bookname} not found in {language_code=}. Trying in all languages')
         return search_bookname(likely_bookname, None)
     else:
         logger.info(f'{likely_bookname!r} not found in any language')
         raise Exception
 
-def get_botcommands(language_id) -> List[BotCommand]:
-    books = db.get_books(language_id=language_id)
+def get_botcommands(language_code) -> List[BotCommand]:
+    books = db.get_books(language_code=language_code)
     return [BotCommand(unidecode(book.standard_abbreviation).lower().replace(' ', ''), book.full_name) for book in books]
 
-def get_commands(language_id) -> List[str]:
-    books = db.get_books(language_id=language_id)
+def get_commands(language_code) -> List[str]:
+    books = db.get_books(language_code=language_code)
     return [unidecode(book.standard_abbreviation).lower().replace(' ', '') for book in books]

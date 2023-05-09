@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 from telegram import ChatAction
 from telegram import InlineKeyboardButton
@@ -38,11 +39,14 @@ SELECTING_CHAPTERS, SELECTING_VERSES = 'C', 'V'
 @vip
 def parse_bible(update: Update, context: CallbackContext) -> None:
     logger.info(f'{context.args=}, {update.message.text}')
-    command = update.message.text.split()[1][1:] if update.message.text.startswith('/') else None
+    command = re.match('/(\w+)', update.message.text)
+    command = command.group(1) if command else None
     args = update.message.text.split()[1:] if len(update.message.text.split()) > 1 else None
     if command and not args:
         if db.get_language(code=command.lower()):
             set_sign_language(update, context, sign_language_code=command.lower())
+        elif db.get_language(meps_symbol=command.upper()):
+            set_sign_language(update, context, sign_language_code=db.get_language(meps_symbol=command.upper()).code)
         return
     original_sign_language_code = db.get_user(update.effective_user.id).sign_language.code
     logger.info(original_sign_language_code)
@@ -58,7 +62,11 @@ def parse_bible(update: Update, context: CallbackContext) -> None:
                 continue
             if len(line.split()) > 1:
                 parse_query_bible(update, context, ' '.join(line.split()[1:]))
-    db.set_user(update.effective_user.id, sign_language_code=original_sign_language_code)
+    db.set_user(
+        update.effective_user.id,
+        sign_language_code=original_sign_language_code,
+        last_active_datetime=db.dt_now()
+    )
 
 
 def parse_query_bible(update: Update, context: CallbackContext, query: str) -> None:
@@ -66,7 +74,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
     db_user = db.get_user(update.effective_user.id)
     t = TextGetter(db_user.bot_language.code)
     try:
-        book, chapternum, verses = parse_bible_citation(query, db_user.sign_language.meps_symbol)
+        book, chapternum, verses = parse_bible_citation(query, db_user.sign_language.code)
     except BooknumNotFound:
         update.message.reply_text(t.book_not_found.format(MyCommand.BOOKNAMES), parse_mode=ParseMode.MARKDOWN)
         return
@@ -115,7 +123,7 @@ def show_chapters(update: Update, context: CallbackContext):
         columns=8
     )
     db_user = db.get_user(update.effective_user.id)
-    book = db.get_book(db_user.bot_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
     kwargs = {
         'chat_id': update.effective_chat.id,
         'text': f'🧏‍♂️ {jw.language_meps_symbol}\n📖 *{book.name}*\n{t.choose_chapter}',
@@ -154,7 +162,7 @@ def show_verses(update: Update, context: CallbackContext):
         message_id = None
     
     db_user = db.get_user(update.effective_user.id)
-    book = db.get_book(db_user.bot_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
     kwargs = {
         'chat_id': update.effective_chat.id,
         'text': f'🧏‍♂️ {jw.language_meps_symbol}\n📖 *{book.chapter_display_title} {jw.chapternum}*\n{t.choose_verse}',
@@ -192,10 +200,10 @@ def manage_verses(update: Update, context: CallbackContext):
         )
         return show_verses(update, context)
 
-    book = db.get_book(db_user.bot_language, jw.booknum)
-    book_sign = db.get_book(db_user.sign_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
+    book_sign = db.get_book(db_user.sign_language.code, jw.booknum)
     with_overlay = db_user.overlay_language_id is not None and book.name != book_sign.name
-    file = db.get_file(jw, db_user.overlay_language_id if with_overlay else None)
+    file = db.get_file(jw, db_user.overlay_language.code if with_overlay else None)
     if file:
         return send_by_fileid(update, context, file)
 
@@ -216,7 +224,7 @@ def send_by_fileid(update: Update, context: CallbackContext, file: File):
     if context.user_data.get('msg'):
         context.user_data.get('msg').delete()
     db_user = db.get_user(update.effective_user.id)
-    book = db.get_book(db_user.bot_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
     bookname = book.standard_plural_bookname if len(jw.verses) > 1 else book.standard_singular_bookname
     citation = jw.citation(bookname)
     try:
@@ -251,8 +259,8 @@ def send_single_verse(update: Update, context: CallbackContext):
     msg = context.user_data.get('msg')
     t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
     db_user = db.get_user(update.effective_user.id)
-    book = db.get_book(db_user.bot_language, jw.booknum)
-    book_sign = db.get_book(db_user.sign_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
+    book_sign = db.get_book(db_user.sign_language.code, jw.booknum)
     with_overlay = db_user.overlay_language_id is not None and book.name != book_sign.name
     citation = f'{book.standard_singular_bookname} {jw.chapternum}:{jw.verses[0]}'
     logger.info("Splitting %s", citation)
@@ -272,7 +280,7 @@ def send_single_verse(update: Update, context: CallbackContext):
     msg.edit_text(f'📦 {t.sending} {citation}', parse_mode=ParseMode.MARKDOWN)
     thumbnail = video.make_thumbnail(versepath)
     logger.info('%s', thumbnail)
-    sign_book = db.get_book(db_user.sign_language, jw.booknum)
+    sign_book = db.get_book(db_user.sign_language.code, jw.booknum)
     sign_citation = jw.citation(sign_book.standard_singular_bookname)
     msgverse = context.bot.send_video(
         chat_id=chat.id,
@@ -307,8 +315,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     message = update.effective_message
     db_user = db.get_user(update.effective_user.id)
     jw = context.user_data['jw'] # type: SignsBible
-    book = db.get_book(db_user.bot_language, jw.booknum)
-    book_sign = db.get_book(db_user.sign_language, jw.booknum)
+    book = db.get_book(db_user.bot_language.code, jw.booknum)
+    book_sign = db.get_book(db_user.sign_language.code, jw.booknum)
     with_overlay = db_user.overlay_language_id is not None and book.name != book_sign.name
     verses = jw.verses
     msg = context.user_data.get('msg')
@@ -318,7 +326,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
     new = []
     for verse in jw.verses:
         jw.verses = verse
-        file = db.get_file(jw, db_user.overlay_language_id)
+        file = db.get_file(jw, db_user.overlay_language.code if with_overlay else None)
         citation = f'{book.standard_singular_bookname} {jw.chapternum}:{verse}'
         if file:
             logger.info('Downloading verse %s from telegram servers', citation)
@@ -347,7 +355,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext):
             paths_to_concatenate.append(versepath)
             new.append((verse, versepath))
     jw.verses = verses
-    book_sign = db.get_book(db_user.sign_language, jw.booknum)
+    book_sign = db.get_book(db_user.sign_language.code, jw.booknum)
     sign_citation = jw.citation(book_sign.standard_plural_bookname)
     logger.info('Concatenating video %s', citation)
     msg.edit_text(f'🎥 {t.splicing}', parse_mode=ParseMode.MARKDOWN)

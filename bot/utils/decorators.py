@@ -23,7 +23,7 @@ def vip(func):
         if not isinstance(user, User):
             return
         db_user = db.get_user(user.id)
-        if db_user is None or not db_user.is_accepted():
+        if db_user is None or not db_user.is_authorized():
             logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
             context.bot.forward_message(
                 chat_id=LOG_CHANNEL_ID,

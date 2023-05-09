@@ -3,7 +3,6 @@ https://dbdiagram.io/d/61417a16825b5b0146029d49
 """
 from datetime import datetime, timedelta
 
-from bot.utils import dt_now
 from bot.utils import represent as rep
 
 from sqlalchemy import Column, ForeignKey, UniqueConstraint
@@ -18,8 +17,8 @@ Base = declarative_base()
 class Language(Base):
     __tablename__ = 'Language'
     id = Column('LanguageId', Integer, primary_key=True)
-    meps_symbol = Column('LanguageCode', String, unique=True, nullable=False) #, sqlite_on_conflict_unique='IGNORE')
-    code = Column('LanguageLocale', String, unique=True, nullable=False) #, sqlite_on_conflict_unique='IGNORE')
+    meps_symbol = Column('LanguageMepsSymbol', String, unique=True, nullable=False) #, sqlite_on_conflict_unique='IGNORE')
+    code = Column('LanguageCode', String, unique=True, nullable=False) #, sqlite_on_conflict_unique='IGNORE')
     name = Column('LanguageName', String)
     vernacular = Column('LanguageVernacular', String)
     rsconf = Column('RsConfigSymbol', String)
@@ -147,7 +146,7 @@ class File(Base): # old File
     added_datetime = Column('AddedDatetime', DateTime)
     overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
 
-    chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
+    chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id]) # type: Chapter
     overlay_language = relationship('Language', back_populates='overlay_verses', foreign_keys=[overlay_language_id])
     
     users = relationship('User', back_populates='files', secondary='File2User')
@@ -166,6 +165,9 @@ class File(Base): # old File
 
 class User(Base):
     __tablename__ = 'User'
+    AUTHORIZED = 1
+    WAITING = 0
+    DENIED = -1
 
     id = Column('UserId', Integer, primary_key=True)
     telegram_user_id = Column('TelegramUserId', Integer, unique=True)
@@ -177,27 +179,27 @@ class User(Base):
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
     
-    bot_language = relationship('Language', back_populates='bot_language_users', foreign_keys=[bot_language_id])
-    sign_language = relationship('Language', back_populates='sign_language_users', foreign_keys=[sign_language_id])
-    overlay_language = relationship('Language', back_populates='overlay_users', foreign_keys=[overlay_language_id])
-    files = relationship('File', back_populates='users', secondary='File2User')
+    bot_language = relationship('Language', back_populates='bot_language_users', foreign_keys=[bot_language_id]) # type: Language
+    sign_language = relationship('Language', back_populates='sign_language_users', foreign_keys=[sign_language_id]) # type: Language
+    overlay_language = relationship('Language', back_populates='overlay_users', foreign_keys=[overlay_language_id]) # type: Language
+    files = relationship('File', back_populates='users', secondary='File2User') # type: File
 
     def __repr__(self):
         return f"<User(id={self.id!r}, telegram_user_id={self.telegram_user_id!r}, status={self.status!r}, " \
             f"sign_language_id={self.sign_language_id!r}, full_name={self.full_name!r}," \
             f"added_datetime={self.added_datetime!r}, overlay_language_id={self.overlay_language_id})>"
 
-    def is_accepted(self) -> bool:
-        return True if self.status == 1 else False
+    def is_authorized(self) -> bool:
+        return self.status == self.AUTHORIZED
     
     def is_waiting(self) -> bool:
-        return True if self.status == 0 else False
+        return self.status == self.WAITING
     
-    def is_banned(self) -> bool:
-        return True if self.status == -1 else False
+    def is_denied(self) -> bool:
+        return self.status == self.DENIED
     
     def is_active(self) -> bool:
-        _30_days_ago = dt_now() - timedelta(days=30)
+        _30_days_ago = datetime.now() - timedelta(days=30)
         return self.last_active_datetime > _30_days_ago
     
 
