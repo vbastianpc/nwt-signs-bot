@@ -1,15 +1,12 @@
 import re
 from pathlib import Path
-from typing import Optional, List, Union
-import requests
 from zipfile import ZipFile
-
+import requests
 
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag, PageElement
 
 from bot.jw.bible import BaseBible
-from bot.jw.language import JWLanguage
 
 
 EPUB_PATH = Path('bible-epub')
@@ -18,10 +15,10 @@ EPUB_PATH = Path('bible-epub')
 class Epub(BaseBible):
     def __init__(
             self,
-            language_code: str = None,
-            booknum: Optional[int] = None,
-            chapternum: Optional[int] = None,
-            verses: Union[int, str, List[str], List[int]] = [],
+            language_code: str | None = None,
+            booknum: int | None = None,
+            chapternum: int | None = None,
+            verses: int | str | list[str] | list[int] = [],
             download=True,
     ):
         super().__init__(language_code, booknum, chapternum, verses)
@@ -81,7 +78,7 @@ class Epub(BaseBible):
                 return file
 
     @property
-    def bookname(self) -> Optional[str]:
+    def bookname(self) -> str | None:
         file = self.dirpath() / f'OEBPS/bibleversenav{self.booknum}_1.xhtml'
         nav_soup = BeautifulSoup(file.read_bytes(), 'html.parser')
         return nav_soup.title.text
@@ -89,7 +86,7 @@ class Epub(BaseBible):
     def get_text(self) -> str:
         return f'<a href="{self.share_url(is_sign_language=False)}">{self.bookname} {self.chapternum}</a>\n' + self.verse_text()
 
-    def verse_text(self) -> List[str]:
+    def verse_text(self) -> list[str]:
         versenav = self.dirpath() / f'OEBPS/bibleversenav{self.booknum}_{self.chapternum}.xhtml'
         nav_soup = BeautifulSoup(versenav.read_bytes(), 'html.parser')
         verses = []
@@ -134,18 +131,3 @@ class Epub(BaseBible):
         text = re.sub(r'(\xa0)+', ' ', text)
         text = re.sub(r'(\n)+', '\n', text)
         return text.replace('*', '')
-
-
-if __name__ == '__main__':
-    import sys
-    from bot.secret import ADMIN
-    from bot.secret import TOKEN
-    from telegram import Bot
-
-    epub = Epub(JWLanguage('S'), 43, 1, [1, 2])
-    print('ESPAÑOL')
-    print(epub.get_text())
-    # print('"', epub.get_text(), '"')
-    bot = Bot(TOKEN)
-    # bot.send_message(chat_id=ADMIN, text=epub.get_text(), parse_mode='HTML', disable_web_page_preview=True)
-    print('Enviado')

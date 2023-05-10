@@ -1,12 +1,5 @@
-
-from .utils import (
-    list_of_lists,
-    safechars,
-    parse_chapter,
-    parse_verses,
-    BooknumNotFound,
-    MultipleBooknumsFound,
-    now,
-    dt_now,
-    represent,
-)
+from bot.utils.utils import list_of_lists
+from bot.utils.utils import safechars
+from bot.utils.utils import now
+from bot.utils.utils import dt_now
+from bot.utils.utils import represent

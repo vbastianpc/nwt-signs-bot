@@ -2,7 +2,6 @@ from pathlib import Path
 from subprocess import run
 import shlex
 import time
-from typing import Dict, Optional, List
 import json
 
 import numpy as np
@@ -35,7 +34,7 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None) -> 
     return output
 
 
-def show_streams(video) -> Dict:
+def show_streams(video) -> dict:
     console = run(
         shlex.split(f'ffprobe -v quiet -show_streams -print_format json -i "{video}"'),
         capture_output=True,
@@ -45,7 +44,7 @@ def show_streams(video) -> Dict:
     return streams[0]
 
 
-def concatenate(inputvideos: List[Path], outname: str=None, title_chapters: List[str]=None, title:str=None) -> Path:
+def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list[str]=None, title:str=None) -> Path:
     intermediates = []
     metadata = ';FFMETADATA1\n'
     offset = 0
@@ -104,7 +103,7 @@ def make_thumbnail(inputvideo: Path, name=None) -> Path:
 
 def drawtext(
         inputvideo: str,
-        overlay_text: Optional[str] = None,
+        overlay_text: str | None = None,
         script: str = None,
         start_time: int = 0
     ) -> str:

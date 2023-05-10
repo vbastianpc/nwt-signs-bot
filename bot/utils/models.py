@@ -7,7 +7,7 @@ class LazyProperty:
         self.function = function
         self.name = function.__name__
 
-    def __get__(self, obj, type=None) -> object:
+    def __get__(self, obj, type=None) -> object: # pylint: disable=redefined-builtin
         if isinstance(obj.__dict__.get('_lazies'), list):
             obj.__dict__['_lazies'].append(self.name)
         else:
@@ -18,7 +18,7 @@ class LazyProperty:
 
 class SpecialProperty:
     def __set_name__(self, owner, name):
-        self.name = name
+        self.name = name # pylint: disable=attribute-defined-outside-init
 
     def __set__(self, obj, value) -> None:
         if self.name in obj.__dict__ and obj.__dict__[self.name] != value:
@@ -44,4 +44,3 @@ class classinstancemethod:
             instance, args = args[0], args[1:]
         cls = self.owner
         return self.method(cls, instance, *args, **kwargs)
-

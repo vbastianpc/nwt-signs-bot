@@ -1,6 +1,3 @@
-from typing import List, Dict, Optional
-import requests
-
 from bot.utils.browser import LazyBrowser
 from bot.utils.models import LazyProperty
 from bot.jw import URL_LANGUAGES
@@ -19,7 +16,7 @@ logger = get_logger(__name__)
 # in API https://data.jw-api.org/mediator/v1/languages/S/all
 # code: E
 # locale: en
-# 
+#
 # in API https://www.jw.org/en/languages/
 # langcode: E
 # symbol: en
@@ -34,52 +31,53 @@ class JWLanguage:
 
     def __init__(self, meps_symbol=None, code=None):
         if meps_symbol and code:
-            raise TypeError('meps_symbol and code are mutually exclusive arguments')
+            raise TypeError(
+                'meps_symbol and code are mutually exclusive arguments')
         self._meps_symbol = meps_symbol
         self._code = code
-    
+
     @property
-    def meps_symbol(self) -> Optional[str]:
+    def meps_symbol(self) -> str | None:
         return self._meps_symbol or self._get_lang_data('code', code=self._code)
-    
+
     @meps_symbol.setter
     def meps_symbol(self, value):
         self._code = None
         self._meps_symbol = value
-    
+
     @property
-    def code(self) -> Optional[str]:
+    def code(self) -> str | None:
         return self._code or self._get_lang_data('locale', self._meps_symbol)
 
     @code.setter
     def code(self, value):
         self._meps_symbol = None
         self._code = value
-    
+
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return self._get_lang_data('name', meps_symbol=self._meps_symbol, code=self._code)
-    
+
     @property
-    def vernacular(self) -> Optional[str]:
+    def vernacular(self) -> str | None:
         return self._get_lang_data('vernacular', meps_symbol=self._meps_symbol, code=self._code)
 
     @property
-    def is_sign_language(self) -> Optional[bool]:
+    def is_sign_language(self) -> bool | None:
         return self._get_lang_data('isSignLanguage', meps_symbol=self._meps_symbol, code=self._code)
-    
+
     @property
     def is_rtl(self) -> bool:
         return self._get_lang_data('isRTL', meps_symbol=self._meps_symbol, code=self._code)
 
     @property
-    def rsconf(self) -> Optional[str]:
+    def rsconf(self) -> str | None:
         return self._get_tag_attribute('data-rsconf', self.meps_symbol)
-    
+
     @property
-    def lib(self) -> Optional[str]:
+    def lib(self) -> str | None:
         return self._get_tag_attribute('data-lib', self.meps_symbol)
-    
+
     @property
     def script(self) -> str:
         return self._get_lang_data('script', meps_symbol=self._meps_symbol, code=self._code)
@@ -90,16 +88,16 @@ class JWLanguage:
             return True
         else:
             return False
-    
+
     @LazyProperty
-    def all_langs(self) -> List[Dict]:
+    def all_langs(self) -> list[dict]:
         return self.browser.open(URL_LANGUAGES).json()['languages']
-    
+
     @property
-    def signs_languages(self) -> List[Dict]:
+    def signs_languages(self) -> list[dict]:
         return [item for item in self.all_langs if item['isSignLanguage']]
 
-    def _get_lang_data(self, key, meps_symbol=None, code=None) -> Optional[str]:
+    def _get_lang_data(self, key, meps_symbol=None, code=None) -> str | None:
         if meps_symbol:
             return next((lang[key] for lang in self.all_langs if lang['code'] == meps_symbol))
         elif code:
@@ -107,10 +105,11 @@ class JWLanguage:
         else:
             raise TypeError('Missing required argument: meps_symbol or code')
 
-    def _get_tag_attribute(self, attribute_name, meps_symbol) -> Optional[str]:
+    def _get_tag_attribute(self, attribute_name, meps_symbol) -> str | None:
         self.wol_browser.open(URL_LIBRARIES)
         try:
-            value = self.wol_browser.page.find('a', {'data-meps-symbol': meps_symbol}).get(attribute_name)
+            value = self.wol_browser.page.find(
+                'a', {'data-meps-symbol': meps_symbol}).get(attribute_name)
         except:
             return None
         else:

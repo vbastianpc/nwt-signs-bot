@@ -1,8 +1,6 @@
-from typing import Optional, List, Union, Iterable
+from collections.abc import Iterable
 from datetime import datetime
 
-
-from sqlalchemy.exc import IntegrityError
 from telegram import Video
 
 from bot.logs import get_logger
@@ -22,6 +20,7 @@ from bot.jw.language import JWLanguage
 
 
 logger = get_logger(__name__)
+browser = LazyBrowser()
 
 # region Language
 
@@ -47,18 +46,17 @@ def fetch_languages():
     SESSION.add_all(languages)
     SESSION.commit()
 
-
-def get_sign_languages() -> List[Language]:
+def get_sign_languages() -> list[Language]:
     return SESSION.query(Language).filter(Language.is_sign_language == True).order_by(Language.meps_symbol.asc()).all()
 
-def get_languages() -> List[Language]:
+def get_languages() -> list[Language]:
     return SESSION.query(Language).order_by(Language.meps_symbol.asc()).all()
 
 def get_language(
-        id: Optional[int] = None, # pylint: disable=redefined-builtin
-        meps_symbol: Optional[str] = None,
-        code: Optional[str] = None
-    ) -> Optional[Language]:
+        id: int | None = None, # pylint: disable=redefined-builtin
+        meps_symbol: str | None = None,
+        code: str | None = None
+    ) -> Language | None:
     q = SESSION.query(Language)
     if id is not None:
         q = q.filter(Language.id == id)
@@ -70,7 +68,7 @@ def get_language(
         raise TypeError('get_language expected one argument')
     return q.one_or_none()
 
-def get_sign_languages_meps_symbol() -> List[str]:
+def get_sign_languages_meps_symbol() -> list[str]:
     return [
         lang[0] for lang in
         SESSION.query(Language.meps_symbol)
@@ -81,30 +79,30 @@ def get_sign_languages_meps_symbol() -> List[str]:
 # endregion
 # region User
 
-def get_user(telegram_user_id) -> Optional[User]:
+def get_user(telegram_user_id) -> User | None:
     return SESSION.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
 
-def get_users() -> List[User]:
+def get_users() -> list[User | None]:
     return SESSION.query(User).all()
 
-def get_banned_users() -> Optional[List[User]]:
+def get_banned_users() -> list[User | None]:
     return SESSION.query(User).filter(User.status == -1).all()
 
-def get_waiting_users() -> Optional[List[User]]:
+def get_waiting_users() -> list[User | None]:
     return SESSION.query(User).filter(User.status == 0).all()
 
-def get_accepted_users() -> Optional[List[User]]:
+def get_accepted_users() -> list[User | None]:
     return SESSION.query(User).filter(User.status == 1).all()
 
 def set_user(
         telegram_user_id: int,
-        sign_language_code: str = None,
-        full_name: str = None,
-        bot_language: Language = None,
-        status: int = None,
-        overlay_language: Language = None,
-        added_datetime: datetime = None,
-        last_active_datetime: datetime = None
+        sign_language_code: str | None = None,
+        full_name: str | None = None,
+        bot_language: Language | None = None,
+        status: int | None = None,
+        overlay_language: Language | None = None,
+        added_datetime: datetime | None = None,
+        last_active_datetime: datetime | None = None
     ) -> User:
     user = get_user(telegram_user_id)
     if not user:
@@ -135,8 +133,8 @@ def set_user(
 
 # region Bible
 def fetch_bible_editions():
-    browser = LazyBrowser()
     data = browser.open("https://www.jw.org/en/library/bible/json/").json()
+    editions = []
     for d in data['langs'].values():
         language_meps_symbol = d['lang']['langcode']
         language = get_language(meps_symbol=language_meps_symbol)
@@ -145,54 +143,53 @@ def fetch_bible_editions():
         except AssertionError:
             continue
         for e in d['editions']:
-            bible = Bible(
-                language_id=language.id,
-                name=e['title'],
-                symbol=e['symbol'],
-                url=e.get('contentAPI')
-            )
-            SESSION.add(bible)
-            try:
-                SESSION.commit()
-            except IntegrityError:
-                SESSION.rollback()
+            if not get_bible(language_code=language.code):
+                editions.append(Bible(
+                    language_id=language.id,
+                    name=e['title'],
+                    symbol=e['symbol'],
+                    url=e.get('contentAPI')
+                ))
+    SESSION.add_all(editions)
+    SESSION.commit()
+
+
 
 def fetch_bible_books(language_code):
     bible = get_bible(language_code)
-    browser = LazyBrowser()
     data = browser.open(bible.url).json()
+    books = []
     for booknum, bookdata in data['editionData']['books'].items():
-        SESSION.add(
-            Book(
-                bible_id=bible.id,
-                number=int(booknum),
-                chapter_count=int(bookdata['chapterCount']),
-                name=bookdata['standardName'].strip('.'),
-                standard_abbreviation=bookdata['standardAbbreviation'].strip('.'),
-                official_abbreviation=bookdata['officialAbbreviation'].strip('.'),
-                standard_singular_bookname=bookdata['standardSingularBookName'].strip('.'),
-                standard_singular_abbreviation=bookdata['standardSingularAbbreviation'].strip('.'),
-                official_singular_abbreviation=bookdata['officialSingularAbbreviation'].strip('.'),
-                standard_plural_bookname=bookdata['standardPluralBookName'].strip('.'),
-                standard_plural_abbreviation=bookdata['standardPluralAbbreviation'].strip('.'),
-                official_plural_abbreviation=bookdata['officialPluralAbbreviation'].strip('.'),
-                book_display_title=bookdata['bookDisplayTitle'].strip('.'),
-                chapter_display_title=bookdata['chapterDisplayTitle'].strip('.')
+        book = get_book(language_code=bible.language.code, booknum=booknum, bible_id=bible.id)
+        if not book:
+            book.append(
+                Book(
+                    bible_id=bible.id,
+                    number=int(booknum),
+                    chapter_count=int(bookdata['chapterCount']),
+                    name=bookdata.get('standardName'),
+                    standard_abbreviation=bookdata.get('standardAbbreviation'),
+                    official_abbreviation=bookdata.get('officialAbbreviation'),
+                    standard_singular_bookname=bookdata.get('standardSingularBookName'),
+                    standard_singular_abbreviation=bookdata.get('standardSingularAbbreviation'),
+                    official_singular_abbreviation=bookdata.get('officialSingularAbbreviation'),
+                    standard_plural_bookname=bookdata.get('standardPluralBookName'),
+                    standard_plural_abbreviation=bookdata.get('standardPluralAbbreviation'),
+                    official_plural_abbreviation=bookdata.get('officialPluralAbbreviation'),
+                    book_display_title=bookdata.get('bookDisplayTitle'),
+                    chapter_display_title=bookdata.get('chapterDisplayTitle')
+                )
             )
-        )
-    try:
-        SESSION.commit()
-    except IntegrityError as e:
-        logger.warning("%s", e)
-        SESSION.rollback()
-    return
+    SESSION.add_all(books)
+    SESSION.commit()
 
-def get_bible(language_code: str) -> Optional[Bible]:
+
+def get_bible(language_code: str) -> Bible | None:
     return (SESSION
             .query(Bible)
             .join(Language)
             .filter(Language.code == language_code)
-            .order_by(Bible.id.asc())
+            .order_by(Bible.id.desc())
             .limit(1)
             .one_or_none()
     )
@@ -203,35 +200,40 @@ def get_bible(language_code: str) -> Optional[Bible]:
 def get_books(
         language_code: str = None,
         booknum: int = None,
-    ) -> List[Book]:
+    ) -> list[Book]:
     q = SESSION.query(Book)
-    if language_code:
+    if isinstance(language_code, str):
         q = (q
              .join(Bible, Bible.id == Book.bible_id)
              .join(Language, Language.id == Bible.language_id)
              .filter(Language.code == language_code)
         )
-    if booknum is not None:
+    if isinstance(booknum, int):
         q = q.filter(Book.number == booknum)
     return q.order_by(Book.number.asc()).all()
 
 
 def get_book(language_code: str,
-             booknum: Union[int, str]) -> Optional[Book]:
-    return (
+             booknum: int | str,
+             bible_id: int | None = None
+             ) -> Book | None:
+    q = (
         SESSION.query(Book)
         .join(Bible, Bible.id == Book.bible_id)
         .join(Language, Language.id == Bible.language_id)
         .filter(
             Book.number == int(booknum),
             Language.code == language_code,
-        ).one_or_none()
+        )
     )
+    if isinstance(bible_id, int):
+        q = q.filter(Bible.id == bible_id)
+    return q.one_or_none()
 
 # endregion
 
 # region Chapter
-def get_chapter(jw: SignsBible) -> Optional[Chapter]:
+def get_chapter(jw: SignsBible) -> Chapter | None:
     q = (
         SESSION.query(Chapter)
         .join(Book, Book.id == Chapter.book_id)
@@ -249,10 +251,10 @@ def get_chapter(jw: SignsBible) -> Optional[Chapter]:
 
 def _add_chapter(
         language: Language,
-        booknum: Union[int, str],
-        chapternum: Union[int, str],
+        booknum: int | str,
+        chapternum: int | str,
         checksum: str,
-        modified_datetime: Union[datetime, str],
+        modified_datetime: datetime,
         url: str,
         title: str,
     ) -> Chapter:
@@ -276,7 +278,7 @@ def _add_chapter(
 #         booknum: Union[int, str],
 #         chapternum: Union[int, str],
 #         **kwargs
-#     ) -> Optional[Tuple[Chapter, List[File], str]]:
+#     ) -> Tuple[Chapter, list[File], str]]:
 #     bible_chapter = get_chapter(sign_language_meps_symbol, booknum, chapternum)
 #     if bible_chapter is None:
 #         return
@@ -293,7 +295,7 @@ def _add_chapter(
 
 # region VideoMarker
 
-def get_videomarker(jw: SignsBible):
+def get_videomarker(jw: SignsBible) -> VideoMarker | None:
     assert len(jw.verses) == 1
     q = (
         SESSION.query(VideoMarker)
@@ -313,7 +315,7 @@ def get_videomarker(jw: SignsBible):
 
 
 
-def get_videomarkers(jw: SignsBible):
+def get_videomarkers(jw: SignsBible) -> list[VideoMarker | None]:
     q = (
         SESSION.query(VideoMarker)
         .join(Language, Language.id == Bible.language_id)
@@ -332,7 +334,7 @@ def get_videomarkers(jw: SignsBible):
     return q.all()
 
 
-def get_all_versenumbers(jw: SignsBible = None) -> List[Optional[int]]:
+def get_all_versenumbers(jw: SignsBible | None = None) -> list[int | None]:
     return [row[0] for row in (
         SESSION.query(VideoMarker.versenum)
         .join(Chapter, Chapter.id == VideoMarker.chapter_id)
@@ -361,7 +363,6 @@ def manage_video_markers(jw: SignsBible) -> None:
         jw.get_video_url(),
         jw.get_title(),
     )
-    print(f'{data=}')
     if video_markers:
         return
     elif chapter and chapter.checksum == jw.get_checksum():
@@ -402,8 +403,8 @@ def _add_video_markers(chapter: Chapter, markers: Iterable):
 
 def get_file(
         jw: SignsBible,
-        overlay_language_code: Optional[int] = 0,
-    ) -> Optional[File]:
+        overlay_language_code: int = 0,
+    ) -> File | None:
     q = (
         SESSION.query(File)
         .join(Chapter, Chapter.id == File.chapter_id)
@@ -430,7 +431,7 @@ def get_files(
         raw_verses: str = None,
         checksum: str = None,
         overlay_language_code: int = None,
-    ) -> List[Optional[File]]:
+    ) -> list[File | None]:
     q = (
         SESSION.query(File)
         .join(Chapter, Chapter.id == File.chapter_id)
@@ -459,7 +460,7 @@ def get_files(
 def add_file(
         tg_video: Video,
         jw: SignsBible,
-        overlay_language_id: Optional[int],
+        overlay_language_id: int | None,
     ) -> File:
     chapter = get_chapter(jw)
     file = File(

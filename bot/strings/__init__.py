@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Tuple, List, Union
+from collections.abc import Iterator
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -14,7 +14,7 @@ class Self:
     def __set_name__(self, owner, name):
         self.name = name # pylint: disable=attribute-defined-outside-init
 
-    def __get__(self, obj, type=None) -> Union[str, Dict]: # pylint: disable=redefined-builtin
+    def __get__(self, obj, type=None) -> str | dict: # pylint: disable=redefined-builtin
         p = STRINGS_PATH / f'{obj.language_code}.yaml'
         try:
             return yaml.load(p.read_text())[self.name]
@@ -81,21 +81,21 @@ class TextGetter:
         self.language_code = language_code
 
 
-def get_language(botlang: str) -> Dict:
+def get_language(botlang: str) -> dict:
     return TextGetter(botlang).language
 
 
-def get_commands(botlang) -> List[BotCommand]:
+def get_commands(botlang) -> list[BotCommand]:
     return [BotCommand(command, descr) for command, descr in TextGetter(botlang).commands.items()]
 
 
-def get_admin_commands(botlang) -> List[BotCommand]:
+def get_admin_commands(botlang) -> list[BotCommand]:
     return [BotCommand(command, descr) for command, descr in TextGetter(botlang).admin_commands.items()]
 
 
-def botlangs_vernacular() -> Iterator[Tuple[str, str]]:
+def botlangs_vernacular() -> Iterator[tuple[str, str]]:
     return ((p.stem, yaml.load(p.read_text())['language']['vernacular']) for p in STRINGS_PATH.glob('*.yaml'))
 
 
-def botlangs() -> List[str]:
+def botlangs() -> list[str]:
     return [p.stem for p in STRINGS_PATH.glob('*.yaml')]

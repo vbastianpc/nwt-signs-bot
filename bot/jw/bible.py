@@ -1,5 +1,3 @@
-from typing import Optional, Union, List
-
 from bot.jw.language import JWLanguage
 from bot.jw import SHARE_URL
 
@@ -8,10 +6,10 @@ class BaseBible:
     def __init__(
             self,
             language_meps_symbol: str = None,
-            booknum: Optional[int] = None,
-            chapternum: Optional[int] = None,
-            verses: Union[int, str, List[str], List[int]] = [],
-            ):
+            booknum: int | None = None,
+            chapternum: int | None = None,
+            verses: int | str | list[str] | list[int] = [],
+    ):
         self.language_meps_symbol = language_meps_symbol
         self.language = language_meps_symbol
         self.booknum = booknum
@@ -19,9 +17,9 @@ class BaseBible:
         self.verses = verses
 
     @property
-    def booknum(self) -> Optional[int]:
+    def booknum(self) -> int | None:
         return self._booknum
-    
+
     @booknum.setter
     def booknum(self, value):
         if value is None:
@@ -32,9 +30,9 @@ class BaseBible:
             raise ValueError('booknum must be between 1 and 66')
 
     @property
-    def chapternum(self) -> Optional[int]:
+    def chapternum(self) -> int | None:
         return self._chapter
-    
+
     @chapternum.setter
     def chapternum(self, value):
         if isinstance(value, (str, int)):
@@ -43,22 +41,22 @@ class BaseBible:
             self._chapter = None
 
     @property
-    def verses(self) -> Optional[List[int]]:
+    def verses(self) -> list[int | None]:
         return self._verses
-    
+
     @verses.setter
     def verses(self, value):
         if isinstance(value, list):
             self._verses = [int(verse) for verse in value]
         elif isinstance(value, int):
             self._verses = [value]
-        elif isinstance(value, str): # it could be '14' or '14 15 18' etc
+        elif isinstance(value, str):  # it could be '14' or '14 15 18' etc
             self._verses = [int(i) for i in value.split()]
         elif value is None:
             self._verses = []
         else:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(value).__name__}')
-    
+
     @property
     def raw_verses(self):
         return ' '.join(map(str, self.verses))
@@ -66,7 +64,7 @@ class BaseBible:
     @property
     def language(self) -> JWLanguage:
         return self._language
-    
+
     @language.setter
     def language(self, language_meps_symbol) -> None:
         self._language = JWLanguage(language_meps_symbol)
@@ -99,7 +97,7 @@ class BaseBible:
         if last != verses[-1]:
             pv += f'{sep}{verses[-1]}'
         return f'{bookname} {chapternum}:{pv}' if bookname else f'{chapternum}:{pv}'
-    
+
     def share_url(self, verse=None, is_sign_language=True, language_meps_symbol=None):
         assert not None in [self.language_meps_symbol, self.booknum, self.chapternum]
         return SHARE_URL(
@@ -111,7 +109,6 @@ class BaseBible:
             is_sign_language
         )
 
-    
     def __repr__(self):
         return f'{self.__class__.__name__}(language_meps_symbol={self.language_meps_symbol}, booknum={self.booknum}, ' \
             f'chapternum={self.chapternum}, verses={self.verses})'

@@ -10,7 +10,6 @@ from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
-from sqlalchemy.exc import PendingRollbackError
 from sqlalchemy.exc import OperationalError
 
 from bot.database import SESSION

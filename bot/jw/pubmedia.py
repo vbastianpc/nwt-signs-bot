@@ -1,6 +1,5 @@
 from pathlib import Path
 import re
-from typing import List, Dict, Optional, Union
 import json
 from subprocess import run
 import shlex
@@ -30,9 +29,9 @@ class SignsBible(BaseBible):
     def __init__(
             self,
             sign_language_meps_symbol: str = None,
-            booknum: Optional[int] = None,
-            chapternum: Optional[int] = None,
-            verses: Union[int, str, List[str], List[int]] = [],
+            booknum: int | None = None,
+            chapternum: int | None = None,
+            verses: int | str | list[str] | list[int] = [],
             **kwargs):
         super().__init__(sign_language_meps_symbol, booknum, chapternum, verses)
     
@@ -41,7 +40,7 @@ class SignsBible(BaseBible):
         return URL_PUBMEDIA.format(language_meps_symbol=self.language_meps_symbol, booknum=self.booknum, track=self.chapternum or '')
 
     @property
-    def _rawdata(self) -> Dict:
+    def _rawdata(self) -> dict:
         assert all([self.language_meps_symbol, self.booknum]), f'Debes definir language_meps_symbol y booknum ({self.language_meps_symbol} {self.booknum})'
         url_1 = self.api_url
         url_2 = URL_PUBMEDIA.format(language_meps_symbol=self.language_meps_symbol, booknum=self.booknum, track='')
@@ -65,12 +64,12 @@ class SignsBible(BaseBible):
             self.browser_pubmedia.open_fake_page('')
             return {}
 
-    def files(self) -> Dict:
+    def files(self) -> dict:
         for files in self._rawdata['files'][self.language_meps_symbol].values():
             for file in files:
                 yield file
 
-    def _match(self, chapternum=None, quality=None) -> Dict:
+    def _match(self, chapternum=None, quality=None) -> dict:
         chapternum = int(chapternum) if chapternum is not None else self.chapternum
         quality = quality or self.get_best_quality()
         assert isinstance(chapternum, (int, str)), f'Debes definir capítulo {self.chapternum}'
@@ -100,7 +99,7 @@ class SignsBible(BaseBible):
     def get_title(self):
         return next(self.files())['title']
 
-    def get_available_qualities(self) -> List[str]:
+    def get_available_qualities(self) -> list[str]:
         qualities = set()
         for item in self.files():
             qualities.update([item['label']])
@@ -115,20 +114,20 @@ class SignsBible(BaseBible):
         except KeyError:
             return False
     
-    def get_all_chapternumber(self) -> List[int]:
+    def get_all_chapternumber(self) -> list[int]:
         chapters = set((int(item['track'])) for item in self.__class__(self.language_meps_symbol, self.booknum).files() if item['hasTrack'])
         return sorted(chapters)
     
 
-    def get_markers(self) -> List[Dict]:
+    def get_markers(self) -> list[dict]:
         return self._api_markers() or self._ffprobe_markers()
 
     
-    def _ffprobe_markers(self) -> List[Dict]:
+    def _ffprobe_markers(self) -> list[dict]:
         url = self.get_video_url(quality=self.get_available_qualities()[0])
         return ffprobe_markers(url)
 
-    def _api_markers(self) -> List[Dict]:
+    def _api_markers(self) -> list[dict]:
         logger.info('Getting JW-API markers')
         for item in self.files():
             if (item['markers'] and
@@ -147,7 +146,7 @@ class SignsBible(BaseBible):
             label=str(marker['label'])
         ) for marker in markers]
 
-    def wol_discover(self, verse=None) -> Optional[str]:
+    def wol_discover(self, verse=None) -> str | None:
         if self.language.is_wol_available():
             return URL_WOL_DISCOVER.format(language_code=self.language.code,
                                         rsconf=self.language.rsconf,
@@ -159,7 +158,7 @@ class SignsBible(BaseBible):
                                         )
 
 
-def chapter_from_url(url) -> Optional[int]:
+def chapter_from_url(url) -> int | None:
     " returns '1' if url= '/.../nwt_40_Mt_SCH_01_r240P.mp4'"
     try:
         return int(Path(url).name.split('_')[4])
