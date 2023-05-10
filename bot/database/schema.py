@@ -53,6 +53,7 @@ class Language(Base):
 
 class Bible(Base):
     __tablename__ = 'Bible'
+    __table_args__ = (UniqueConstraint('LanguageId', 'SymbolEdition'), )
 
     id = Column('BibleId', Integer, primary_key=True)
     language_id = Column('LanguageId', Integer, ForeignKey('Language.LanguageId'), nullable=False)
@@ -73,20 +74,20 @@ class Book(Base):
     number = Column('BookNumber', Integer)
     chapter_count = Column('ChapterCount', Integer)
 
-    name = Column('StandardName', String)
-    standard_abbreviation = Column('StandardAbbreviation', String)
-    official_abbreviation = Column('OfficialAbbreviation', String)
+    name = Column('StandardName', String, default='')
+    standard_abbreviation = Column('StandardAbbreviation', String, default='')
+    official_abbreviation = Column('OfficialAbbreviation', String, default='')
 
-    standard_singular_bookname = Column('StandardSingularBookName', String)
-    standard_singular_abbreviation = Column('StandardSingularAbbreviation', String)
-    official_singular_abbreviation = Column('OfficialSingularAbbreviation', String)
+    standard_singular_bookname = Column('StandardSingularBookName', String, default='')
+    standard_singular_abbreviation = Column('StandardSingularAbbreviation', String, default='')
+    official_singular_abbreviation = Column('OfficialSingularAbbreviation', String, default='')
 
-    standard_plural_bookname = Column('StandardPluralBookName', String)
-    standard_plural_abbreviation = Column('StandardPluralAbbreviation', String)
-    official_plural_abbreviation = Column('OfficialPluralAbbreviation', String)
+    standard_plural_bookname = Column('StandardPluralBookName', String, default='')
+    standard_plural_abbreviation = Column('StandardPluralAbbreviation', String, default='')
+    official_plural_abbreviation = Column('OfficialPluralAbbreviation', String, default='')
 
-    book_display_title = Column('BookDisplayTitle', String)
-    chapter_display_title = Column('ChapterDisplayTitle', String)
+    book_display_title = Column('BookDisplayTitle', String, default='')
+    chapter_display_title = Column('ChapterDisplayTitle', String, default='')
 
     bible = relationship('Bible', back_populates='books', foreign_keys=[bible_id])  # type: Bible
     chapters = relationship('Chapter', back_populates='book', foreign_keys='[Chapter.book_id]')  # type: Chapter
