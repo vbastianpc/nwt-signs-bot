@@ -11,7 +11,7 @@ from telegram.ext import ConversationHandler
 from telegram.ext import MessageHandler
 from telegram.ext.filters import Filters
 
-from bot.database import localdatabase as db
+from bot.database import get
 from bot.utils.decorators import vip
 from bot.utils.decorators import forw
 from bot import MyCommand
@@ -22,7 +22,7 @@ from bot.strings import TextGetter
 @vip
 def menu_overlay(update: Update, context: CallbackContext) -> None:
     t = TextGetter(update.effective_user.language_code)
-    db_user = db.get_user(update.effective_user.id)
+    db_user = get.user(update.effective_user.id)
 
     msg = update.message.reply_text(
         text=(
@@ -40,7 +40,7 @@ def menu_overlay(update: Update, context: CallbackContext) -> None:
 
 @forw
 def with_overlay(update: Update, context: CallbackContext) -> None:
-    db_user = db.get_user(update.effective_user.id)
+    db_user = get.user(update.effective_user.id)
     db.set_user(update.effective_user.id, overlay_language=db_user.bot_language)
     t = TextGetter(update.effective_user.language_code)
     context.bot.edit_message_text(

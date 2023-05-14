@@ -12,8 +12,8 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 from sqlalchemy.exc import OperationalError
 
-from bot.database import SESSION
-from bot.database import localdatabase as db
+from bot.database import session
+from bot.database import get
 from bot.utils.decorators import admin
 from bot import AdminCommand, MyCommand
 from bot.secret import LOG_CHANNEL_ID
@@ -45,7 +45,7 @@ def test_data(update: Update, context: CallbackContext) -> None:
 
 @admin
 def notify(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     if not context.args:
         update.message.reply_text(
             text=t.wrong_notify.format(AdminCommand.NOTIFY),
@@ -72,7 +72,7 @@ def send_notification(update: Update, context: CallbackContext):
                 from_chat_id=update.effective_user.id,
                 message_id=msg.message_id,
             )
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(t.notify_success)
     del context.user_data['advice_note']
     del context.user_data['user_ids']
@@ -80,7 +80,7 @@ def send_notification(update: Update, context: CallbackContext):
 
 
 def cancel(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(t.notify_cancel)
     del context.user_data['advice_note']
     return -1
@@ -92,7 +92,7 @@ def logs(update: Update, context: CallbackContext):
         with open('./log.log', 'r', encoding='utf-8') as f:
             data = f.read()
     except FileNotFoundError:
-        t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+        t = TextGetter(get.user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
     else:
         update.message.reply_markdown_v2(f'```{data[-MAX_MESSAGE_LENGTH::]}```')
@@ -107,7 +107,7 @@ def logfile(update: Update, context: CallbackContext):
             document=open('./log.log', 'rb'),
         )
     except FileNotFoundError:
-        t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+        t = TextGetter(get.user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
 
 

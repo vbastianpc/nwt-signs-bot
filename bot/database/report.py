@@ -1,7 +1,7 @@
 from sqlalchemy import func
 
 from bot.logs import get_logger
-from bot.database import SESSION
+from bot.database import session
 from bot.database.schema import Language
 from bot.database.schema import Bible
 from bot.database.schema import Book
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 
 def _count(primary_key) -> int:
-    return SESSION.query(func.count(primary_key))
+    return session.query(func.count(primary_key))
 
 def count_sentverse() -> int:
     return _count(File.id).scalar()

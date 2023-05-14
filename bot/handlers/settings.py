@@ -15,7 +15,9 @@ from telegram.ext import MessageHandler
 from telegram.ext.filters import Filters
 import telegram.error
 
-from bot.database import localdatabase as db
+from bot.database import get
+from bot.database import add
+from bot.database import fetch
 from bot.database import report as rdb
 from bot.database.schema import Language
 from bot.utils import list_of_lists
@@ -39,16 +41,15 @@ PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 @forw
 @vip
 def show_current_settings(update: Update, _: CallbackContext) -> None:
-    db_user = db.get_user(update.effective_user.id)
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    db_user = get.user(update.effective_user.id)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(
-        text=t.show_settings.format(
-            db_user.signlanguage.meps_symbol,
-            db_user.signlanguage.vernacular,
+        text=t.current_settings(
+            db_user.sign_language.code,
+            db_user.sign_language.vernacular,
             db_user.bot_language.code,
-            strings.get_language(db_user.bot_language.code)['vernacular'],
-            MyCommand.SIGNLANGUAGE,
-            MyCommand.BOTLANGUAGE
+            t.enable if db_user.overlay_language else t.disable,
+
         ),
         parse_mode=ParseMode.MARKDOWN
     )
@@ -59,7 +60,7 @@ def build_signlangs():
         [{
             'text': f'{sign_language.code} - {sign_language.vernacular}',
             'callback_data': f'{SELECTING_SIGNLANGUAGE}|{sign_language.code}'
-        } for sign_language in sorted(db.get_sign_languages(), key=lambda x: x.code)
+        } for sign_language in sorted(get.sign_languages(), key=lambda x: x.code)
         ],
         columns=1
     )
@@ -68,7 +69,7 @@ def build_signlangs():
 @forw
 @vip
 def manage_langs(update: Update, context: CallbackContext):
-    db.fetch_languages()
+    fetch.languages()
     if context.args:
         set_sign_language(update, context)
     else:
@@ -76,12 +77,12 @@ def manage_langs(update: Update, context: CallbackContext):
 
 
 def generate_lang_buttons(update: Update, _: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     send_buttons(
         message=update.message,
         info_for_buttons=build_signlangs(),
         suffix=PAGE_SIGNLANGUAGE,
-        text=t.menu_signlanguage.format(rdb.count_signlanguage()),
+        text=t.menu_signlanguage(rdb.count_signlanguage()),
     )
 
 
@@ -128,19 +129,19 @@ def prev_next_signlanguage(update: Update, _: CallbackContext):
 
 @forw
 def set_sign_language(update: Update, context: CallbackContext, sign_language_code=None) -> int:
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     if update.callback_query:
         sign_language_code = update.callback_query.data.split('|')[1]
     else:
         sign_language_code = sign_language_code or context.args[0].lower()
 
-    db_user = db.set_user(update.effective_user.id, sign_language_code=sign_language_code)
+    db_user = add.or_update_user(update.effective_user.id, sign_language_code=sign_language_code)
 
-    if not db.get_bible(language_code=sign_language_code):
-        db.fetch_bible_editions()
-    if not db.get_books(sign_language_code):
-        db.fetch_bible_books(language_code=sign_language_code)
-    text = t.ok_signlanguage_code.format(sign_language_code, db_user.sign_language.vernacular)
+    if not get.edition(language_code=sign_language_code):
+        fetch.editions()
+    if not get.books(sign_language_code):
+        fetch.books(language_code=sign_language_code)
+    text = t.ok_signlanguage_code(db_user.sign_language.vernacular)
     if update.callback_query:
         update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
     else:
@@ -159,7 +160,7 @@ def build_botlangs():
 @forw
 @vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     msg = send_buttons(
         message=update.message,
         info_for_buttons=build_botlangs(),
@@ -180,22 +181,22 @@ def set_bot_language(update: Update, context: CallbackContext, bot_language_code
     else:
         bot_language_code = bot_language_code or context.args[0].lower()
     t = TextGetter(bot_language_code)
-    language = db.get_language(code=bot_language_code)
-    db_user = db.get_user(update.effective_user.id)
-    db.set_user(update.effective_user.id,
-                bot_language=language,
+    language = get.language(code=bot_language_code)
+    db_user = get.user(update.effective_user.id)
+    add.or_update_user(update.effective_user.id,
+                bot_language_code=language.code,
                 overlay_language=language if db_user.overlay_language else None)
     set_my_commands(update.effective_user, language)
     if update.callback_query:
         update.callback_query.answer(f'{language.vernacular} - {language.code}')
     update.effective_message.reply_text(
-        text=t.ok_botlang.format(language.vernacular),
+        text=t.ok_botlang(language.vernacular),
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not db.get_bible(language_code=language.code):
-        db.fetch_bible_editions()
-    if not db.get_books(language.code):
-        db.fetch_bible_books(language.code)
+    if not get.edition(language_code=language.code):
+        fetch.editions()
+    if not get.books(language.code):
+        fetch.books(language.code)
     return ConversationHandler.END
 
 

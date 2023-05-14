@@ -9,8 +9,6 @@ from bot.logs import get_logger
 from bot.utils.browser import LazyBrowser
 from bot.jw.language import JWLanguage
 from bot.jw.bible import BaseBible
-from bot.jw import URL_PUBMEDIA
-from bot.jw import URL_WOL_DISCOVER
 
 
 logger = get_logger(__name__)

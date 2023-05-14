@@ -9,7 +9,7 @@ from bot.database.schema import Base
 from bot.database.views import views
 
 
-PATH_DB = 'newlanguages.db'
+PATH_DB = 'database.db'
 # PATH_DB = 'test_database.db'
 
 @event.listens_for(Engine, "connect")
@@ -29,4 +29,4 @@ def start_database() -> scoped_session:
     return scoped_session(sessionmaker(bind=engine))()
 
 
-SESSION = start_database()
+session = start_database()

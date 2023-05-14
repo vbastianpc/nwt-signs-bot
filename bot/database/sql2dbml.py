@@ -29,4 +29,4 @@ with open(DBSQL_SCHEMA, 'w', encoding='utf-8') as f:
             print()
 print(f'\n{len(metadata_obj.tables) - err} of {len(metadata_obj.tables)} tables created')
 
-run(['sql2dbml', DBSQL_SCHEMA, '-o', DBML_SCHEMA])
+run(['sql2dbml', DBSQL_SCHEMA, '-o', DBML_SCHEMA], check=True)

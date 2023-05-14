@@ -1,37 +1,50 @@
+Table "Bible" {
+  "VerseId" INTEGER [pk, not null]
+  "BookNumber" INTEGER [unique]
+  "ChapterNumber" INTEGER [unique]
+  "VerseNumber" INTEGER [unique]
+  "IsApocryphal" BOOLEAN
+}
+
 Table "Language" {
   "LanguageId" INTEGER [pk, not null]
+  "LanguageMepsSymbol" VARCHAR [unique, not null]
   "LanguageCode" VARCHAR [unique, not null]
-  "LanguageLocale" VARCHAR [unique, not null]
   "LanguageName" VARCHAR
   "LanguageVernacular" VARCHAR
   "RsConfigSymbol" VARCHAR
   "LibrarySymbol" VARCHAR
   "IsSignLanguage" BOOLEAN
+  "LanguageScript" VARCHAR
+  "IsRTL" BOOLEAN
 }
 
-Table "Bible" {
-  "BibleId" INTEGER [pk, not null]
+Table "Edition" {
+  "EditionId" INTEGER [pk, not null]
   "LanguageId" INTEGER [unique, not null]
-  "BookCount" INTEGER
   "Name" VARCHAR
-  "Abbreviation" VARCHAR
+  "SymbolEdition" VARCHAR [unique]
   "URL" VARCHAR
 }
 
 Table "User" {
   "UserId" INTEGER [pk, not null]
-  "TelegramUserId" INTEGER [unique]
-  "FullName" VARCHAR
+  "TelegramUserId" INTEGER [unique, not null]
+  "FirstName" VARCHAR
+  "LastName" VARCHAR
+  "UserName" VARCHAR
+  "IsPremium" BOOLEAN
   "SignLanguageId" INTEGER
   "BotLanguageId" INTEGER
   "OverlayLanguageId" INTEGER
   "Status" INTEGER
-  "AddedDatetime" VARCHAR
+  "AddedDatetime" DATETIME
+  "LastActiveDatetime" DATETIME
 }
 
 Table "Book" {
   "BookId" INTEGER [pk, not null]
-  "BibleId" INTEGER [unique, not null]
+  "EditionId" INTEGER [unique, not null]
   "BookNumber" INTEGER [unique]
   "ChapterCount" INTEGER
   "StandardName" VARCHAR
@@ -43,6 +56,7 @@ Table "Book" {
   "StandardPluralBookName" VARCHAR
   "StandardPluralAbbreviation" VARCHAR
   "OfficialPluralAbbreviation" VARCHAR
+  "RefreshedOnDate" DATETIME
   "BookDisplayTitle" VARCHAR
   "ChapterDisplayTitle" VARCHAR
 }
@@ -51,10 +65,9 @@ Table "Chapter" {
   "ChapterId" INTEGER [pk, not null]
   "BookId" INTEGER [unique, not null]
   "ChapterNumber" INTEGER [unique]
-  "Checksum" VARCHAR [unique]
-  "ModifiedDatetime" VARCHAR
+  "Checksum" VARCHAR
+  "ModifiedDatetime" DATETIME
   "URL" VARCHAR
-  "Title" VARCHAR
 }
 
 Table "File" {
@@ -65,18 +78,20 @@ Table "File" {
   "Duration" INTEGER
   "FileName" VARCHAR
   "RawVerseNumbers" VARCHAR
+  "IsSingleVerse" BOOLEAN
   "FileSize" INTEGER
-  "AddedDatetime" VARCHAR
+  "AddedDatetime" DATETIME
   "OverlayLanguageId" INTEGER
 }
 
 Table "VideoMarker" {
   "VideoMarkerId" INTEGER [pk, not null]
   "ChapterId" INTEGER [not null]
-  "Label" VARCHAR
-  "StartTime" VARCHAR
-  "Duration" VARCHAR
+  "VerseId" INTEGER [not null]
   "VerseNumber" INTEGER
+  "Label" VARCHAR
+  "Duration" VARCHAR
+  "StartTime" VARCHAR
   "EndTransitionDuration" VARCHAR
 }
 
@@ -84,10 +99,10 @@ Table "File2User" {
   "File2UserId" INTEGER [pk, not null]
   "FileId" INTEGER [not null]
   "UserId" INTEGER [not null]
-  "Datetime" VARCHAR
+  "Datetime" DATETIME
 }
 
-Ref:"Language"."LanguageId" < "Bible"."LanguageId"
+Ref:"Language"."LanguageId" < "Edition"."LanguageId"
 
 Ref:"Language"."LanguageId" < "User"."SignLanguageId"
 
@@ -95,7 +110,7 @@ Ref:"Language"."LanguageId" < "User"."BotLanguageId"
 
 Ref:"Language"."LanguageId" < "User"."OverlayLanguageId"
 
-Ref:"Bible"."BibleId" < "Book"."BibleId"
+Ref:"Edition"."EditionId" < "Book"."EditionId"
 
 Ref:"Book"."BookId" < "Chapter"."BookId"
 
@@ -104,6 +119,8 @@ Ref:"Chapter"."ChapterId" < "File"."ChapterId"
 Ref:"Language"."LanguageId" < "File"."OverlayLanguageId"
 
 Ref:"Chapter"."ChapterId" < "VideoMarker"."ChapterId"
+
+Ref:"Bible"."VerseId" < "VideoMarker"."VerseId"
 
 Ref:"File"."FileId" < "File2User"."FileId"
 

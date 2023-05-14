@@ -23,9 +23,8 @@ def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-,() ") else '_' for x in text.replace(':', '.')])
 
 
-def dt_now() -> str:
+def dt_now() -> datetime:
     tzinfo = pytz.timezone('UTC')
-    tzinfo.localize(datetime.now())
     return tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago'))
 
 def now() -> str:

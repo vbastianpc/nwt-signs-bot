@@ -2,6 +2,7 @@
 https://dbdiagram.io/d/61417a16825b5b0146029d49
 """
 from datetime import datetime, timedelta
+from typing import Type
 
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -17,15 +18,25 @@ from sqlalchemy.sql.sqltypes import DateTime
 class Base:
     """https://stackoverflow.com/a/55749579
     https://stackoverflow.com/a/54034230"""
-
     def __repr__(self):
         params = [f'{k}={v!r}' for k, v in self.__dict__.items() if k not in ['_sa_instance_state', '_sa_adapter']]
         params = ',\n    '.join(params)
         return f'<{self.__class__.__name__}(\n    {params}\n)>'
 
-
 Base = declarative_base(cls=Base)
 
+class Bible(Base):
+    __tablename__ = 'Bible'
+    __table_args__ = (UniqueConstraint('BookNumber', 'ChapterNumber', 'VerseNumber'),)
+    id = Column('VerseId', Integer, primary_key=True)
+    book = Column('BookNumber', Integer)
+    chapter = Column('ChapterNumber', Integer)
+    verse = Column('VerseNumber', Integer)
+    is_apocryphal = Column('IsApocryphal', Boolean, default=False)
+
+    video_markers: list['VideoMarker'] = relationship('VideoMarker',
+                                                      back_populates='verse',
+                                                      foreign_keys='[VideoMarker.verse_id]')
 
 class Language(Base):
     __tablename__ = 'Language'
@@ -40,37 +51,37 @@ class Language(Base):
     script = Column('LanguageScript', String)
     is_rtl = Column('IsRTL', Boolean)
 
-    bible = relationship('Bible', back_populates='language', foreign_keys='[Bible.language_id]')  # type: Bible
-    sign_language_users = relationship('User', back_populates='sign_language',
-                                       foreign_keys='[User.sign_language_id]')  # type: User
-    bot_language_users = relationship('User', back_populates='bot_language',
-                                      foreign_keys='[User.bot_language_id]')  # type: User
-    overlay_users = relationship('User', back_populates='overlay_language',
-                                 foreign_keys='[User.overlay_language_id]')  # type: User
-    overlay_verses = relationship('File', back_populates='overlay_language',
-                                  foreign_keys='[File.overlay_language_id]')  # type: File
+    edition = relationship('Edition', back_populates='language', foreign_keys='[Edition.language_id]')
+    sign_language_users: list['User'] = relationship('User', back_populates='sign_language',
+                                                           foreign_keys='[User.sign_language_id]')
+    bot_language_users: list['User'] = relationship('User', back_populates='bot_language',
+                                                           foreign_keys='[User.bot_language_id]')
+    overlay_users: list['User'] = relationship('User', back_populates='overlay_language',
+                                                     foreign_keys='[User.overlay_language_id]')
+    overlay_files: list['File'] = relationship('File', back_populates='overlay_language',
+                                                     foreign_keys='[File.overlay_language_id]')
 
 
-class Bible(Base):
-    __tablename__ = 'Bible'
+class Edition(Base):
+    __tablename__ = 'Edition'
     __table_args__ = (UniqueConstraint('LanguageId', 'SymbolEdition'), )
 
-    id = Column('BibleId', Integer, primary_key=True)
+    id = Column('EditionId', Integer, primary_key=True)
     language_id = Column('LanguageId', Integer, ForeignKey('Language.LanguageId'), nullable=False)
     name = Column('Name', String)
     symbol = Column('SymbolEdition', String)
     url = Column('URL', String)
 
-    language = relationship('Language', back_populates='bible', foreign_keys=[language_id])  # type: Language
-    books = relationship('Book', back_populates='bible', foreign_keys='[Book.bible_id]')  # type: Book
+    language: Language = relationship('Language', back_populates='edition', foreign_keys=[language_id])
+    books: 'Book' = relationship('Book', back_populates='edition', foreign_keys='[Book.edition_id]')
 
 
 class Book(Base):
     __tablename__ = 'Book'
-    __table_args__ = (UniqueConstraint('BookNumber', 'BibleId'), )
+    __table_args__ = (UniqueConstraint('BookNumber', 'EditionId'), )
 
     id = Column('BookId', Integer, primary_key=True)
-    bible_id = Column('BibleId', Integer, ForeignKey('Bible.BibleId'), nullable=False)
+    edition_id = Column('EditionId', Integer, ForeignKey('Edition.EditionId'), nullable=False)
     number = Column('BookNumber', Integer)
     chapter_count = Column('ChapterCount', Integer)
 
@@ -86,23 +97,22 @@ class Book(Base):
     standard_plural_abbreviation = Column('StandardPluralAbbreviation', String, default='')
     official_plural_abbreviation = Column('OfficialPluralAbbreviation', String, default='')
 
+    refreshed = Column('RefreshedOnDate', DateTime)
+
     book_display_title = Column('BookDisplayTitle', String, default='')
     chapter_display_title = Column('ChapterDisplayTitle', String, default='')
 
-    bible = relationship('Bible', back_populates='books', foreign_keys=[bible_id])  # type: Bible
-    chapters = relationship('Chapter', back_populates='book', foreign_keys='[Chapter.book_id]')  # type: Chapter
-    # files = relationship(
-    #     'File',
-    #     cascade="all,delete",
-    #     back_populates='bible_book',
-    #     passive_deletes=True,
-    #     foreign_keys='[File.bible_book_id]'
-    # )
+    edition: Edition = relationship('Edition', back_populates='books', foreign_keys=[edition_id])
+    chapters: list['Chapter'] = relationship('Chapter', back_populates='book', foreign_keys='[Chapter.book_id]')
+
+    @property
+    def language(self) -> Language:
+        return self.edition.language
 
 
 class Chapter(Base):
     __tablename__ = 'Chapter'
-    __table_args__ = (UniqueConstraint('BookId', 'ChapterNumber', 'Checksum'), )
+    __table_args__ = (UniqueConstraint('BookId', 'ChapterNumber'), )
 
     id = Column('ChapterId', Integer, primary_key=True)
     book_id = Column('BookId', Integer, ForeignKey('Book.BookId'), nullable=False)
@@ -110,34 +120,63 @@ class Chapter(Base):
     checksum = Column('Checksum', String)
     modified_datetime = Column('ModifiedDatetime', DateTime)
     url = Column('URL', String)
-    title = Column('Title', String)
 
-    book = relationship('Book', back_populates='chapters', foreign_keys=[book_id])  # type: Book
-    files = relationship('File', back_populates='chapter', foreign_keys='[File.chapter_id]')  # type: File
-    video_markers = relationship(
+    book: Book = relationship('Book', back_populates='chapters', foreign_keys=[book_id])
+    files: list['File'] = relationship('File', back_populates='chapter', foreign_keys='[File.chapter_id]')
+    video_markers: list['VideoMarker'] = relationship(
         'VideoMarker',
         # cascade="all,delete",
         back_populates='chapter',
         foreign_keys='[VideoMarker.chapter_id]'
         # passive_deletes=True,
-    )  # type: VideoMarker
+    )
 
+    @property
+    def edition(self) -> Edition:
+        return self.book.edition
+    
+    @property
+    def language(self) -> Language:
+        return self.book.edition.language
 
+    def get_file(self, verses: list[int], overlay_language_id: int | None) -> Type['File'] | None:
+        files = [file for file in self.files
+                 if file.raw_verses == ' '.join(map(str, verses)) and
+                 file.overlay_language_id == overlay_language_id]
+        return files[0] if files else None
+
+    def get_videomarker(self, verse: int) -> Type['VideoMarker'] | None:
+        videomarkers = [videomarker for videomarker in self.video_markers if videomarker.versenum == verse]
+        return videomarkers[0] if videomarkers else None
 class VideoMarker(Base):
     __tablename__ = 'VideoMarker'
 
     id = Column('VideoMarkerId', Integer, primary_key=True)
     chapter_id = Column('ChapterId', Integer, ForeignKey('Chapter.ChapterId'), nullable=False)
+    verse_id = Column('VerseId', Integer, ForeignKey('Bible.VerseId'), nullable=False)
     versenum = Column('VerseNumber', Integer)
     label = Column('Label', String)
     duration = Column('Duration', String)
     start_time = Column('StartTime', String)
     end_transition_duration = Column('EndTransitionDuration', String)
 
-    chapter = relationship('Chapter', back_populates='video_markers', foreign_keys=[chapter_id])  # type: Chapter
+    chapter: Chapter = relationship('Chapter', back_populates='video_markers', foreign_keys=[chapter_id])
+    verse: Bible = relationship('Bible', back_populates='video_markers', foreign_keys=[verse_id])
+
+    @property
+    def book(self) -> Book:
+        return self.chapter.book
+
+    @property
+    def edition(self) -> Edition:
+        return self.chapter.book.edition
+    
+    @property
+    def language(self) -> Language:
+        return self.chapter.book.edition.language
 
 
-class File(Base):  # old File
+class File(Base):
     __tablename__ = 'File'
 
     id = Column('FileId', Integer, primary_key=True)
@@ -152,16 +191,23 @@ class File(Base):  # old File
     added_datetime = Column('AddedDatetime', DateTime)
     overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
 
-    chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])  # type: Chapter
-    overlay_language = relationship('Language', back_populates='overlay_verses',
-                                    foreign_keys=[overlay_language_id])  # type: Language
-    users = relationship('User', back_populates='files', secondary='File2User')  # type: User
+    chapter: Chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
+    overlay_language: Language = relationship('Language', back_populates='overlay_files',
+                                    foreign_keys=[overlay_language_id])
+    users: list['User'] = relationship('User', back_populates='files', secondary='File2User')
 
-    def get_language(self) -> Language:
-        return self.chapter.book.bible.language
-
-    def get_book(self) -> Book:
+    @property
+    def book(self) -> Book:
         return self.chapter.book
+    
+    @property
+    def edition(self) -> Edition:
+        return self.chapter.book.edition
+
+    @property
+    def language(self) -> Language:
+        return self.chapter.book.edition.language
+
 
 
 class User(Base):
@@ -172,21 +218,25 @@ class User(Base):
 
     id = Column('UserId', Integer, primary_key=True)
     telegram_user_id = Column('TelegramUserId', Integer, unique=True, nullable=False)
-    full_name = Column('FullName', String)
+    first_name = Column('FirstName', String)
+    last_name = Column('LastName', String)
+    user_name = Column('UserName', String)
+    is_premium = Column('IsPremium', Boolean)
     sign_language_id = Column('SignLanguageId', Integer, ForeignKey('Language.LanguageId'))
     bot_language_id = Column('BotLanguageId', Integer, ForeignKey('Language.LanguageId'))
     overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
+    sign_language_name = Column('SignLanguageName', String) # sign language name in bot language
     status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
 
-    bot_language = relationship('Language', back_populates='bot_language_users',
-                                foreign_keys=[bot_language_id])  # type: Language
-    sign_language = relationship('Language', back_populates='sign_language_users',
-                                 foreign_keys=[sign_language_id])  # type: Language
-    overlay_language = relationship('Language', back_populates='overlay_users',
-                                    foreign_keys=[overlay_language_id])  # type: Language
-    files = relationship('File', back_populates='users', secondary='File2User')  # type: File
+    bot_language: Language = relationship('Language', back_populates='bot_language_users',
+                                foreign_keys=[bot_language_id])
+    sign_language: Language = relationship('Language', back_populates='sign_language_users',
+                                 foreign_keys=[sign_language_id])
+    overlay_language: Language = relationship('Language', back_populates='overlay_users',
+                                    foreign_keys=[overlay_language_id])
+    files: list[File] = relationship('File', back_populates='users', secondary='File2User')
 
     def is_authorized(self) -> bool:
         return self.status == self.AUTHORIZED
@@ -206,6 +256,6 @@ class File2User(Base):
     __tablename__ = 'File2User'
 
     id = Column('File2UserId', Integer, primary_key=True)
-    file_id = Column('FileId', Integer, ForeignKey('File.FileId'), nullable=False)
-    user_id = Column('UserId', Integer, ForeignKey('User.UserId'), nullable=False)
+    file_id: int = Column('FileId', Integer, ForeignKey('File.FileId'), nullable=False)
+    user_id: int = Column('UserId', Integer, ForeignKey('User.UserId'), nullable=False)
     datetime = Column('Datetime', DateTime)

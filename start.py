@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """
 TODO
-solucionar tema SESSION
-    - SESSION decorador para thread safe?
+https://evertype.com/standards/iso639/sgn.html
+solucionar tema session
+    - session decorador para thread safe?
 
 def with_session(func):
     session = new_session()

@@ -7,7 +7,8 @@ from telegram.error import Unauthorized
 
 from bot.utils import now
 from bot.utils.decorators import admin
-from bot.database import localdatabase as db
+from bot.database import get
+from bot.database import fetch
 from bot.database import PATH_DB
 from bot.database.schema import User
 from bot.handlers.start import start
@@ -27,9 +28,9 @@ def autorizacion(update: Update, context: CallbackContext):
         new_member_id = int(context.args[0])
     except:
         return
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
 
-    if not db.get_user(new_member_id):
+    if not get.user(new_member_id):
         update.message.reply_text(t.warn_user)
         return
 
@@ -41,29 +42,29 @@ def autorizacion(update: Update, context: CallbackContext):
     
     new_db_user = db.set_user(new_member_id, status=User.AUTHORIZED)
     update.message.reply_text(
-        text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
+        text=t.user_added.format(mention_markdown(new_member_id, new_db_user.first_name)),
         parse_mode=ParseMode.MARKDOWN,
     )
-    if not db.get_bible(new_db_user.bot_language.code):
-        db.fetch_bible_books(new_db_user.bot_language.code)
+    if not get.edition(new_db_user.bot_language.code):
+        fetch.bible_books(new_db_user.bot_language.code)
 
     start(
         update,
         context,
         chat_id=new_member_id,
-        full_name=new_db_user.full_name
+        first_name=new_db_user.first_name
     )
 
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_language.code)
+    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
     try:
         user_id = int(context.args[0])
     except IndexError:
         return
 
-    if not db.get_user(user_id):
+    if not get.user(user_id):
         update.message.reply_text(t.warn_user)
         return
     db.set_user(user_id, status=User.DENIED)
@@ -76,7 +77,7 @@ def sending_users(update: Update, context: CallbackContext):
         text = f'*{title}*'
         for i, user in enumerate(users, 1):
             text += (
-                f'\n{mention_markdown(user.telegram_user_id, user.full_name.split()[0])} '
+                f'\n{mention_markdown(user.telegram_user_id, user.first_name.split()[0])} '
                 f'{user.signlanguage.meps_symbol if user.signlanguage else None} '
                 f'{user.bot_language.name} '
                 f'`{user.telegram_user_id}`'
@@ -86,9 +87,9 @@ def sending_users(update: Update, context: CallbackContext):
                 text = ''
         if text:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    print_users(db.get_accepted_users(), "ACCEPTED")
-    print_users(db.get_banned_users(), 'BANNED')
-    print_users(db.get_waiting_users(), 'WAITING')
+    print_users(get.accepted_users(), "ACCEPTED")
+    print_users(get.banned_users(), 'BANNED')
+    print_users(get.waiting_users(), 'WAITING')
 
 @admin
 def backup(update: Update, context: CallbackContext):

@@ -4,6 +4,7 @@ from sqlalchemy.sql import text
 views = ['''
 CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
 SELECT
+    Chapter.ChapterId,
     Language.LanguageMepsSymbol,
     Language.LanguageCode,
     Bible.SymbolEdition,
@@ -72,7 +73,9 @@ SELECT
 		WHEN User.Status = -1 THEN "Banned"
 		ELSE "Unknown" END
 	) AS Status,
-    User.FullName,
+    User.FirstName,
+    User.LastName,
+    User.UserName,
     SignLanguage.LanguageCode AS SignLanguageCode,
 	BotLanguage.LanguageCode AS BotLanguageCode,
 	OverlayLanguage.LanguageCode AS OverlayLanguageCode

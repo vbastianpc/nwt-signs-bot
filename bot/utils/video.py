@@ -34,7 +34,7 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None) -> 
     return output
 
 
-def show_streams(video) -> dict:
+def show_streams(video) -> dict[str, str | int]:
     console = run(
         shlex.split(f'ffprobe -v quiet -show_streams -print_format json -i "{video}"'),
         capture_output=True,
@@ -80,7 +80,7 @@ def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list
     run(shlex.split(cmd), capture_output=True, check=True)
     for i in intermediates:
         Path(i).unlink()
-    metapath.unlink()
+    # metapath.unlink() # TODO uncomment
     return output
 
 

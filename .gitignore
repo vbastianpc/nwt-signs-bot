@@ -4,12 +4,16 @@
 # exclude patterns (uncomment them if you want to use them):
 # *.[oa]
 # *~
-*.mp4
 *.ipynb
-*.db
+*.mp4
 **/*.png
+**/*.jpg
 bible-epub/
 bot/utils/fonts/
+*.db
+*.db-journal
+*.jwpub
+/test
 
 .DS_Store
 .vscode/

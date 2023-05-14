@@ -13,7 +13,7 @@ from bot.secret import ADMIN
 from bot.secret import LOG_CHANNEL_ID
 from bot.logs import get_logger
 from bot.utils.decorators import forw
-from bot.database import localdatabase as db
+from bot.database import get
 from bot.strings import TextGetter
 
 
@@ -22,24 +22,24 @@ logger = get_logger(__name__)
 TAG_START = '#start'
 
 @forw
-def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
+def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
     user = update.effective_user
-    full_name = full_name or user.first_name
-    db_user = db.get_user(chat_id or update.effective_user.id)
+    first_name = first_name or user.first_name
+    db_user = get.user(chat_id or update.effective_user.id)
     t = TextGetter(update.effective_user.language_code if db_user is None else db_user.bot_language.code)
 
     if context.args and context.args[0] == 'github':
         context.bot.send_message(
             chat_id=ADMIN,
-            text=t.from_github.format(mention_markdown(user.id, user.full_name)),
+            text=t.from_github.format(mention_markdown(user.id, user.first_name)),
             parse_mode=ParseMode.MARKDOWN
         )
     
     if db_user is None or not db_user.is_authorized():
         db.set_user(
             update.effective_user.id,
-            full_name=update.effective_user.full_name,
-            bot_language=db.get_language(code=update.effective_user.language_code),
+            first_name=update.effective_user.first_name,
+            bot_language=get.language(code=update.effective_user.language_code),
             status=db_user.WAITING
         )
         context.bot.send_message(
@@ -50,14 +50,14 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, full_na
         context.bot.send_message(update.effective_user.id, '🔒👤')
         context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=t.barrier_to_entry.format(full_name),
+            text=t.barrier_to_entry.format(first_name),
             parse_mode=ParseMode.MARKDOWN,
         )
         return 1
 
     context.bot.send_message(
         chat_id=chat_id if chat_id else update.effective_user.id,
-        text=t.greetings.format(full_name, MyCommand.SIGNLANGUAGE, MyCommand.HELP),
+        text=t.greetings.format(first_name, MyCommand.SIGNLANGUAGE, MyCommand.HELP),
         parse_mode=ParseMode.MARKDOWN,
     )
 
@@ -88,7 +88,8 @@ start_handler = ConversationHandler(
 )
 
 @forw
-def all_fallback(update: Update, context: CallbackContext) -> None:
+def all_fallback(update: Update, context: CallbackContext, text: str = None) -> None:
+    # TODO text for multiline query. text is specific line dont understand
     return
 
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)

@@ -7,7 +7,7 @@ from bot.handlers.settings import setlang_handler
 from bot.handlers.settings import pagelang_handler
 from bot.handlers.settings import botlang_handler
 from bot.handlers.help import help_handler
-from bot.handlers.inline_bible import inline_handler
+# from bot.handlers.inline_bible import inline_handler
 from bot.handlers.admin.logs import test_handler
 from bot.handlers.feedback import feedback_handler
 from bot.handlers.start import start_handler
@@ -19,7 +19,7 @@ from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
 from bot.handlers.admin import getting_user_handler
 from bot.handlers.admin import database_status_handler
-from bot.handlers.admin import reset_chapter_handler
+# from bot.handlers.admin import reset_chapter_handler 
 from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
 from bot.handlers.admin.logs import logs_handler
@@ -45,7 +45,7 @@ handlers = [
     overlay_handler,
 
     # inline
-    inline_handler,
+    # inline_handler,
 
     # admin handlers
     test_handler,
@@ -56,7 +56,7 @@ handlers = [
     set_commands_handler,
     getting_user_handler,
     database_status_handler,
-    reset_chapter_handler,
+    # reset_chapter_handler,
 
     # parse bible citation
     parse_bible_handler,

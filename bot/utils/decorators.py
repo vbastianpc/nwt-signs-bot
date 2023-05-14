@@ -9,7 +9,7 @@ import telegram.error
 from bot.logs import get_logger
 from bot.secret import ADMIN
 from bot.secret import LOG_CHANNEL_ID
-from bot.database import localdatabase as db
+from bot.database import get
 
 
 logger = get_logger(__name__)
@@ -21,7 +21,7 @@ def vip(func):
         user = update.effective_user
         if not isinstance(user, User):
             return
-        db_user = db.get_user(user.id)
+        db_user = get.user(user.id)
         if db_user is None or not db_user.is_authorized():
             logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
             context.bot.forward_message(
@@ -75,6 +75,6 @@ def log(func):
     def log_function(update: Update, context: CallbackContext, *args, **kwargs):
         user = update.effective_user
         payload = update.callback_query.data if update.callback_query else update.effective_message.text
-        logger.info(f'{user.id} {user.full_name} {payload}')
+        logger.info(f'{user.id} {user.first_name} {payload}')
         return func(update, context, *args, **kwargs)
     return log_function

@@ -1,5 +1,4 @@
 from bot.jw.language import JWLanguage
-from bot.jw import SHARE_URL
 
 
 class BaseBible:
@@ -100,7 +99,7 @@ class BaseBible:
 
     def share_url(self, verse=None, is_sign_language=True, language_meps_symbol=None):
         assert not None in [self.language_meps_symbol, self.booknum, self.chapternum]
-        return SHARE_URL(
+        return (
             language_meps_symbol or self.language_meps_symbol,
             self.booknum,
             self.chapternum,

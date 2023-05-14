@@ -15,7 +15,6 @@ class LazyProperty:
         obj.__dict__[self.name] = self.function(obj)
         return obj.__dict__[self.name]
 
-
 class SpecialProperty:
     def __set_name__(self, owner, name):
         self.name = name # pylint: disable=attribute-defined-outside-init
