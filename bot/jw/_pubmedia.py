@@ -8,7 +8,7 @@ from datetime import datetime
 from bot.logs import get_logger
 from bot.utils.browser import LazyBrowser
 from bot.jw.language import JWLanguage
-from bot.jw.bible import BaseBible
+from bot.jw.bible import BibleObject
 
 
 logger = get_logger(__name__)
@@ -21,7 +21,7 @@ def clean(func):
     return function
 
 
-class SignsBible(BaseBible):
+class SignsBible(BibleObject):
     browser_pubmedia = LazyBrowser()
 
     def __init__(

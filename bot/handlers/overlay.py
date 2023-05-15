@@ -1,75 +1,41 @@
+from pathlib import Path
 
 from telegram import Update
-from telegram import InlineKeyboardButton
-from telegram import InlineKeyboardMarkup
 from telegram import ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.ext import CallbackQueryHandler
-from telegram.ext import CallbackQueryHandler
-from telegram.ext import ConversationHandler
-from telegram.ext import MessageHandler
-from telegram.ext.filters import Filters
 
 from bot.database import get
+from bot.database import add
 from bot.utils.decorators import vip
 from bot.utils.decorators import forw
 from bot import MyCommand
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 
 
 
 @vip
-def menu_overlay(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(update.effective_user.language_code)
-    db_user = get.user(update.effective_user.id)
+def toggle_overlay(update: Update, _: CallbackContext) -> None:
+    tt = TextTranslator(update.effective_user.language_code)
+    user = get.user(update.effective_user.id)
+    user = add.or_update_user(update.effective_user.id,
+                              with_overlay=False if user.overlay_language_id else True)
+    update.message.reply_text(tt.overlay_activated if user.overlay_language_id else tt.overlay_deactivated,
+                              parse_mode=ParseMode.MARKDOWN)
+    
 
-    msg = update.message.reply_text(
-        text=(
-            t.overlay_description + '\n\n' + 
-            (t.overlay_deactivated if db_user.overlay_language is None else t.overlay_activated)
-        ),
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(t.yes, callback_data='YES')],
-            [InlineKeyboardButton(t.no, callback_data='NO')]
-        ]),
+
+@vip
+def overlay_info(update: Update, context: CallbackContext) -> None:
+    user = get.user(update.effective_user.id)
+    tt = TextTranslator(user.bot_language.code)
+    msg = context.bot.send_photo(
+        update.effective_user.id,
+        photo=context.bot_data.get('overlay_info') or Path('./assets/overlay.jpg').read_bytes(),
+        caption=tt.overlay_info,
         parse_mode=ParseMode.MARKDOWN
     )
-    context.user_data['message_id'] = msg.message_id
-    return 1
+    context.bot_data['overlay_info'] = max(msg.photo, key=lambda p: p.height).file_id
 
-@forw
-def with_overlay(update: Update, context: CallbackContext) -> None:
-    db_user = get.user(update.effective_user.id)
-    db.set_user(update.effective_user.id, overlay_language=db_user.bot_language)
-    t = TextGetter(update.effective_user.language_code)
-    context.bot.edit_message_text(
-        message_id=context.user_data['message_id'],
-        chat_id=update.effective_chat.id,
-        text=t.overlay_activated,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    return -1
-
-@forw
-def without_overlay(update: Update, context: CallbackContext) -> None:
-    db.set_user(update.effective_user.id, overlay_language=False)
-    t = TextGetter(update.effective_user.language_code)
-    context.bot.edit_message_text(
-        message_id=context.user_data['message_id'],
-        chat_id=update.effective_chat.id,
-        text=t.overlay_deactivated,
-        parse_mode=ParseMode.MARKDOWN
-    )
-    return -1
-
-
-
-overlay_handler = ConversationHandler(
-    entry_points=[CommandHandler(MyCommand.OVERLAY, menu_overlay)],
-    states={
-        1: [CallbackQueryHandler(with_overlay, pattern='YES'),
-            CallbackQueryHandler(without_overlay, pattern='NO')]
-    },
-    fallbacks=[MessageHandler(Filters.command, lambda u, c: -1)]
-)
+overlay_handler = CommandHandler(MyCommand.OVERLAY, toggle_overlay)
+overlay_info_handler = CommandHandler(MyCommand.OVERLAYINFO, overlay_info)

@@ -125,11 +125,23 @@ def chapters(book: Book) -> list[Chapter | None]:
         ).order_by(Chapter.id.asc())
     ).all()
 
-def videomarkers(chapter: Chapter, verses: list[int]) -> list[VideoMarker]:
-    return session.query(VideoMarker).filter(
-        VideoMarker.chapter_id == chapter.id,
-        VideoMarker.versenum.in_(verses)
-    ).all()
+
+def videomarkers(chapter: Chapter, verses: list[int] | None = None) -> list[VideoMarker]:
+    q = session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id)
+    if verses is None:
+        return q.all()
+    else:
+        vms = q.filter(VideoMarker.versenum.in_(verses)).all()
+        available_versenums = [vm.versenum for vm in vms]
+        if set(verses) == set(available_versenums):
+            return vms
+        else:
+            raise exc.IncompleteVideoMarkers(set(verses) == set(available_versenums))
+
+
+def unavailable_verses(chapter: Chapter, verses: list[int]) -> list[int]:
+    available = session.scalars(select(VideoMarker.versenum).filter(VideoMarker.chapter_id == chapter.id)).all()
+    return list(set(verses) - set(available))
 
 
 def file(chapter: Chapter,
@@ -183,101 +195,6 @@ def files(
             )
         )
     return q.all()
-
-
-# def get_chapter(jw: SignsBible) -> Chapter | None:
-#     q = (
-#         session.query(Chapter)
-#         .join(Book, Book.id == Chapter.book_id)
-#         .join(Edition, Edition.id == Book.edition_id)
-#         .join(Language, Language.id == Edition.language_id)
-#         .filter(
-#             Language.meps_symbol == jw.language_meps_symbol,
-#             Book.number == jw.booknum,
-#             Chapter.number == jw.chapternum,
-#             Chapter.checksum == jw.get_checksum()
-#         )
-#     )
-#     return q.one_or_none()
-
-
-# def get_videomarker(jw: SignsBible) -> VideoMarker | None:
-#     assert len(jw.verses) == 1
-#     q = (
-#         session.query(VideoMarker)
-#         .join(Language, Language.id == Edition.language_id)
-#         .join(Edition, Edition.id == Book.edition_id)
-#         .join(Book, Book.id == Chapter.book_id)
-#         .join(Chapter, Chapter.id == VideoMarker.chapter_id)
-#         .filter(
-#             Language.meps_symbol == jw.language_meps_symbol,
-#             Book.number == jw.booknum,
-#             Chapter.number == jw.chapternum,
-#             Chapter.checksum == jw.get_checksum(),
-#             VideoMarker.versenum == jw.verses[0],
-#         )
-#     )
-#     return q.one_or_none()
-
-
-
-# def get_videomarkers(jw: SignsBible) -> list[VideoMarker | None]:
-#     q = (
-#         session.query(VideoMarker)
-#         .join(Language, Language.id == Edition.language_id)
-#         .join(Edition, Edition.id == Book.edition_id)
-#         .join(Book, Book.id == Chapter.book_id)
-#         .join(Chapter, Chapter.id == VideoMarker.chapter_id)
-#         .filter(
-#             Language.meps_symbol == jw.language_meps_symbol,
-#             Book.number == jw.booknum,
-#             Chapter.number == jw.chapternum,
-#             Chapter.checksum == jw.get_checksum(),
-#         )
-#         .order_by(VideoMarker.versenum.asc())
-#     )
-#     # print(q.statement.compile(compile_kwargs={"literal_binds": True}))
-#     return q.all()
-
-
-# def get_all_versenumbers(jw: SignsBible | None = None) -> list[int | None]:
-#     return [row[0] for row in (
-#         session.query(VideoMarker.versenum)
-#         .join(Chapter, Chapter.id == VideoMarker.chapter_id)
-#         .join(Book, Book.id == Chapter.book_id)
-#         .join(Edition, Edition.id == Book.edition_id)
-#         .join(Language, Language.id == Edition.language_id)
-#         .filter(
-#             Language.meps_symbol == jw.language_meps_symbol,
-#             Book.number == jw.booknum,
-#             Chapter.number == jw.chapternum,
-#             Chapter.checksum == jw.get_checksum(),
-#         )
-#         .all()
-#     )]
-
-
-# def get_file(
-#         jw: SignsBible,
-#         overlay_language_code: int = 0,
-#     ) -> File | None:
-#     q = (
-#         session.query(File)
-#         .join(Chapter, Chapter.id == File.chapter_id)
-#         .join(Book, Book.id == Chapter.book_id)
-#         .join(Edition, Edition.id == Book.edition_id)
-#         .join(Language, Language.id == Edition.language_id)
-#         .filter(
-#             Language.meps_symbol == jw.language_meps_symbol,
-#             Book.number == jw.booknum,
-#             Chapter.number == jw.chapternum,
-#             Chapter.checksum == jw.get_checksum(),
-#             File.raw_verses == jw.raw_verses,
-#             File.overlay_language_id == get_language(code=overlay_language_code).id if overlay_language_code else None
-#         )
-#     )
-#     # print(q.statement.compile(compile_kwargs={"literal_binds": True}))
-#     return q.one_or_none()
 
 
 if __name__ == '__main__':

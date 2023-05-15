@@ -1,3 +1,7 @@
+# https://yaml.org/spec/1.2.2/#chapter-2-language-overview
+# https://stackoverflow.com/a/21699210/9505959
+# https://yaml-multiline.info
+
 language:
   code: es
   name: Spanish
@@ -27,51 +31,69 @@ admin_commands:
   reset_chapter: Altera el checksum de un capítulo
 
 # Start
-barrier_to_entry: |-
-  ¡Hola {}! Soy un bot que te ayudará a obtener textos bíblicos en todas las lenguas de señas disponibles \
-  en [jw.org](https://www.jw.org/en/choose-language). Por favor, espera a que el desarrollador acepte tu ingreso. \
-  Mientras tanto, háblame de ti, de dónde eres y por qué quieres usar este bot.
+barrier_to_entry: >
+  ¡Hola {}! Soy un bot que te ayudará a obtener pasajes bíblicos del sitio. Por favor, espera a que el desarrollador
+  acepte tu ingreso. Mientras tanto, háblame de ti, de dónde eres y por qué quieres usar este bot.
 
 wait: ¡Gracias! Te avisaré cuando seas aceptado.
-welcome: ¡Felicidades {}! Ya puedes usar este bot
-greetings: |-
-  ¡Hola {}! 👋🏼📖 Selecciona una lengua de señas, por ejemplo /ase. O busca otra con /{}. Luego puedes pedirme pasajes \
-  de la Biblia, por ejemplo
 
+step_1: >
+  ¡Felicidades {}! Ya puedes usar este bot. Ahora debes elegir una lengua de señas, por ejemplo /ase. También puedes
+  buscar otra con /signlanguage. Te mostraré todas las disponibles en el sitio
+  [JW](https://www.jw.org/en/choose-language)
+
+step_2: >
+  ¡Muy bien! Ahora ya puedes pedirme pasajes de la Biblia. Intentaré entender todo lo que me pidas. Puedes usar el
+  nombre completo o su abreviación, por ejemplo:
+
+
+  gen 1:29, 30
   Salmo 104:14
-  Génesis 1:29, 30
-  Romanos 14:6-8, 22, 23
-  2 Tim 3
-  1Cor
+  rom 14:6-8, 22, 23
+  Judas 20
+  1cor 13
 
-  Si necesitas ayuda, haz click en /{}
+
+greetings: >
+  ¡Hola {}! 👋🏼📖 Selecciona una lengua de señas, por ejemplo /ase. O busca otra con /signlanguage. \
+  Luego puedes pedirme pasajes de la Biblia, por ejemplo
+
+
+  Ecle 11:10
+  Filip 4:6, 7
+  2 Tim 3:1-5
+  Prov 19:19-22, 27 
+  Salmo 1
+  Mateo
+
+
+  Si necesitas ayuda, haz click en /help
+
 
 yes: Sí
 no: No
-enable: Activado
-disable: Desactivado
+enabled: Activado
+disabled: Desactivado
 
-# Bible
-choose_signlang: Primero elige una lengua de señas. Busca tu lengua de señas /{} o escribe su código, por ejemplo
 
 # Example: asjkkjas 1:1
 # {} -> asjkkjas
 book_not_found:
-  - Por lo que sé, el libro {} no existe. Si me indicas el idioma probablemente lo encuentre en otro intento.
-  - El libro {} no existe en ninguna Biblia que yo conozca. A menos que esté en los nuevos rollos. Pero mi conocimiento no llega tan lejos.
-  - No encontré el libro {} en ninguna Biblia. ¿Podrías intentarlo de nuevo con un término diferente?
-  - No puedo encontrar el libro {} que estás buscando. ¿Podrías intentarlo otra vez con una palabra diferente?
-  - ¿Podrías repetir eso {}?
-  - Creo que olvidé mi capacidad de comprensión en algún lugar, porque no entendí {}. 
-  - Por mucho que lo busco, no encuentro {}. ¿Podrías escribirlo de otra manera?
-  - Por más que lo intento, no encuentro {} en ninguna edición de la Biblia. ¿Podrías intentarlo de nuevo?
-  - Por lo que sé, {} no existe en ninguna Biblia. 
+  - Por lo que sé, el libro *{}* no existe. Si me indicas el idioma probablemente lo encuentre en otro intento.
+  - El libro *{}* no existe en ninguna Biblia que yo conozca. A menos que esté en los nuevos rollos. Pero mi conocimiento no llega tan lejos.
+  - No encontré el libro *{}* en ninguna Biblia. ¿Podrías intentarlo de nuevo con un término diferente?
+  - No puedo encontrar el libro *{}* que estás buscando. ¿Podrías intentarlo otra vez con una palabra diferente?
+  - ¿Podrías repetir eso *{}*?
+  - Creo que olvidé mi capacidad de comprensión en algún lugar, porque no entendí *{}*. 
+  - Por mucho que lo busco, no encuentro *{}*. ¿Podrías escribirlo de otra manera?
+  - Por más que lo intento, no encuentro *{}* en ninguna edición de la Biblia. ¿Podrías intentarlo de nuevo?
+  - Por lo que sé, *{}* no existe en ninguna Biblia. 
 
 
 # Example: mat 1, 2, 3
 # {} -> Matthew
 missing_chapter:
-  - Creo que te has olvidado de decirme algo... ¿el capítulo de {} tal vez?
+  - Creo que te has olvidado de decirme algo... ¿el capítulo de *{}* tal vez?
   - Uhm... parece que me falta algo... 
 
 
@@ -80,11 +102,11 @@ missing_chapter:
 # {1} -> 100
 # {2} -> 28 (max chapter number for Matthew)
 chapter_not_exists:
-  - "{0} no tiene el capítulo {1}. A menos que esté en los nuevos rollos. Pero por ahora solo tiene {2} capítulos."
-  - De todas las ediciones de la Biblia que conozco, {0} no tiene el capítulo {1}.
-  - Por mucho que busco, no encuentro el capítulo {1} de {0}
-  - Uhm... el capítulo {1} no está en {0}. O eso tengo entendido yo.
-  - ¿Me podrías indicar en qué Biblia encuentro {0} {1}? En la Traducción del Nuevo Mundo no está.
+  - "*{0}* no tiene el capítulo *{1}*. A menos que esté en los nuevos rollos. Pero por ahora solo tiene *{2}* capítulos."
+  - De todas las ediciones de la Biblia que conozco, *{0}* no tiene el capítulo *{1}*.
+  - Por mucho que busco, no encuentro el capítulo *{1}* de *{0}*
+  - Uhm... el capítulo *{1}* no está en *{0}*. O eso tengo entendido yo.
+  - ¿Me podrías indicar en qué Biblia encuentro *{0}* *{1}*? En la Traducción del Nuevo Mundo no está.
 
 
 # Example: mat 28:1, 50 
@@ -93,10 +115,10 @@ chapter_not_exists:
 # {2} -> 50 (wrong verse)
 # {3} -> 20 (max verse number for Matthew 28)
 verse_not_exists:
-  - El versículo {2} no existe en {0} {1}.
-  - "{0} {1} no tiene tantos versículos. Como mucho puedes pedirme hasta el versículo {3}."
-  - "{0} {1} solo tiene {3} versículos."
-  - No te puedo dar el versículo {2}, porque {0} {1} solo tiene {3} versículos.
+  - El versículo *{2}* no existe en *{0}* *{1}*.
+  - "*{0}* *{1}* no tiene tantos versículos. Como mucho puedes pedirme hasta el versículo *{3}*."
+  - "*{0}* *{1}* solo tiene *{3}* versículos."
+  - No te puedo dar el versículo *{2}*, porque *{0}* *{1}* solo tiene *{3}* versículos.
 
 
 # Example: mat 28:1, 50, 51
@@ -105,147 +127,166 @@ verse_not_exists:
 # {2} -> 50, 51 (wrong verses)
 # {3} -> 20 (max versenumber for Mathhew 28)
 verses_not_exists:
-  - Los versículos {2} no existen en {0} {1}.
-  - "{0} {1} no tiene tantos versículos. Como mucho puedes pedirme hasta el versículo {3}."
-  - No te puedo dar los versículos {3}, porque {0} {1} solo tiene {3} versículos.
+  - Los versículos *{2}* no existen en *{0}* *{1}*.
+  - "*{0}* *{1}* no tiene tantos versículos. Como mucho puedes pedirme hasta el versículo *{3}*."
+  - No te puedo dar los versículos *{2}*, porque *{0}* *{1}* solo tiene *{3}* versículos.
  
 
  # Example: Isaiah 6:8 not in SLV
  # {0} -> Isaiah 6:8
  # {1} -> Vietnamese Sign Language
-this_verse_no:
-  - Por el momento no está disponible {0} en {1}. 
-  - Oh que pena, {0} aún no está interpretado en {1}. 
-  - Por ahora {0} no está aún en {1}. Un poco de paciencia.
-  - Quizá pronto esté disponible {0} en {1}.
+that_verse_no:
+  - Por el momento *{0}* no está disponible en *{1}*. 
+  - Oh que pena, *{0}* aún no está interpretado en *{1}*. 
+  - Por ahora *{0}* no está aún en *{1}*. Un poco de paciencia.
+  - Quizá pronto esté disponible *{0}* en *{1}*.
 
  # Example: Isaiah 6:8 not in SLV, but 1, 9, 11, 13 verses are available.
-but_this_verse:
+but_these_verses:
   - Puedes intentar cambiar la lengua de señas, o probar con estos versículos.
   - Pero puedes ver estos versículos si quieres.
   - Pero estos versículos sí están disponibles.
+  - Pero puedes elegir uno de estos versículos.
 
 
 # Example: Psalms 45 not in SLV
 # {0} -> Psalms 45
 # {1} -> Vietnamese Sign Language
-this_chapter_no:
-  - Por el momento no hay ningún versículo disponible de {0} en {1}.
-  - Todavía no hay versículos de {0} en {1}. 
+that_chapter_no:
+  - Por el momento no hay ningún versículo disponible de *{0}* en *{1}*.
+  - Todavía no hay versículos de *{0}* en *{1}*. 
 
 # Example: Psalms 45 not in SLV, but 1, 9, 11, 19, 22 chapter are available.
-but_this_chapter:
+but_these_chapters:
   - Pero puedes probar con estos capítulos.
   - Pero estos capítulos sí están disponibles.
+
 
 # Example: Habakkuk not in SLV
 # {0} -> Habakkuk
 # {1} -> Vietnamese Sign Language
-empty_pubmedia:
-  - ¡Vaya! No hay ningún versículo de {0} en {1}. Cuando haya alguno disponible, te lo podré mostrar.
-  - Por ahora no hay ningún versículo traducido de {0} en {1}. 
+that_book_no:
+  - ¡Vaya! No hay ningún versículo de *{0}* en *{1}*. Cuando haya alguno disponible, te lo podré mostrar.
+  - Por ahora no hay ningún versículo traducido de *{0}* en *{1}*. 
 
+but_these_books:
+  - Pero te enseño los libros que están disponibles.
+  - Pero estos libros tienen versículos traducidos.
+  - Aquí tienes algunos libros disponibles.
 
 # Example: john 8:1
 # {} John 8:1
 is_apocrypha:
-  - Uhm... {} no está inspirado por Dios.
-  - No creo que {} te interese mucho, porque es apócrifo.
-  - Yo elegiría otro pasaje de la Biblia, uno que sea inspirado por Dios. Porque {} no lo es.
+  - Uhm... *{}* no está inspirado por Dios.
+  - No creo que *{}* te interese mucho, porque es apócrifo.
+  - Yo elegiría otro pasaje de la Biblia, uno que sea inspirado por Dios. Porque *{}* no lo es.
 
 
 not_language:
   - Creo que quieres cambiar el idioma, pero no conozco ese código.
 
+choose_book: "*Elige un libro*"
+choose_chapter: "*Elige un capítulo*"
+choose_verse: "*Elige un versículo*"
 
-choose_chapter: Elige un capítulo
-choose_verse: Elige un versículo
 
-
+fetching_videomarkers: Obteniendo versículos disponibles
 downloading: Descargando
 trimming: Recortando
-splicing: Uniendo versículos
 sending: Enviando
 
 
 # Help
-help: |-
+help: >
   *Lengua de Señas*
-  Cambia la lengua de señas escribiendo su código como comando. Por ejemplo, para lengua de señas americana, puedes \
-  escribir cualquiera de estos dos
-  /ase /ASL
 
-  Si no conoces su código, usa /{}, navega por el menú y elige una.
+  Cambia la lengua de señas escribiendo su código como comando. Por ejemplo, para lengua de señas americana, puedes
+  escribir /asl o /ase
+
+
+  Si no conoces su código, usa /signlanguage, navega por el menú y elige una.
+
 
 
   *Idioma del bot*
-  Puedo hablar contigo en varios idiomas. Haz click en /{} y elige uno.
 
+  Puedo hablar contigo en algunos idiomas. Haz click en /botlanguage y elige uno.
 
-  *Superposición de texto*
-  La *superposición de texto* en el video permite entender qué versículo se muestra en el video cuando no es tu \
-  idioma. Puedes activar o desactivar esta función con /{}. Haz click en /{} para saber más.
 
 
   *Pro Tips*
-  ¿Quieres conocer consejos más avanzados? Haz click en /{}
+
+  ¿Quieres conocer consejos más avanzados? Haz click en /protips
 
 
-  *Feedback*
-  ¿Tienes alguna sugerencia? ¿Algo anda mal? ¿Quieres dejar un mensaje de agradecimiento? Haz click en /{2}. Estaré \
-  encantado de leer tus comentarios.
-
-
-pro_tips: |-
+pro_tips: >
+  *Varios pasajes bíblicos.*
+  
   Puedes pedirme hasta 5 citas bíblicas en un solo mensaje.
-  Ecle 11:10
-  Filip 4:6, 7
-  1 Cro 19:12
-  Sal 1:1-3
-  Prov 19:21
 
 
-  Puedes cambiar momentáneamente la lengua de señas. Escribe su código seguido del pasaje de la Biblia. Por ejemplo:
-  /ase 1 Tim 2:6
-  /hab 1 Tim 2:6
+  También puedes cambiar momentáneamente tu lengua de señas. Escribe su código seguido del pasaje de la Biblia.
+  Por ejemplo:
+
+
+  `/ase 1 Tim 2:6`
+
+  `/hab 1 Tim 2:6`
+
 
 
   *Idioma del bot*
-  Si quieres ayudar a traducir el bot a más idiomas, déjame un comentario /{} y comienza a traducir [desde aquí]({}).
-  Puedes cambiar el idioma si conoces su código. Por ejemplo, para el inglés puedes escribir
-  /en
-  /E
 
-  Si eliges un idioma que aún no está disponible, podré entenderte cuando me pidas citas bíblicas al nuevo idioma. \
-  Además intentaré enviarte el texto de los pasajes bíblicos en ese idioma.
+  Puedes cambiar el idioma si conoces su código. Por ejemplo, para el inglés puedes escribir /en o /E
+
+
+  Aunque elijas un idioma que aún no sé hablar, podré entenderte cuando me pidas citas bíblicas en el nuevo idioma.
+  También intentaré enviarte el texto de los pasajes bíblicos en ese idioma. Si quieres ayudar a traducir el bot a más
+  idiomas, déjame un comentario /feedback y comienza a traducir [desde aquí]({0}). 
 
 
   *Modo Inline*
-  Escribe `@{5}` en cualquier chat de Telegram para enviar pasajes de la Biblia.
+
+  Escribe `{1}` en cualquier chat de Telegram para enviar pasajes de la Biblia.
 
 
 
-fallback: |-
+overlay_info: >
+  *Superposición de texto*
+
+  Cuando actives /overlay, verás la cita bíblica en tu idioma. Técnicamente puedes usar cualquier combinación de 
+  idiomas disponibles en el sitio www.jw.org
+
+
+  Ten en cuenta que si un libro de la Biblia coincide en tu lengua de señas y tu idioma _escrito_,
+  no verás la superposición de texto.
+
+
+overlay_activated: Has *activado* la superposición de texto.
+overlay_deactivated: Has *desactivado* la superposición de texto.
+
+
+fallback:
   - Eso no parece un texto bíblico.
   - Lo siento, no puedo ayudarte con eso.
   - Aunque lo parezca, no soy una inteligencia artificial.
   - Uhm... parece que no quieres un pasaje de la Biblia, ¿verdad?
   - Si necesitas ayuda, puedes encontrarla en /help
   - No puedo ayudarte con eso, pero puedo enviarte pasajes de la Biblia en muchas lenguas de señas.
-
+  - Ahhh, ¡qué interesante!
 
 # {0} -> ase
 # {1} -> American Sign Language
 # {2} -> en
 # {3} -> English
 # {4} -> Enabled or Disabled
-current_settings: |-
-  Tu lengua de señas: *{0} - {1}*
+current_settings: |
+  Lengua de señas: *{0} - {1}*
   Idioma del bot: *{2} - {3}*
   Superposición de texto: *{4}*
 
 
-menu_signlanguage: |-
+menu_signlanguage: |
   🧏‍♂️ *Escoge una lengua de señas*
   🌎 Total *{}*
 
@@ -257,9 +298,15 @@ ok_signlanguage_code:
   - ¡Ok! Ya cambié a {}
 
 
-choose_botlang: |-
-  Elige un idioma para que nos podamos entender. También puedes cambiarlo rápidamente con su código. \
-  Por ejemplo: /en, /es o /vi. Incluso puedes agregar un nuevo idioma como /ko si quieres leer la Biblia en coreano.
+choose_botlang: >
+  *Elige un idioma* para que nos podamos entender
+
+
+  También puedes cambiarlo rápidamente con su código. Por ejemplo: /en, /es o /vi.
+
+
+  Incluso puedes agregar un nuevo idioma como /ko si quieres leer la Biblia en coreano.
+
 
 # {} -> English
 ok_botlang:
@@ -269,29 +316,19 @@ ok_botlang:
 
 
 # {} -> English
-bible_fetch_botlang:
-  - Ahora aprendí cómo encontrar libros bíblicos en {}.
-  - Gracias a ti ahora sé cómo se llaman los libros de la Biblia en {}.
+books_fetch_botlang:
+  - Ahora aprendí cómo encontrar libros bíblicos en *{}*.
+  - Gracias a ti ahora sé cómo se llaman los libros de la Biblia en *{}*.
+  - Acabo de aprender los nombres de loslibros de la Biblia en *{}*.
+  - Recién eché un vistazo y ya encontré la Biblia en *{}*, así que puedes pedirme pasajes bíblicos.
 
-# {} -> English
+# {0} -> English
 no_botlang_but:
-  - Aunque aún no sé hablar en {}. Si quieres ayudarme con mi traducción, escríbele al desarrollador /feedback
-  - Todavía no estoy programado para hablar en {}, pero puedes ayudarme. Déjale un mensaje al desarrollador, que si no \
-    no se entera /feedback
+  - Aunque aún no sé hablar en *{0}*, puedo entenderte si me pides libros en ese idioma. Si quieres ayudarme con mi 
+    traducción, escríbele al desarrollador /feedback
+  - Todavía no estoy programado para hablar en *{0}*, pero puedes ayudarme. Déjale un mensaje al desarrollador, que si
+    no no se entera /feedback. De momento te podré entender si me pides pasajes bíblicos en *{}*.
 
-
-# Overlay
-overlay_description: |-
-  *Superposición de texto*
-  La *superposición de texto* permite entender qué versículo se muestra en el video. Puedes activarla y desactivarla \
-  con el comando /{}.
-
-  Cuando pidas un versículo en tu lengua de señas, se agregará el texto bíblico en el idioma que tengas configurado \
-  en tu bot. Técnicamente puedes usar cualquier combinación de idiomas que se encuentren en el sitio www.jw.org
-
-
-overlay_activated: Has *activado* la superposición de texto.
-overlay_deactivated: Has *desactivado* la superposición de texto.
 
 # Feedback
 feedback_1: ¿Tienes alguna sugerencia? ¿Algo anda mal? Puedes cancelar esta conversación cuando quieras /{}
@@ -304,7 +341,7 @@ waiting_list: "{} `{}` ha sido puesto en la sala de espera."
 from_github: "{} ha entrado desde el enlace de github."
 introduced_himself: "{} {} `{}` se ha presentado."
 
-db_summary: |-
+db_summary: |
   ```
   {:>5} Marcadores guardados
   {:>5} Versículos enviados
@@ -317,7 +354,7 @@ db_summary: |-
   {:>5} Usuarios en total
   ```
 
-wrong_notify: |-
+wrong_notify: >
   La sintaxis correcta es:
   `/{} <user_id1>...`
 notify: Envíame los mensajes que quieres que reenvíe. Pueden ser stickers, gifs, vídeos, imágenes, lo que sea. Cuando estés listo, escribe /{}. Para cancelar usa /{}.
@@ -333,7 +370,7 @@ warn_user: No he podido hacer la operación porque el usuario no estaba registra
 user_banned: El usuario ha sido bloqueado.
 user_stopped_bot: No lo he podido agregar porque el usuario ha detenido al bot.
 
-checksum_touched: |-
+checksum_touched: >
   He alterado el checksum de:
   {}
 checksum_failed: No he podido alterar el checksum porque {} {} no ha sido registrado en la base de datos.

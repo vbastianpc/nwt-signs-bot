@@ -84,3 +84,10 @@ class LanguageNotFound(BaseBibleException):
 
 class PubmediaNotExists(BaseBibleException):
     pass
+
+class IncompleteVideoMarkers(BaseBibleException):
+    def __init__(self, verses):
+        self.verses = verses
+
+class NoNeedVideoMarkerFFMPEG(BaseBibleException):
+    pass

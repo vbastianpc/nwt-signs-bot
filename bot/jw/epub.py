@@ -61,9 +61,9 @@ class BibleEpub(BiblePassage):
         return self.head(fmt, head_url) + '\n' + self.verse_texts(fmt, versenum_url)
 
     def head(self, fmt=None, with_url=False) -> str:
-        c = self.citation()
+        c = self.citation
         if fmt == None:
-            return self.citation()
+            return self.citation
         url = self.url_share_jw()
         if fmt == 'HTML':
             text = "<strong>{}</strong>"
@@ -76,7 +76,7 @@ class BibleEpub(BiblePassage):
             internal_links = []
             for verse in original_verses:
                 self.verses = verse
-                internal_links.append(f'[[{self.citation()}|]]')
+                internal_links.append(f'[[{self.citation}|]]')
             self.verses = original_verses
             text += ' '.join(internal_links)
         return text

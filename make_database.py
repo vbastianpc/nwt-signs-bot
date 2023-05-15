@@ -21,6 +21,7 @@ from bot.database import fetch
 from bot.database.schema import User
 from bot.utils.fonts import fetch_fonts, download_fonts
 
+
 logger = get_logger(__name__)
 
 rbi8 = 'Rbi8_E.jwpub'
@@ -102,8 +103,12 @@ if __name__ == '__main__':
     logger.info(f'There are {report.count_languages()} languages stored in the database')
     fetch.editions()
     logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
-    for language_code in ['en', 'es', 'vi', 'ko', 'csg  ']:
+    for language_code in ['en', 'es', 'vi', 'ko', 'csg', 'ase']:
         fetch.books(language_code=language_code)
+    for book_code in [('csg', 19), ('csg', 40), ('csg', 1), ('ase', 19)]:
+        book = get.book(book_code[0], book_code[1])
+        assert book
+        fetch.chapters_and_videomarkers(book)
     bot = Bot(TOKEN)
     member = bot.get_chat_member(chat_id=ADMIN, user_id=ADMIN)
     sign_language = get.language(code='csg')

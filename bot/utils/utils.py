@@ -1,7 +1,9 @@
 from typing import Any
 from datetime import datetime
 import pytz
+import requests
 
+from bot.utils.browser import LazyBrowser
 
 def list_of_lists(items: list[Any], columns: int) -> list[list[Any]]:
     start = 0
@@ -30,7 +32,6 @@ def dt_now() -> datetime:
 def now() -> str:
     return dt_now().isoformat(sep=' ', timespec="seconds")
 
-def represent(instance, **kwargs):
-    s = ', '.join([f'{kw}={arg!r}' for kw, arg in kwargs.items()])
-    return f'{type(instance).__name__}({s})'
-    
+def vernacular_language(language_code: str) -> str:
+    data = LazyBrowser().open(f'https://www.jw.org/{language_code}/languages/').json()
+    return list(map(lambda x: x['vernacularName'], filter(lambda x: x['symbol'] == language_code, data['languages'])))[0]

@@ -1,15 +1,15 @@
 
 import re
-from typing import TypeVar, Type
+from typing import TypeVar, Type, Self
 
 from unidecode import unidecode as ud
 from sqlalchemy import select
-from sqlalchemy import func
 
 from bot.database import session
 from bot.database import get
 from bot.database.schema import Bible
 from bot.database.schema import Book
+from bot.database.schema import Edition
 from bot.database.schema import Chapter
 from bot.database.schema import Language
 from bot import exc
@@ -18,10 +18,10 @@ from bot.logs import get_logger
 
 logger = get_logger(__name__)
 
-BB = TypeVar('BB', bound='BaseBible')
+BO = TypeVar('BO', bound='BibleObject')
 
 
-class BaseBible:
+class BibleObject:
     BIBLE_PATTERN = r'([123]? *(?:[^\d]+)) *(?:(\d*)[ :]+)? *([ ,\d-]*)'
     ONE_CHHAPTER_BOOKS = [31, 57, 63, 64, 65] # Abdías, Filemón, 2 Juan, 3 Juan, Judas
     __slots__ = (
@@ -48,6 +48,10 @@ class BaseBible:
         return self._language
 
     @property
+    def edition(self) -> Edition:
+        return self._edition
+
+    @property
     def book(self) -> Book:
         return self._book
 
@@ -68,15 +72,24 @@ class BaseBible:
         return self._chapternumber
 
     @chapternumber.setter
-    def chapternumber(self, value: int | None) -> int | None:
+    def chapternumber(self, value: int | str | None) -> int | None:
         if value is not None and not select(Bible.verse).where(
                 Bible.book == self.book.number,
-                Bible.chapter == value
+                Bible.chapter == int(value)
             ).scalar():
-            raise exc.ChapterNotExists(self.book.number, self.book.name, value)
-        else:
-            self._chapternumber = value
-            self._chapter = get.chapter(value, self.book)
+            raise exc.ChapterNotExists(self.book.number, self.book.name, int(value))
+        if isinstance(value, (str, int)):
+            self._chapternumber = int(value)
+            self._chapter = get.chapter(self._chapternumber, self.book)
+        elif value is None:
+            self._chapternumber = None
+            self._chapter = None
+
+    def refresh(self):
+        self._book = get.book(self._language.code, self._book.number)
+        self._edition = self._book.edition
+        self._chapter = get.chapter(self.chapternumber, self._book)
+        self._language = get.language(code=self._language.code)
 
     def set_booknum(self, booknum: int):
         new_book = get.book(self.language.code, booknum)
@@ -88,20 +101,21 @@ class BaseBible:
             raise exc.BookNotFound
 
 
-    def set_language(self, language_code: str):
+    def set_language(self, language_code: str) -> Self:
         new_book = get.book(language_code, self.book.number)
         if new_book:
             self._language = new_book.edition.language
             self._edition = new_book.edition
             self._book = new_book
             self._chapter = get.chapter(self.chapternumber, new_book)
+            return self
         else:
             if get.language(code=language_code):
                 raise exc.BookNotFound
             else:
                 raise exc.LanguageNotFound
 
-
+    @property
     def citation(self) -> str:
         bookname = self.book.name if len(self.verses) > 1 else self.book.standard_singular_bookname
         if self.book.number in [57, 63, 64, 65]:  # Filemón, 2 Juan, 3 Juan, Judas
@@ -115,16 +129,15 @@ class BaseBible:
 
 
     @classmethod
-    def from_human(cls: Type[BB], citation: str, language_code: str) -> BB:
-        m = re.search(cls.BIBLE_PATTERN, citation)
-        if m is None:
-            raise exc.BibleCitationNotFound
-        book_like = m.group(1).rstrip()
-        book = cls.search_book(book_like, language_code=language_code)
-        if not book:
-            raise exc.BookNameNotFound(book_like)
-        chapternumber = int(m.group(2)) if m.group(2) else None
-        verses = cls.get_verses(m.group(3))
+    def from_human(cls: Type[BO], citation: str, language_code: str) -> BO:
+        book_like, chapternumber, verses = cls.parse_citation_regex(citation)
+        try:
+            book = cls.search_book(book_like, language_code=language_code)
+        except exc.BookNameNotFound as e:
+            if book_like and chapternumber:
+                raise e
+            else:
+                raise exc.BibleCitationNotFound
         if chapternumber is None and len(verses) == 1 and book.number not in cls.ONE_CHHAPTER_BOOKS:
             # "Mateo 5" chapternumber = None, verses = [5]
             chapternumber, verses = verses[0], []
@@ -140,13 +153,13 @@ class BaseBible:
             if b:
                 book = b
             else:
-                logger.warning(f'{book_like!r} found in another language: {book.edition.language.code!r}. '
+                logger.warning(f'{citation!r} found in another language: {book.edition.language.code!r}. '
                                f'Query language: {language_code!r}. ')
         return cls(book, chapternumber, verses)
 
 
     @staticmethod
-    def exists(booknum: int, chapternumber: int, verses: list[int],
+    def exists(booknum: int, chapternumber: int | str | None, verses: int | str | list[int | str] | None,
                bookname:str = None, raise_error:bool = True) -> bool:
         try:
             s = select(Bible).where(Bible.book == booknum)
@@ -154,11 +167,13 @@ class BaseBible:
                 raise exc.BookNumberNotExists(booknum)
             if chapternumber is None:
                 return True
+            chapternumber = int(chapternumber)
             s = s.where(Bible.chapter == chapternumber)
             if not session.query(s.exists()).scalar():
                 raise exc.ChapterNotExists(booknum, bookname, chapternumber)
             if not verses:
                 return True
+            verses = BibleObject.get_verses(verses)
             in_nwt = session.scalars(
                 select(Bible.verse).where(
                     Bible.book == booknum,
@@ -172,7 +187,7 @@ class BaseBible:
                     booknum,
                     bookname,
                     chapternumber,
-                    wrong_verses=BaseBible.get_verse_citation(bad),
+                    wrong_verses=BibleObject.get_verse_citation(bad),
                     count_wrong=len(bad)
                 )
             s = s.where(Bible.verse.in_(verses), Bible.is_apocryphal == True)
@@ -185,7 +200,7 @@ class BaseBible:
                         Bible.is_apocryphal == True
                     ).order_by(Bible.verse.asc())
                 ).all()
-                raise exc.isApocrypha(f'{bookname} {chapternumber}:{BaseBible.get_verse_citation(apocryphal)}')
+                raise exc.isApocrypha(f'{bookname} {chapternumber}:{BibleObject.get_verse_citation(apocryphal)}')
         except exc.BaseBibleException as e:
             if raise_error:
                 raise e
@@ -196,8 +211,11 @@ class BaseBible:
 
 
     @staticmethod
-    def search_book(book_like: str, language_code: str) -> Book | None:
-        book_like = re.sub(' *', '', book_like).lower()
+    def search_book(book_like: str | None = None,
+                    language_code: str | None = None,
+                    from_citation: str | None = None) -> Book | None:
+        book_like = BibleObject.parse_citation_regex(from_citation)[0] if from_citation else book_like
+        book_like = re.sub(' *', '', book_like).lower().replace('.', '')
         books = get.books(language_code=language_code)
         for book in books:
             bn, sa, oa, ssb = map(
@@ -209,18 +227,29 @@ class BaseBible:
                 return book
         else:
             if language_code is None:
-                return None
+                raise exc.BookNameNotFound(book_like)
             else:
-                return BaseBible.search_book(book_like, language_code=None)
-
+                return BibleObject.search_book(book_like, language_code=None)
 
     @staticmethod
-    def get_verses(verses_like: int | str | list[int | str] | None) -> list[int | None]:
+    def parse_citation_regex(citation: str) -> tuple[str, int | None, list[int | None]]:
+        m = re.search(BibleObject.BIBLE_PATTERN, citation)
+        if m is None:
+            raise exc.BibleCitationNotFound
+        return (m.group(1),                              # book_like
+                int(m.group(2)) if m.group(2) else None, # chapternum
+                BibleObject.get_verses(m.group(3)))      # verses
+
+    @staticmethod
+    def get_verses(verses_like: int | str | list[int | str] | None = None,
+                   from_citation: str | None = None) -> list[int | None]:
         """
         1  ->  [1]
         '1'  ->  [1]
         '1-3, 6, 7'  -> [1, 2, 3, 6, 7]
         """
+        if from_citation:
+            return BibleObject.get_verses(BibleObject.parse_citation_regex(from_citation)[2])
         if isinstance(verses_like, int):
             return [verses_like]
         elif verses_like is None or verses_like == '':
@@ -235,7 +264,7 @@ class BaseBible:
                     verses.append(int(group))
             return verses
         elif isinstance(verses_like, list):
-            return [verse for result in [BaseBible.get_verses(item) for item in verses_like] for verse in result]
+            return [verse for result in [BibleObject.get_verses(item) for item in verses_like] for verse in result]
         else:
             raise TypeError(f'verses must be a list, a string or an integer, not {type(verses_like).__name__}')
 
@@ -268,13 +297,13 @@ class BaseBible:
         return pv
 
     @classmethod
-    def from_num(cls :Type[BB],
+    def from_num(cls :Type[BO],
                  language_code: str,
-                 booknumber: int,
-                 chapternumber: int | None = None,
+                 booknumber: str | int,
+                 chapternumber: str | int | None = None,
                  verses: int | str | list[int | str] | None = None
-                 ) -> BB:
-        cls.exists(booknumber, chapternumber, verses)
+                 ) -> BO:
+        cls.exists(int(booknumber), chapternumber, verses)
         book = get.book(language_code, booknumber)
         if not book:
             if not get.language(code=language_code):
@@ -285,7 +314,7 @@ class BaseBible:
 
 
 if __name__ == '__main__':
-    passage = BaseBible.from_human('Mat', 'es')
+    passage = BibleObject.from_human('Mat', 'es')
 
 
     print('end')

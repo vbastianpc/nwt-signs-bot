@@ -3,13 +3,14 @@ from typing import Final
 from urllib.parse import urlunsplit
 from urllib.parse import urlencode
 from urllib.parse import unquote
+from bot.utils.browser import LazyBrowser
 
+from bot.database.schema import Book
 from bot.logs import get_logger
-from bot.jw import BaseBible
+from bot.jw import BibleObject
 
 
 logger = get_logger(__name__)
-
 
 class Domain:
     JW : Final[str] = 'www.jw.org'
@@ -19,7 +20,12 @@ class Domain:
     JW_CDN : Final[str] = 'b.jw-cdn.org'
 
 
-class BiblePassage(BaseBible):
+class BiblePassage(BibleObject):
+    def __init__(self, book: Book, chapternumber: int | None = None,
+                 verses: int | str | list[int | str] | None = None):
+        super().__init__(book, chapternumber, verses)
+        self.browser = LazyBrowser()
+
     def url_pubmedia(self, all_chapters=True) -> str:
         """API JSON for sign languages get markers
         https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten=ASL&txtCMSLang=ASL&pub=nwt&booknum=21&track=11
@@ -49,12 +55,13 @@ class BiblePassage(BaseBible):
         'https://www.jw.org/en/languages/'
         """
         if domain == Domain.DATA_JWAPI:
-            return f'https://data.jw-api.org/mediator/v1/languages/{self.book.edition.language.meps_symbol}/all'
+            return f'https://data.jw-api.org/mediator/v1/languages/{self.language.meps_symbol}/all'
         elif domain == Domain.JW:
-            return f'https://www.jw.org/{self.book.edition.language.code}/languages/'
+            return f'https://www.jw.org/{self.language.code}/languages/'
         else:
             raise ValueError
 
+    @property
     def url_wol_libraries(self):
         """WOL human url to get rsconf, locale, lib
         'https://wol.jw.org/en/wol/li/r1/lp-e'
@@ -62,6 +69,7 @@ class BiblePassage(BaseBible):
         l = self.book.edition.language
         return f'https://wol.jw.org/{l.code}/wol/li/{l.rsconf}/{l.lib}'
 
+    @property
     def url_citation(self):
         """API JSON get bible citation. Example: "Ecclesiastes 11:9, 10"
         'https://wol.jw.org/wol/api/v1/citation/r266/lp-asl/bible/21/11/9/21/11/10?pub=nwt'
@@ -120,6 +128,7 @@ class BiblePassage(BaseBible):
         )
         return urlunsplit(('https', 'www.jw.org', 'finder', urlencode(q), 'suppress_app_links' if suppress_app_links else None))
    
+    @property
     def url_bible_wol(self):
         """WOL human url
         'https://wol.jw.org/ASL/wol/b/r266/lp-asl/nwt/21/11'
@@ -133,6 +142,7 @@ class BiblePassage(BaseBible):
             None
         ))
 
+    @property
     def url_bible_wol_discover(self):
         """Similar bible_wol, but select specific verses
         'https://wol.jw.org/ase/wol/b/r266/lp-asl/nwt/21/11#study=discover&v=21:11:9-21:11:10'
@@ -155,6 +165,21 @@ class BiblePassage(BaseBible):
             unquote(urlencode(fragment))
         ))
 
+    @property
+    def url_wol_binav(self) -> str:
+        """https://wol.jw.org/hab/wol/binav/r582/lp-slv/nwt"""
+        assert self.language.rsconf and self.language.lib
+        return (f'https://wol.jw.org/{self.language.code}/wol/binav'
+                f'/{self.language.rsconf}/{self.language.lib}/{self.edition.symbol}')
+
+    @property
+    def available_booknums(self) -> list[int | None]:
+        self.browser.open(self.url_wol_binav)
+        books = self.browser.page.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
+                self.browser.page.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
+        return [int(book.findChildren('a')[0].get('data-bookid'))
+                for book in books
+                if 'unavailable' not in book.get('class')]
 
 # others
 # https://www.jw.org/en/library/bible/study-bible/books/json/html/40024013-40024014

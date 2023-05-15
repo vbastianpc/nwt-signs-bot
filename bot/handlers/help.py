@@ -6,8 +6,9 @@ from telegram.ext import CommandHandler
 from bot.logs import get_logger
 from bot.utils.decorators import vip, forw
 from bot import MyCommand
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 from bot.database import get
+from bot.handlers.overlay import overlay_info
 
 
 logger = get_logger(__name__)
@@ -15,17 +16,21 @@ logger = get_logger(__name__)
 @forw
 @vip
 def help(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(
-        text=t.help.format(
-            MyCommand.SIGNLANGUAGE,
-            MyCommand.BOTLANGUAGE,
-            MyCommand.FEEDBACK,
-            'https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
-            MyCommand.BOOKNAMES,
-            context.bot.username,
-        ),        
+    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    update.message.reply_text(text=tt.help,
+                              parse_mode=ParseMode.MARKDOWN)
+
+@forw
+@vip
+def protips(update: Update, context: CallbackContext) -> None:
+    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    update.effective_message.reply_text(
+        text=tt.pro_tips('https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
+                         context.bot.name),
         parse_mode=ParseMode.MARKDOWN,
-        disable_web_page_preview=True
-    )
+        disable_web_page_preview=True)
+    overlay_info(update, context)
+
+
 help_handler = CommandHandler(MyCommand.HELP, help)
+protips_handler = CommandHandler(MyCommand.PROTIPS, protips)

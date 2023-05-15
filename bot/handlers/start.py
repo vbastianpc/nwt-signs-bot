@@ -14,7 +14,7 @@ from bot.secret import LOG_CHANNEL_ID
 from bot.logs import get_logger
 from bot.utils.decorators import forw
 from bot.database import get
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 
 
 logger = get_logger(__name__)
@@ -23,28 +23,28 @@ TAG_START = '#start'
 
 @forw
 def start(update: Update, context: CallbackContext, chat_id: int = None, first_name: str = None) -> None:
-    user = update.effective_user
-    first_name = first_name or user.first_name
-    db_user = get.user(chat_id or update.effective_user.id)
-    t = TextGetter(update.effective_user.language_code if db_user is None else db_user.bot_language.code)
+    tuser = update.effective_user
+    first_name = first_name or tuser.first_name
+    user = get.user(chat_id or update.effective_user.id)
+    t = TextTranslator(update.effective_user.language_code if user is None else user.bot_language.code)
 
     if context.args and context.args[0] == 'github':
         context.bot.send_message(
             chat_id=ADMIN,
-            text=t.from_github.format(mention_markdown(user.id, user.first_name)),
+            text=t.from_github.format(mention_markdown(tuser.id, tuser.first_name)),
             parse_mode=ParseMode.MARKDOWN
         )
     
-    if db_user is None or not db_user.is_authorized():
+    if user is None or not user.is_authorized():
         db.set_user(
             update.effective_user.id,
             first_name=update.effective_user.first_name,
             bot_language=get.language(code=update.effective_user.language_code),
-            status=db_user.WAITING
+            status=user.WAITING
         )
         context.bot.send_message(
             chat_id=ADMIN,
-            text=t.waiting_list.format(mention_markdown(user.id, user.first_name), user.id),
+            text=t.waiting_list.format(mention_markdown(tuser.id, tuser.first_name), tuser.id),
             parse_mode=ParseMode.MARKDOWN
         )
         context.bot.send_message(update.effective_user.id, '🔒👤')
@@ -63,16 +63,16 @@ def start(update: Update, context: CallbackContext, chat_id: int = None, first_n
 
 
 def whois(update: Update, context: CallbackContext):
-    user = update.effective_user
-    t = TextGetter(user.language_code)
+    tuser = update.effective_user
+    t = TextTranslator(tuser.language_code)
     update.message.reply_text(t.wait)
     context.bot.send_message(
         chat_id=ADMIN,
-        text=t.introduced_himself.format(TAG_START, mention_markdown(user.id, user.first_name), user.id),
+        text=t.introduced_himself.format(TAG_START, mention_markdown(tuser.id, tuser.first_name), tuser.id),
         parse_mode=ParseMode.MARKDOWN,
     )
-    context.bot.forward_message(ADMIN, user.id, update.message.message_id)
-    context.bot.forward_message(LOG_CHANNEL_ID, user.id, update.message.message_id)
+    context.bot.forward_message(ADMIN, tuser.id, update.message.message_id)
+    context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.message.message_id)
     return ConversationHandler.END
 
 
@@ -90,6 +90,9 @@ start_handler = ConversationHandler(
 @forw
 def all_fallback(update: Update, context: CallbackContext, text: str = None) -> None:
     # TODO text for multiline query. text is specific line dont understand
+    user = get.user(update.effective_user.id)
+    tt = TextTranslator(user.bot_language.code)
+    update.effective_message.reply_text(tt.fallback)
     return
 
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)

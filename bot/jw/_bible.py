@@ -1,7 +1,7 @@
 from bot.jw.language import JWLanguage
 
 
-class BaseBible:
+class BibleObject:
     def __init__(
             self,
             language_meps_symbol: str = None,

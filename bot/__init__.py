@@ -2,7 +2,6 @@ class MyCommand:
     START = 'start'
     SIGNLANGUAGE = 'signlanguage'
     BOTLANGUAGE = 'botlanguage'
-    INLINE = 'inline'
     FEEDBACK = 'feedback'
     HELP = 'help'
     BOOKNAMES = 'booknames'
@@ -10,6 +9,9 @@ class MyCommand:
     OK = 'ok'
     SETTINGS = 'settings'
     OVERLAY = 'overlay'
+    OVERLAYINFO = 'overlayinfo'
+    PROTIPS = 'protips'
+    
 
 class AdminCommand:
     ADD = 'add'

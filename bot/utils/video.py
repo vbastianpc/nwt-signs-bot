@@ -80,7 +80,7 @@ def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list
     run(shlex.split(cmd), capture_output=True, check=True)
     for i in intermediates:
         Path(i).unlink()
-    # metapath.unlink() # TODO uncomment
+    metapath.unlink() # TODO uncomment
     return output
 
 
@@ -116,7 +116,7 @@ def drawtext(
         capture_output=True, check=True
     )
     image = Image.open(frame) # already mode L, grayscale because edgedetect
-    # frame.unlink()
+    frame.unlink()
     r720P = image.size[1] == 720
     box = (0, 115, 150, 116) if r720P else (0, 90, 150, 91)
     line = np.array(image.crop(box))[0]

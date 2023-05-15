@@ -9,7 +9,7 @@ from bot import strings
 from bot import AdminCommand
 from bot.logs import get_logger
 from bot.database import get
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 
 
 logger = get_logger(__name__)
@@ -22,15 +22,15 @@ def set_commands(update: Update, context: CallbackContext):
             commands=strings.get_commands(botlang),
             language_code=botlang
         )
-    db_user = get.user(update.effective_user.id)
+    user = get.user(update.effective_user.id)
     context.bot.set_my_commands(
         commands=(
-            strings.get_commands(db_user.bot_language.code) +
-            strings.get_admin_commands(db_user.bot_language.code)
+            strings.get_commands(user.bot_language.code) +
+            strings.get_admin_commands(user.bot_language.code)
         ),
         scope=BotCommandScopeChat(update.effective_user.id),
     )
-    t = TextGetter(db_user.bot_language.code)
+    t = TextTranslator(user.bot_language.code)
     update.message.reply_text(t.setcommands)
 # TODO eliminar botcommands de todos los scope=BotCommandScopeChat(telegram_user_id)
 

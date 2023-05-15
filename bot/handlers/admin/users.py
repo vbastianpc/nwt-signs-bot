@@ -14,7 +14,7 @@ from bot.database.schema import User
 from bot.handlers.start import start
 from bot import AdminCommand
 from bot.logs import get_logger
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 from bot.database.schema import User
 
 
@@ -28,7 +28,7 @@ def autorizacion(update: Update, context: CallbackContext):
         new_member_id = int(context.args[0])
     except:
         return
-    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
+    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
 
     if not get.user(new_member_id):
         update.message.reply_text(t.warn_user)
@@ -58,7 +58,7 @@ def autorizacion(update: Update, context: CallbackContext):
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
-    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
+    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     try:
         user_id = int(context.args[0])
     except IndexError:
@@ -87,9 +87,9 @@ def sending_users(update: Update, context: CallbackContext):
                 text = ''
         if text:
             update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    print_users(get.accepted_users(), "ACCEPTED")
-    print_users(get.banned_users(), 'BANNED')
-    print_users(get.waiting_users(), 'WAITING')
+    print_users(get.accepted_users(), User.AUTHORIZED)
+    print_users(get.banned_users(), User.DENIED)
+    print_users(get.waiting_users(), User.WAITING)
 
 @admin
 def backup(update: Update, context: CallbackContext):

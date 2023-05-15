@@ -6,12 +6,12 @@ from bot import AdminCommand
 from bot.utils.decorators import admin
 from bot.database import report as rdb
 from bot.database import get
-from bot.strings import TextGetter
+from bot.strings import TextTranslator
 
 
 @admin
 def database_status(update: Update, context: CallbackContext) -> None:
-    t = TextGetter(get.user(update.effective_user.id).bot_language.code)
+    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(
         t.db_summary.format(
             rdb.count_videomarker(),

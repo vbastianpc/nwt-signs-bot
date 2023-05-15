@@ -1,4 +1,4 @@
-import re
+from pathlib import Path
 import json
 import shlex
 from datetime import datetime
@@ -99,20 +99,24 @@ def books(language_code: str):
     session.commit()
 
 
-def chapters_and_videomarkers(book: Book, all_chapters=True):
+def need_chapter_and_videomarks(book: Book) -> bool:
     _time_ago = datetime.now() - timedelta(hours=1) # TODO change hours=24
     if book.refreshed and _time_ago < book.refreshed:
         logger.info(f'Too soon to request {book.name} {book.id=}')
-        return
+        return False
+    else:
+        return True
 
+
+def chapters_and_videomarkers(book: Book, all_chapters=True):
     url = BiblePassage(book).url_pubmedia(all_chapters)
     if browser.open(url).status_code != 200:
         raise exc.PubmediaNotExists
     data = browser.response.json()['files'][book.edition.language.meps_symbol]
 
     docs = {}
-    for items in data.values():
-        docs |= dict(map(lambda d: (int(d['track']), d), items)) # best quality
+    for ff, items in data.items():
+        docs |= dict(map(lambda d: (int(d['track']), d), items)) if ff != '3GP' else {} # best quality
 
     for chapternumber, doc in docs.items():
         if doc['file']['url'].endswith('.zip'):
@@ -126,7 +130,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
             chapter.url = doc['file']['url']
             session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
-            session.commit()
+            # session.commit()
         else:
             logger.info(f'Creating new chapter {book.name} {chapternumber}')
             chapter = Chapter(
@@ -160,6 +164,17 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
     session.commit()
 
 
+def need_ffmpeg(chapter: Chapter) -> bool:
+    try:
+        vms = get.videomarkers(chapter)
+    except exc.IncompleteVideoMarkers:
+        return True
+    else:
+        if vms:
+            return False
+        return True
+
+
 def videomarkers_by_ffmpeg(chapter: Chapter):
     """Use this method only if videomarkers not stored on data json api.
     No use for bulk. It's slow and expensive. 
@@ -179,7 +194,10 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     for m in markers:
         chapter.video_markers.append(
             VideoMarker(
-                versenum=int(m['verseNumber']),
+                versenum=m['verseNumber'],
+                verse_id=select(Bible.id).where(Bible.book == chapter.book.number,
+                                                Bible.chapter == m['chapterNumber'],
+                                                Bible.verse == m['verseNumber']).scalar() or 0,
                 label=m['label'],
                 duration=m['duration'],
                 start_time=m['startTime'],
@@ -189,7 +207,7 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     session.commit()
 
 
-def _ffprobe_markers(videopath):
+def _ffprobe_markers(videopath: Path):
     logger.info('Getting ffprobe markers. Slow and expensive %s', videopath)
     console = run(
         shlex.split(f'ffprobe -v quiet -show_chapters -print_format json "{videopath}"'),
@@ -197,11 +215,21 @@ def _ffprobe_markers(videopath):
         check=True
     )
     raw_chapters = json.loads(console.stdout.decode())['chapters']
-    markers = [{
-        'duration': str(float(rc['end_time']) - float(rc['start_time'])),
-        'verseNumber': int(re.findall(r'\d+', rc['tags']['title'])[-1]),
-        'startTime': str(rc['start_time']),
-        'label': rc['tags']['title'].strip(),
-        'endTransitionDuration': '0',
-    } for rc in raw_chapters]
+    json.dump(raw_chapters, open(videopath.stem + '.json', 'w'), indent=4, ensure_ascii=False)
+    markers = []
+    for rc in raw_chapters:
+        try:
+            _, chapternum, verses = BiblePassage.parse_citation_regex(rc['tags']['title'])
+        except exc.BibleCitationNotFound:
+            continue
+        if not chapternum or len(verses) != 1:
+            continue
+        markers.append(dict(
+            duration=str(float(rc['end_time']) - float(rc['start_time'])),
+            verseNumber=verses[0],
+            chapterNumber=chapternum,
+            startTime=str(rc['start_time']),
+            label=rc['tags']['title'].strip(),
+            endTransitionDuration='0',
+        ))
     return markers

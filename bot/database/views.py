@@ -1,5 +1,5 @@
-from sqlalchemy.sql import text
-
+# https://github.com/sqlalchemy/sqlalchemy/wiki/Views
+# I don't have idea how implement create views by sqlalchemy. So
 
 views = ['''
 CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
@@ -7,23 +7,37 @@ SELECT
     Chapter.ChapterId,
     Language.LanguageMepsSymbol,
     Language.LanguageCode,
-    Bible.SymbolEdition,
+    Edition.SymbolEdition,
     Book.BookNumber,
     Book.StandardName || " " || Chapter.ChapterNumber AS Chapter,
-    count(*) AS CountVideoMarkers,
+    count(VideoMarker.VideoMarkerId) AS CountVideoMarkers,
     Chapter.Checksum
 FROM
-    VideoMarker
-INNER JOIN Chapter ON Chapter.ChapterId = VideoMarker.ChapterId
+    Chapter
+LEFT JOIN VideoMarker ON VideoMarker.ChapterId = Chapter.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
-INNER JOIN Bible ON Bible.BibleId = Book.BibleId
-INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+INNER JOIN Edition ON Edition.EditionId = Book.EditionId
+INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 GROUP BY Chapter.ChapterId
 ORDER BY
     Language.LanguageCode ASC,
     Book.BookNumber ASC,
     Chapter.ChapterNumber ASC
 ;''',
+'''
+CREATE VIEW IF NOT EXISTS ViewEdition AS
+SELECT
+	Language.LanguageId,
+	Edition.EditionId,
+	Language.LanguageCode,
+	Language.LanguageMepsSymbol AS MepsSymbol,
+	Language.LanguageName,
+	Edition.SymbolEdition AS Pub,
+	Edition.Name,
+	Edition.URL
+FROM Language
+LEFT JOIN Edition ON Language.LanguageId = Edition.LanguageId
+''',
 '''
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByCitation" AS
 SELECT
@@ -58,8 +72,8 @@ FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
-INNER JOIN Bible ON Bible.BibleId = Book.BibleId
-INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+INNER JOIN Edition ON Edition.EditionId = Book.EditionId
+INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 GROUP BY Language.LanguageCode, Book.BookNumber, Chapter.ChapterNumber , File.RawVerseNumbers
 ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
 ;''',
@@ -99,8 +113,8 @@ INNER JOIN File ON File.FileId = File2User.FileId
 INNER JOIN User ON User.UserId = File2User.UserId
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
-INNER JOIN Bible ON Bible.BibleId = Book.BibleId
-INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+INNER JOIN Edition ON Edition.EditionId = Book.EditionId
+INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File2User.Datetime DESC
 ;
@@ -118,11 +132,9 @@ SELECT
 FROM File
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
-INNER JOIN Bible ON Bible.BibleId = Book.BibleId
-INNER JOIN Language ON Language.LanguageId = Bible.LanguageId
+INNER JOIN Edition ON Edition.EditionId = Book.EditionId
+INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File.FileId DESC
 ;'''
 ]
-
-views = [text(view) for view in views]
