@@ -12,7 +12,6 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 from sqlalchemy.exc import OperationalError
 
-from bot.database import session
 from bot.database import get
 from bot.utils.decorators import admin
 from bot import AdminCommand, MyCommand

@@ -110,6 +110,20 @@ def drawtext(
     if not overlay_text:
         return ''
     overlay_text = overlay_text.replace(':', r'\:')
+    x, y, height = coord(inputvideo, start_time)
+    params = {
+        'fontfile': f"'{select_font(script)}'",
+        'text': f"'{overlay_text}'",
+        'fontcolor': '0xD7D7D7', # '0xA2A2A2'
+        'fontsize': 30 * height / 720, # if r720P else 22,
+        'x': x,
+        'y': y
+    }
+
+    return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
+
+
+def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int]:
     frame = Path(__file__).parent / 'frame.png'
     run(
         shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
@@ -117,29 +131,23 @@ def drawtext(
     )
     image = Image.open(frame) # already mode L, grayscale because edgedetect
     frame.unlink()
-    r720P = image.size[1] == 720
-    box = (0, 115, 150, 116) if r720P else (0, 90, 150, 91)
-    line = np.array(image.crop(box))[0]
-    has_hebrew = np.where(line > 120)[0].size > 0
+    box = [0, 30, 150, 80] # width= 150, height 50
+    for _ in range(300):
+        if 255 not in np.array(image.crop(box)):
+            y = box[1] + round(25 * image.height / 720)
+            print(box)
+            break
+        box[1] += 1
+        box[3] += 1
 
-    if r720P and has_hebrew:
-        y = 160
-    elif r720P and not has_hebrew:
-        y = 107
-    elif not r720P and has_hebrew:
-        y = 120
-    elif not r720P and not has_hebrew:
-        y = 90
-    params = {
-        'fontfile': f"'{select_font(script)}'",
-        'text': f"'{overlay_text}'",
-        'fontcolor': '0xD7D7D7' if r720P else '0xA2A2A2',
-        'fontsize': 30 if r720P else 22,
-        'x': 95 if r720P else 65,
-        'y': y
-    }
-
-    return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
+    box2 = [0, 0, 1, 150]
+    for _ in range(200):
+        if 255 in np.array(image.crop(box2)):
+            x = box2[2]
+            break
+        box2[0] += 1
+        box2[2] += 1
+    return x, y, image.height
 
 
 # 720p

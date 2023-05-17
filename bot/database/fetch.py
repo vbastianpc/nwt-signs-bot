@@ -44,6 +44,8 @@ def languages():
                     rsconf=a.get('data-rsconf'),
                     lib=a.get('data-lib'),
                     is_sign_language=lang['isSignLanguage'],
+                    has_web_content=lang['hasWebContent'],
+                    is_counted=lang['isCounted']
                 )
             )
     session.add_all(langs)
@@ -57,6 +59,7 @@ def editions():
         language_meps_symbol = d['lang']['langcode']
         language = get.language(meps_symbol=language_meps_symbol)
         if not language:
+            logger.warning(f'language {language_meps_symbol!r} not found')
             continue
         for e in d['editions']:
             if not get.edition(language_code=language.code):
@@ -72,29 +75,66 @@ def editions():
 
 def books(language_code: str):
     edition = get.edition(language_code)
+    if not edition:
+        logger.warning('No books found in because Bible not exists')
+        raise exc.EditionNotFound(language_code)
+    if edition.url:
+        _fetch_books_json(edition)
+    else:
+        _fetch_books_wol(edition)
+
+
+def _fetch_books_json(edition: Edition) -> None:
     data = browser.open(edition.url).json()
     bks = []
     for booknum, bookdata in data['editionData']['books'].items():
         book = get.book(language_code=edition.language.code, booknum=booknum, edition_id=edition.id)
-        if not book:
-            bks.append(
-                Book(
-                    edition_id=edition.id,
-                    number=int(booknum),
-                    chapter_count=int(bookdata['chapterCount']),
-                    name=bookdata.get('standardName'),
-                    standard_abbreviation=bookdata.get('standardAbbreviation'),
-                    official_abbreviation=bookdata.get('officialAbbreviation'),
-                    standard_singular_bookname=bookdata.get('standardSingularBookName'),
-                    standard_singular_abbreviation=bookdata.get('standardSingularAbbreviation'),
-                    official_singular_abbreviation=bookdata.get('officialSingularAbbreviation'),
-                    standard_plural_bookname=bookdata.get('standardPluralBookName'),
-                    standard_plural_abbreviation=bookdata.get('standardPluralAbbreviation'),
-                    official_plural_abbreviation=bookdata.get('officialPluralAbbreviation'),
-                    book_display_title=bookdata.get('bookDisplayTitle'),
-                    chapter_display_title=bookdata.get('chapterDisplayTitle')
-                )
-            )
+        if book:
+            continue
+        bks.append(Book(
+            edition_id=edition.id,
+            number=int(booknum),
+            name=bookdata.get('standardName'),
+            standard_abbreviation=bookdata.get('standardAbbreviation'),
+            official_abbreviation=bookdata.get('officialAbbreviation'),
+            standard_singular_bookname=bookdata.get('standardSingularBookName'),
+            standard_singular_abbreviation=bookdata.get('standardSingularAbbreviation'),
+            official_singular_abbreviation=bookdata.get('officialSingularAbbreviation'),
+            standard_plural_bookname=bookdata.get('standardPluralBookName'),
+            standard_plural_abbreviation=bookdata.get('standardPluralAbbreviation'),
+            official_plural_abbreviation=bookdata.get('officialPluralAbbreviation'),
+            book_display_title=bookdata.get('bookDisplayTitle'),
+            chapter_display_title=bookdata.get('chapterDisplayTitle')
+        ))
+    session.add_all(bks)
+    session.commit()
+
+
+def _fetch_books_wol(edition: Edition) -> None:
+    "https://wol.jw.org/wol/finder?wtlocale=BRS&pub=nwt"
+    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={edition.language.meps_symbol}&pub=nwt')
+    books = browser.page.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
+            browser.page.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
+    bks = []
+    for bk in books:
+        book = get.book(language_code=edition.language.code, booknum=int(bk.a['data-bookid']), edition_id=edition.id)
+        if book:
+            continue
+        bks.append(Book(
+            edition_id=edition.id,
+            number=int(bk.a['data-bookid']),
+            name=bk.a.find('span', class_="title ellipsized name").text,
+            standard_abbreviation=bk.a.find('span', class_="title ellipsized abbreviation").text,
+            official_abbreviation=bk.a.find('span', class_="title ellipsized official").text,
+            standard_singular_bookname=bk.a.find('span', class_="title ellipsized name").text,
+            standard_singular_abbreviation=bk.a.find('span', class_="title ellipsized abbreviation").text,
+            official_singular_abbreviation=bk.a.find('span', class_="title ellipsized official").text,
+            standard_plural_bookname=bk.a.find('span', class_="title ellipsized name").text,
+            standard_plural_abbreviation=bk.a.find('span', class_="title ellipsized abbreviation").text,
+            official_plural_abbreviation=bk.a.find('span', class_="title ellipsized official").text,
+            book_display_title=bk.a.find('span', class_="title ellipsized name").text,
+            chapter_display_title=bk.a.find('span', class_="title ellipsized name").text
+        ))
     session.add_all(bks)
     session.commit()
 
@@ -207,7 +247,8 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     session.commit()
 
 
-def _ffprobe_markers(videopath: Path):
+def _ffprobe_markers(videopath: str):
+    videopath = Path(videopath)
     logger.info('Getting ffprobe markers. Slow and expensive %s', videopath)
     console = run(
         shlex.split(f'ffprobe -v quiet -show_chapters -print_format json "{videopath}"'),

@@ -1,7 +1,21 @@
 # https://github.com/sqlalchemy/sqlalchemy/wiki/Views
 # I don't have idea how implement create views by sqlalchemy. So
 
-views = ['''
+views = '''
+CREATE VIEW IF NOT EXISTS ViewBooks AS
+SELECT
+    Book.BookId,
+    Language.LanguageId,
+    Language.LanguageCode,
+    Language.LanguageMepsSymbol,
+    Book.BookNumber,
+    Book.StandardName
+FROM
+    Book
+INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
+INNER JOIN Edition ON Edition.EditionId = Book.EditionId
+;
+
 CREATE VIEW IF NOT EXISTS "ViewPubMedia" AS
 SELECT
     Chapter.ChapterId,
@@ -10,6 +24,7 @@ SELECT
     Edition.SymbolEdition,
     Book.BookNumber,
     Book.StandardName || " " || Chapter.ChapterNumber AS Chapter,
+    Chapter.URL,
     count(VideoMarker.VideoMarkerId) AS CountVideoMarkers,
     Chapter.Checksum
 FROM
@@ -23,8 +38,8 @@ ORDER BY
     Language.LanguageCode ASC,
     Book.BookNumber ASC,
     Chapter.ChapterNumber ASC
-;''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS ViewEdition AS
 SELECT
 	Language.LanguageId,
@@ -37,8 +52,8 @@ SELECT
 	Edition.URL
 FROM Language
 LEFT JOIN Edition ON Language.LanguageId = Edition.LanguageId
-''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByCitation" AS
 SELECT
     Book.BookNumber,
@@ -50,8 +65,8 @@ INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
 GROUP BY Book.BookNumber, Chapter.ChapterNumber, File.RawVerseNumbers
 ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
-;''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByUser" AS
 SELECT
     User.TelegramUserId,
@@ -61,8 +76,8 @@ FROM File2User
 INNER JOIN User ON User.UserId = File2User.UserId
 GROUP BY User.UserId
 ORDER BY User.TelegramUserId ASC
-;''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByLang" AS
 SELECT
 	Language.LanguageCode,
@@ -76,8 +91,8 @@ INNER JOIN Edition ON Edition.EditionId = Book.EditionId
 INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 GROUP BY Language.LanguageCode, Book.BookNumber, Chapter.ChapterNumber , File.RawVerseNumbers
 ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
-;''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS "ViewUser" AS
 SELECT
     User.TelegramUserId,
@@ -97,8 +112,8 @@ FROM User
 LEFT JOIN Language AS SignLanguage ON SignLanguage.LanguageId = User.SignLanguageId
 LEFT JOIN Language AS BotLanguage ON BotLanguage.LanguageId = User.BotLanguageId
 LEFT JOIN Language AS OverlayLanguage ON OverlayLanguage.LanguageId = User.OverlayLanguageId
-;''',
-'''
+;
+
 CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
 SELECT
 	User.TelegramUserId,
@@ -118,8 +133,7 @@ INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File2User.Datetime DESC
 ;
-''',
-'''
+
 CREATE VIEW IF NOT EXISTS "ViewSentVerse" AS
 SELECT
     Language.LanguageCode,
@@ -136,5 +150,4 @@ INNER JOIN Edition ON Edition.EditionId = Book.EditionId
 INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
 LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
 ORDER BY File.FileId DESC
-;'''
-]
+;'''.split(';')

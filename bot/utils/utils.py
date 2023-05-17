@@ -1,9 +1,11 @@
+import requests.exceptions
 from typing import Any
 from datetime import datetime
 import pytz
-import requests
+from bot.database import get
 
 from bot.utils.browser import LazyBrowser
+
 
 def list_of_lists(items: list[Any], columns: int) -> list[list[Any]]:
     start = 0
@@ -32,6 +34,9 @@ def dt_now() -> datetime:
 def now() -> str:
     return dt_now().isoformat(sep=' ', timespec="seconds")
 
-def vernacular_language(language_code: str) -> str:
-    data = LazyBrowser().open(f'https://www.jw.org/{language_code}/languages/').json()
-    return list(map(lambda x: x['vernacularName'], filter(lambda x: x['symbol'] == language_code, data['languages'])))[0]
+def how_to_say(this_language_code: str, in_this_language_code: str) -> str:
+    try:
+        data = LazyBrowser().open(f'https://www.jw.org/{in_this_language_code}/languages/').json()
+        return list(map(lambda x: x['name'], filter(lambda x: x['symbol'] == this_language_code, data['languages'])))[0]
+    except requests.exceptions.JSONDecodeError:
+        return get.language(code=this_language_code).name

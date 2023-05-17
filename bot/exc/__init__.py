@@ -87,7 +87,13 @@ class PubmediaNotExists(BaseBibleException):
 
 class IncompleteVideoMarkers(BaseBibleException):
     def __init__(self, verses):
+        super().__init__()
         self.verses = verses
 
 class NoNeedVideoMarkerFFMPEG(BaseBibleException):
     pass
+
+class EditionNotFound(BaseBibleException):
+    def __init__(self, language_code: str):
+        super().__init__()
+        self.language_code = language_code

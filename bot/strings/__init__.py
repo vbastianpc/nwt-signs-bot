@@ -9,7 +9,8 @@ from telegram import BotCommand
 
 
 STRINGS_PATH = Path(__file__).parent / 'strings'
-DEFAULT = STRINGS_PATH / 'es.yaml'
+DEFAULT_LANGUAGE = 'es'
+DEFAULT_PATH = STRINGS_PATH / f'{DEFAULT_LANGUAGE}.yaml'
 yaml = YAML(typ='safe')
 
 
@@ -25,7 +26,7 @@ class Self:
         try:
             value = yaml.load(p.read_text())[self.name]
         except (KeyError, FileNotFoundError):
-            value = yaml.load(DEFAULT.read_text())[self.name]
+            value = yaml.load(DEFAULT_PATH.read_text())[self.name]
 
         if isinstance(value, str):
             if re.search(r'{\d*}', value):
@@ -42,8 +43,8 @@ class Self:
                 return choice(value)
 
         elif isinstance(value, dict):
-            def f(key=None) -> dict | str:
-                return value[key] if key is not None else value
+            return value
+
         return f
 
     def __set__(self, obj, value) -> None:
@@ -58,7 +59,8 @@ class TextTranslator:
     wait = Self()
     step_1 = Self()
     step_2 = Self()
-    greetings = Self()
+    step_3 = Self()
+    start = Self()
     yes = Self()
     no = Self()
     enabled = Self()
@@ -76,6 +78,7 @@ class TextTranslator:
     but_these_books = Self()
     is_apocrypha = Self()
     not_language = Self()
+    not_signlanguage = Self()
     choose_book = Self()
     choose_chapter = Self()
     choose_verse = Self()
@@ -95,6 +98,7 @@ class TextTranslator:
     choose_botlang = Self()
     ok_botlang = Self()
     books_fetch_botlang = Self()
+    no_bible = Self()
     no_botlang_but = Self()
     feedback_1 = Self()
     feedback_2 = Self()
@@ -126,11 +130,11 @@ def get_language(botlang: str) -> dict:
 
 
 def get_commands(botlang) -> list[BotCommand]:
-    return [BotCommand(command, descr) for command, descr in TextTranslator(botlang).commands().items()]
+    return [BotCommand(command, descr) for command, descr in TextTranslator(botlang).commands.items()]
 
 
 def get_admin_commands(botlang) -> list[BotCommand]:
-    return [BotCommand(command, descr) for command, descr in TextTranslator(botlang).admin_commands().items()]
+    return [BotCommand(command, descr) for command, descr in TextTranslator(botlang).admin_commands.items()]
 
 
 def botlangs_vernacular() -> Iterator[tuple[str, str]]:
@@ -142,4 +146,4 @@ def botlangs() -> list[str]:
 
 
 if __name__ == '__main__':
-    print(*map(lambda k: f'{k} = Self()', yaml.load(DEFAULT.read_text()).keys()), sep='\n')
+    print(*map(lambda k: f'{k} = Self()', yaml.load(DEFAULT_PATH.read_text()).keys()), sep='\n')

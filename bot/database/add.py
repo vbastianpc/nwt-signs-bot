@@ -24,13 +24,12 @@ def or_update_user(
         sign_language_name: str = None,
         status: int | None = None,
         with_overlay: bool | None = None,
-        added_datetime: datetime | None = None,
         last_active_datetime: datetime | None = None
     ) -> User:
     user = session.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
     if not user:
         logger.info(f'No existe usuario')
-        user = User(telegram_user_id=telegram_user_id)
+        user = User(telegram_user_id=telegram_user_id, added_datetime=dt_now())
         session.add(user)
 
     if sign_language_code:
@@ -43,8 +42,6 @@ def or_update_user(
         user.user_name = user_name
     if is_premium is not None:
         user.is_premium = is_premium
-    if added_datetime:
-        user.added_datetime = added_datetime
     if bot_language_code:
         user.bot_language_id = get.language(code=bot_language_code).id
     if with_overlay is False:

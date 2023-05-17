@@ -12,7 +12,7 @@ from telegram import Bot
 from bot.logs import get_logger
 from bot.secret import ADMIN
 from bot.secret import TOKEN
-from bot.utils import dt_now
+from bot.utils import how_to_say
 from bot.database import PATH_DB
 from bot.database import report
 from bot.database import get
@@ -120,9 +120,8 @@ if __name__ == '__main__':
         is_premium=member.user.is_premium,
         bot_language_code=member.user.language_code,
         sign_language_code=sign_language.code,
-        sign_language_name=sign_language.vernacular, # TODO function requests get one language vernacular
+        sign_language_name=how_to_say(sign_language.code, member.user.language_code),
         status=User.AUTHORIZED,
-        added_datetime=dt_now()
     )
     logger.info(f'User {member.user.first_name} added to database')
     # fetch_fonts()

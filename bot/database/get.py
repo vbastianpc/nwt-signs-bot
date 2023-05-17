@@ -1,5 +1,3 @@
-from telegram import Video
-
 from sqlalchemy import select
 
 from bot.logs import get_logger
@@ -37,6 +35,11 @@ def language(
     else:
         raise TypeError('get_language expected one argument')
     return q.one_or_none()
+
+
+def parse_language(code_or_meps: str) -> Language | None:
+    return language(code=code_or_meps.lower()) or language(meps_symbol=code_or_meps.upper())
+
 
 def sign_languages_meps_symbol() -> list[str]:
     return session.scalars(select(Language.meps_symbol).filter(Language.is_sign_language == True)).all()

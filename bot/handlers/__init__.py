@@ -33,15 +33,14 @@ from bot.handlers.admin.logs import error_handler
 
 # Order matters
 handlers = [
-    # conversation handler
     feedback_handler,
-    start_handler,
     notice_handler,
 
     # basic commands
-    show_signlangs_handler,
     set_signlang_handler,
     page_signlang_handler,
+    start_handler,
+    show_signlangs_handler,
     show_botlang_handler,
     set_botlang_handler,
     page_botlang_handler,

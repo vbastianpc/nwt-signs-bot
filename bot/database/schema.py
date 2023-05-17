@@ -50,6 +50,8 @@ class Language(Base):
     is_sign_language = Column('IsSignLanguage', Boolean)
     script = Column('LanguageScript', String)
     is_rtl = Column('IsRTL', Boolean)
+    has_web_content = Column('HasWebContent', Boolean)
+    is_counted = Column('IsCounted', Boolean)
 
     edition = relationship('Edition', back_populates='language', foreign_keys='[Edition.language_id]')
     sign_language_users: list['User'] = relationship('User', back_populates='sign_language',
@@ -83,7 +85,6 @@ class Book(Base):
     id = Column('BookId', Integer, primary_key=True)
     edition_id = Column('EditionId', Integer, ForeignKey('Edition.EditionId'), nullable=False)
     number = Column('BookNumber', Integer)
-    chapter_count = Column('ChapterCount', Integer)
 
     name = Column('StandardName', String, default='')
     standard_abbreviation = Column('StandardAbbreviation', String, default='')

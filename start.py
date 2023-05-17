@@ -61,6 +61,8 @@ Corrección de bugs:
     [ ] Explicarlo en help.
 [x] Buscar tipografía que tenga todos los idiomas
 """
+import sys
+print(*sys.path, sep='\n')
 from telegram.ext import Updater
 from bot.secret import TOKEN
 from bot.logs import get_logger
@@ -72,9 +74,8 @@ logger = get_logger(__name__)
 
 if __name__ == '__main__':
     updater = Updater(TOKEN)
-    dispatcher = updater.dispatcher
     for handler in handlers:
-        dispatcher.add_handler(handler)
-    dispatcher.add_error_handler(error_handler)
+        updater.dispatcher.add_handler(handler)
+    updater.dispatcher.add_error_handler(error_handler)
     updater.start_polling()
     updater.idle()

@@ -50,25 +50,24 @@ def parse_query(update: Update, context: CallbackContext) -> None:
         return re.match(r'/(\w+)', string).group(1) if string.startswith('/') else ''
     def query(string: str) -> str:
         return string if not string.startswith('/') else ' '.join(string.split()[1:])
-    def parse_language(code_or_meps: str) -> Language | None:
-        return get.language(code=code_or_meps.lower()) or get.language(meps_symbol=code_or_meps.upper())
 
     lines = update.effective_message.text.splitlines()[:5]
     for text in lines:
         if not command(text):
             parse_query_bible(update, context, text)
         else:
-            language = parse_language(command(text))
+            language = get.parse_language(command(text))
             if not language:
                 all_fallback(update, context, text)
             if query(text):
-                add.or_update_user(update.effective_user.id, sign_language_code=language.code)
-                parse_query_bible(update, context, query(text))
+                if language.is_sign_language is True:
+                    add.or_update_user(update.effective_user.id, sign_language_code=language.code)
+                    parse_query_bible(update, context, query(text))
             elif len(lines) == 1 and language and not query(text):
                 # change language permanent
-                if language.is_sign_language:
+                if language.is_sign_language is True:
                     set_sign_language(update, context, sign_language_code=language.code)
-                elif not language.is_sign_language:
+                elif language.is_sign_language is False:
                     set_bot_language(update, context, bot_language_code=language.code)
                 return
             elif language and not query(text):
@@ -168,6 +167,7 @@ def show_books(update: Update, context: CallbackContext, p: BiblePassage) -> Non
         ) for booknum in p.available_booknums],
         columns=5
     )
+
     sign_language = p.language
     p.set_language(user.bot_language.code)
     context.user_data['msg'] = context.bot.send_message(
