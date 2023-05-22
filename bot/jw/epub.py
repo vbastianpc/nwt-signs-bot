@@ -43,7 +43,7 @@ class BibleEpub(BiblePassage):
             txtCMSLang=self.language.meps_symbol,
             isBible='1'
         )
-        url = urlunsplit(('https', 'b.jw-cdn.org', '/apis/pub-media/GETPUBMEDIALINKS', urlencode(params)))
+        url = urlunsplit(('https', 'b.jw-cdn.org', '/apis/pub-media/GETPUBMEDIALINKS', urlencode(params), None))
         r = browser.open(url)
         print(f'{r.status_code=!r}')
         assert r.status_code == 200
@@ -62,10 +62,8 @@ class BibleEpub(BiblePassage):
             zip_ref.extractall(directory_to_extract)
 
     @property
-    def epub_file(self):
-        for file in EPUB_PATH.glob(f'*_{self.language.meps_symbol}.epub'):
-            if file.is_file():
-                return file
+    def epub_file(self) -> Path:
+        return EPUB_PATH / f'nwt_{self.language.meps_symbol}.epub'
 
     def get_text(self, fmt='HTML', head_url=True, versenum_url=True) -> str:
         return self.head(fmt, head_url) + '\n' + self.verse_texts(fmt, versenum_url)
