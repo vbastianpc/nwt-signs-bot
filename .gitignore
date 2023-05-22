@@ -6,8 +6,6 @@
 # *~
 *.ipynb
 *.mp4
-**/*.png
-**/*.jpg
 bible-epub/
 bot/utils/fonts/
 *.db
