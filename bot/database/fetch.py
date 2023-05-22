@@ -150,7 +150,7 @@ def need_chapter_and_videomarks(book: Book) -> bool:
 
 def chapters_and_videomarkers(book: Book, all_chapters=True):
     url = BiblePassage(book).url_pubmedia(all_chapters)
-    res = browser.open(url)
+    res = browser.open(url, translate_url=False)
     if res.status_code != 200:
         raise exc.PubmediaNotExists
     data = res.json()['files'][book.edition.language.meps_symbol]
@@ -221,7 +221,7 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     No use for bulk. It's slow and expensive. 
     """
     url = BiblePassage(chapter.book, chapter.number).url_pubmedia(all_chapters=False)
-    res = browser.open(url)
+    res = browser.open(url, translate_url=False)
     if res.status_code != 200:
         raise exc.PubmediaNotExists
 

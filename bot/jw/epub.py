@@ -44,12 +44,12 @@ class BibleEpub(BiblePassage):
             isBible='1'
         )
         url = urlunsplit(('https', 'b.jw-cdn.org', '/apis/pub-media/GETPUBMEDIALINKS', urlencode(params), None))
-        r = browser.open(url)
+        r = browser.open(url, translate_url=False)
         print(f'{r.status_code=!r}')
         assert r.status_code == 200
 
         url = r.json()['files'][self.language.meps_symbol]['EPUB'][0]['file']['url']
-        with browser.open(url, stream=True) as r:
+        with browser.open(url, stream=True, translate_url=False) as r:
             with open(self.epub_file, mode="wb") as f:
                 for chunk in r.iter_content(chunk_size=128*1024):
                     f.write(chunk)

@@ -52,7 +52,7 @@ def fetch_fonts():
     href = wol.soup.find('link', rel='stylesheet', href=re.compile(r'^/assets/css/\+2.*\.css')).get('href')
     css = browser.open(
         # 'https://wol.jw.org/assets/css/+2+cac2f578122dabb5cc955c02ab51b708b49077e6.css',
-        'https://wol.jw.org' + href
+        'https://wol.jw.org' + href, translate_url=False
     ).content.decode()
     data = dict()
     for match in re.finditer(r'\.jwac\.ms-(\w+),\.ms-\w+\{font-family:(\w+)', css):
@@ -71,7 +71,7 @@ def fetch_fonts():
 def download_fonts():
     for url in json.load(FFDIR.open('r')).values():
         with open(DIR / Path(url).name, 'wb') as f:
-            f.write(browser.open(url).content)
+            f.write(browser.open(url, translate_url=False).content)
 
 
 def select_font(script):

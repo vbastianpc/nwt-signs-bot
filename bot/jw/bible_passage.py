@@ -173,7 +173,7 @@ class BiblePassage(BibleObject):
 
     @property
     def available_booknums(self) -> list[int | None]:
-        wol = browser.open(self.url_wol_binav).soup
+        wol = browser.open(self.url_wol_binav, translate_url=False).soup
         books = wol.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
                 wol.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
         return [int(book.findChildren('a')[0].get('data-bookid'))
