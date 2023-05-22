@@ -112,7 +112,7 @@ def _fetch_books_json(edition: Edition) -> None:
 
 def _fetch_books_wol(edition: Edition) -> None:
     "https://wol.jw.org/wol/finder?wtlocale=BRS&pub=nwt"
-    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={edition.language.meps_symbol}&pub=nwt')
+    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={edition.language.meps_symbol}&pub=nwt', translate_url=False)
     books = browser.page.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
             browser.page.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
     bks = []

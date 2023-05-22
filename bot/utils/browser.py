@@ -11,13 +11,13 @@ logger = get_logger(__name__)
 
 
 class LazyBrowser(mechanicalsoup.StatefulBrowser):
-    __slots__ = ['prefix', 'tabs']
-    def __init__(self, translate_url=True):
-        self.prefix = URL_FUNCTION if translate_url else ''
+    __slots__ = ['tabs']
+    def __init__(self):
         self.tabs = {}
         super().__init__(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36')
 
-    def open(self, url, *args, timeout=10, **kwargs) -> Response:
+    def open(self, url, translate_url=True, *args, timeout=10, **kwargs) -> Response:
+        url = URL_FUNCTION + url if translate_url else url
         if url in self.tabs:
             expires = self.tabs[url].headers.get('Expires')
             expires = datetime.strptime(expires, "%a, %d %b %Y %H:%M:%S %Z") if expires else datetime.now()
@@ -33,8 +33,8 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
             self.tabs.pop(old_tab)
         t0 = time.time()
         kwargs = dict(timeout=timeout) | kwargs
-        logger.info(f'Loading {self.prefix + url}')
-        res = super().open(self.prefix + url, *args, **kwargs)
+        logger.info(f'Loading {url}')
+        res = super().open(url, *args, **kwargs)
         logger.info(f'{time.time() - t0:.3f}s')
         self.tabs |= {url: res}
         return res
@@ -44,5 +44,5 @@ browser = LazyBrowser()
 
 if __name__ == '__main__':
     browser.open('https://www.jw.org/en')
-    browser.open('https://www.jw.org/es')
+    browser.open('https://wol.jw.org/wol/finder?wtlocale=BRS&pub=nwt')
     print('end')

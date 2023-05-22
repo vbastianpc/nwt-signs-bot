@@ -40,7 +40,7 @@ def now() -> str:
 
 def how_to_say(this_language_code: str, in_this_language_code: str) -> str:
     try:
-        data = browser.open(f'https://wwww.jw.org/{in_this_language_code}/languages').json()
+        data = browser.open(f'https://www.jw.org/{in_this_language_code}/languages').json()
         return list(filter(lambda x: x['symbol'] == this_language_code, data['languages']))[0]['name']
     except:
         logger.warning(f"Can't get how to say this language {this_language_code!r} "

@@ -2,7 +2,6 @@
 # Path('database.db').unlink()
 
 import sqlite3
-import requests
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile
@@ -19,7 +18,9 @@ from bot.database import get
 from bot.database import add
 from bot.database import fetch
 from bot.database.schema import User
-from bot.utils.fonts import fetch_fonts, download_fonts
+from bot.utils.browser import browser
+from bot.utils.fonts import fetch_fonts
+from bot.utils.fonts import download_fonts
 
 
 logger = get_logger(__name__)
@@ -33,14 +34,15 @@ def get_rbi8_db(overwrite=False):
     if overwrite is False and Path(rbi8).exists():
         logger.info('Already exists rbi8.db')
     else:
+        logger.info('Downloading Rbi8 Bible')
         with open(rbi8, 'wb') as f:
             logger.info(f'Downloading {url}')
-            f.write(requests.get(url).content)
+            f.write(browser.open(url).content)
     with ZipFile(rbi8) as jwpub:
         with jwpub.open(contents, 'r') as c:
             with open(contents, 'wb') as f:
                 f.write(c.read())
-    
+
     with ZipFile(contents) as z:
         with z.open(rbi8db, 'r') as r:
             with open(rbi8db, 'wb') as f:
@@ -83,12 +85,6 @@ def fetch_rbi8db():
                                VALUES (?, ?, ?, ?)
                                ON CONFLICT DO NOTHING""",
                             (book_number, chapter_number, versenum, False))
-        # cur.execute("""INSERT INTO Bible (BookNumber, ChapterNumber, VerseNumber)
-        #                VALUES (?, ?, ?) ON CONFLICT DO NOTHING""",
-        #             (book_number, chapter_number, 0))
-        # cur.execute("""INSERT INTO Bible (BookNumber, ChapterNumber, VerseNumber)
-        #                VALUES (?, ?, ?) ON CONFLICT DO NOTHING""",
-        #             (book_number, 0, 0))
     con.commit()
     con.close()
     rbi8_con.close()
@@ -98,20 +94,26 @@ if __name__ == '__main__':
     logger.info('Starting configuration...')
     get_rbi8_db(overwrite=False)
     fetch_rbi8db()
-    logger.info('rbi8 bible ok')
+    logger.info('Rbi8 bible ok')
+    logger.info('Fetching languages...')
     fetch.languages()
     logger.info(f'There are {report.count_languages()} languages stored in the database')
+    logger.info('Fetching Bible Editions...')
     fetch.editions()
     logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
     for language_code in ['en', 'es', 'vi', 'ko', 'csg', 'ase']:
+        logger.info(f'Fetching books language_code={language_code}')
         fetch.books(language_code=language_code)
+    logger.info('Fetching some chapters and videomarkers')
     for book_code in [('csg', 19), ('csg', 40), ('csg', 1), ('ase', 19)]:
         book = get.book(book_code[0], book_code[1])
         assert book
         fetch.chapters_and_videomarkers(book)
+    logger.info('Connecting to Telegram API Bot')
     bot = Bot(TOKEN)
     member = bot.get_chat_member(chat_id=ADMIN, user_id=ADMIN)
     sign_language = get.language(code='csg')
+    logger.info('Adding user admin')
     add.or_update_user(
         ADMIN,
         first_name=member.user.first_name,
@@ -124,7 +126,8 @@ if __name__ == '__main__':
         status=User.AUTHORIZED,
     )
     logger.info(f'User {member.user.first_name} added to database')
-    # fetch_fonts()
-    # download_fonts()
+
+    fetch_fonts()
+    download_fonts()
     logger.info('Configuration succesful!')
     logger.info('done')
