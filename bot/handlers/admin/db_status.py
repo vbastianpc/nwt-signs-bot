@@ -10,10 +10,10 @@ from bot.strings import TextTranslator
 
 
 @admin
-def database_status(update: Update, context: CallbackContext) -> None:
+def database_status(update: Update, _: CallbackContext) -> None:
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(
-        t.db_summary.format(
+        t.db_summary(
             rdb.count_videomarker(),
             rdb.count_sentverse(),
             rdb.count_biblechapter(),

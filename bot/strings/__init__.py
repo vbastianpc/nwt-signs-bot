@@ -29,14 +29,14 @@ class Self:
             value = yaml.load(DEFAULT_PATH.read_text())[self.name]
 
         if isinstance(value, str):
-            if re.search(r'{\d*}', value):
+            if re.search(r'{[ .:<>\d]+}', value):
                 def f(*args: str | int):
                     return value.format(*args)
             else:
                 return value
 
         elif isinstance(value, list):
-            if any([re.search(r'{\d*}', v) for v in value]):
+            if any([re.search(r'{[ .:<>\d]+}', v) for v in value]):
                 def f(*args: str | int):
                     return choice(value).format(*args)
             else:

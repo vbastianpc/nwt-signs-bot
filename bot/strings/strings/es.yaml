@@ -52,16 +52,14 @@ step_1: >
 
 # {} -> signlanguage command
 step_2: >
-  *Elige una lengua de señas*.
-  
-  Pulsa /{} y selecciona una.
+  Pulsa /{}, y *elige una lengua de señas*
   
   
   O bien escribe su código. Por ejemplo /csg para lengua de señas chilena.
 
 # {} -> help command
 step_3: >
-  ¡Muy bien! Ahora ya puedes pedirme pasajes de la Biblia. Intentaré entender todo lo que me pidas. Puedes usar el
+  Ahora ya puedes pedirme pasajes de la Biblia. Intentaré entender todo lo que me pidas. Puedes usar el
   nombre completo o su abreviación, por ejemplo:
 
 
@@ -287,7 +285,7 @@ overlay_info: >
   idiomas disponibles en el sitio [JW](https://www.jw.org)
 
 
-  Ten en cuenta que si el nombre de libro se escribe igual en tu idioma _escrito_ y en tu lengua de señas,
+  Si el libro se escribe igual tanto en tu _idioma escrito_ como en tu _lengua de señas_,
   no verás la superposición de texto.
 
 

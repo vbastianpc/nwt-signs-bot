@@ -35,6 +35,6 @@ def reset_commands(update: Update, context: CallbackContext):
     context.bot.set_my_commands(
         commands=strings.get_commands(user.bot_language.code) + strings.get_admin_commands(user.bot_language.code),
         scope=BotCommandScopeChat(ADMIN))
-    update.message.reply_text(TextTranslator(user.bot_language).setcommands)
+    update.message.reply_text(TextTranslator(user.bot_language.code).setcommands)
 
 set_commands_handler = CommandHandler(AdminCommand.SETCOMMANDS, reset_commands)
