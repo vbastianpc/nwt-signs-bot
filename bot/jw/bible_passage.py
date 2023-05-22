@@ -3,7 +3,7 @@ from typing import Final
 from urllib.parse import urlunsplit
 from urllib.parse import urlencode
 from urllib.parse import unquote
-from bot.utils.browser import LazyBrowser
+from bot.utils.browser import browser
 
 from bot.database.schema import Book
 from bot.logs import get_logger
@@ -24,7 +24,6 @@ class BiblePassage(BibleObject):
     def __init__(self, book: Book, chapternumber: int | None = None,
                  verses: int | str | list[int | str] | None = None):
         super().__init__(book, chapternumber, verses)
-        self.browser = LazyBrowser()
 
     def url_pubmedia(self, all_chapters=True) -> str:
         """API JSON for sign languages get markers
@@ -49,7 +48,7 @@ class BiblePassage(BibleObject):
         ))
 
     # Todos los lenguajes de señas (jw y wol), vernacular, name, lang_code
-    def url_languages(self, domain : str = Domain.DATA_JWAPI):
+    def url_languages(self, domain : str = Domain.JW):
         """API JSON get languages
         'https://data.jw-api.org/mediator/v1/languages/E/all'
         'https://www.jw.org/en/languages/'
@@ -174,9 +173,9 @@ class BiblePassage(BibleObject):
 
     @property
     def available_booknums(self) -> list[int | None]:
-        self.browser.open(self.url_wol_binav)
-        books = self.browser.page.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
-                self.browser.page.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
+        wol = browser.open(self.url_wol_binav).soup
+        books = wol.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
+                wol.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
         return [int(book.findChildren('a')[0].get('data-bookid'))
                 for book in books
                 if 'unavailable' not in book.get('class')]

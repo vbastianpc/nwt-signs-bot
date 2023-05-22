@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from bot.logs import get_logger
 from bot.utils import dt_now
-from bot.utils.browser import LazyBrowser
+from bot.utils.browser import browser
 from bot.database import session
 from bot.database import get
 from bot.database.schema import Bible
@@ -24,19 +24,19 @@ from bot import exc
 
 logger = get_logger(__name__)
 
-browser = LazyBrowser()
 
 def languages():
     data = browser.open('https://www.jw.org/en/languages/').json()
-    browser.open('https://wol.jw.org/en/wol/li/r1/lp-e')
+    wol = browser.open('https://wol.jw.org/en/wol/li/r1/lp-e').soup
     langs = []
     for i, lang in enumerate(data['languages']):
-        if not get.language(meps_symbol=lang['langcode']):
-            a = browser.page.find('a', {'data-meps-symbol': lang['langcode']}) or {}
+        meps_symbol = lang['langcode'] # other names: code, langcode, wtlocale, data-meps-symbol
+        if not get.language(meps_symbol=meps_symbol):
+            a = wol.find('a', {'data-meps-symbol': meps_symbol}) or {}
             langs.append(
                 Language(
-                    meps_symbol=lang['langcode'],
-                    code=lang['symbol'],
+                    meps_symbol=meps_symbol,
+                    code=lang['symbol'], # other names: symbol, locale
                     name=lang['name'],
                     vernacular=lang['vernacularName'],
                     script=lang['script'],
@@ -44,8 +44,8 @@ def languages():
                     rsconf=a.get('data-rsconf'),
                     lib=a.get('data-lib'),
                     is_sign_language=lang['isSignLanguage'],
-                    has_web_content=lang['hasWebContent'],
-                    is_counted=lang['isCounted']
+                    is_counted=lang['isCounted'],
+                    has_web_content=lang['hasWebContent']
                 )
             )
     session.add_all(langs)
@@ -150,9 +150,10 @@ def need_chapter_and_videomarks(book: Book) -> bool:
 
 def chapters_and_videomarkers(book: Book, all_chapters=True):
     url = BiblePassage(book).url_pubmedia(all_chapters)
-    if browser.open(url).status_code != 200:
+    res = browser.open(url)
+    if res.status_code != 200:
         raise exc.PubmediaNotExists
-    data = browser.response.json()['files'][book.edition.language.meps_symbol]
+    data = res.json()['files'][book.edition.language.meps_symbol]
 
     docs = {}
     for ff, items in data.items():
@@ -220,11 +221,12 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     No use for bulk. It's slow and expensive. 
     """
     url = BiblePassage(chapter.book, chapter.number).url_pubmedia(all_chapters=False)
-    if browser.open(url).status_code != 200:
+    res = browser.open(url)
+    if res.status_code != 200:
         raise exc.PubmediaNotExists
 
     url_lq = {}
-    for ext, items in browser.response.json()['files'][chapter.book.edition.language.meps_symbol].items():
+    for ext, items in res.json()['files'][chapter.book.edition.language.meps_symbol].items():
         # low quality urls with markers in video
         url_lq |= dict(map(lambda d: (d['track'], d['file']['url']), reversed(items))) if ext != '3GP' else {}
 
@@ -256,7 +258,7 @@ def _ffprobe_markers(videopath: str):
         check=True
     )
     raw_chapters = json.loads(console.stdout.decode())['chapters']
-    json.dump(raw_chapters, open(videopath.stem + '.json', 'w'), indent=4, ensure_ascii=False)
+    json.dump(raw_chapters, open(videopath.stem + '.json', 'w', encoding='utf-8'), indent=4, ensure_ascii=False)
     markers = []
     for rc in raw_chapters:
         try:

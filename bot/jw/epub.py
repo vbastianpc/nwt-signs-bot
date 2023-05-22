@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 from zipfile import ZipFile
-import requests
 
 from urllib.parse import urlunsplit
 from urllib.parse import urlencode
@@ -9,6 +8,7 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
 from bot.jw import BiblePassage
+from bot.utils.browser import browser
 
 
 EPUB_PATH = Path('bible-epub')
@@ -34,12 +34,12 @@ class BibleEpub(BiblePassage):
             isBible='1'
         )
         url = urlunsplit(('https', 'b.jw-cdn.org', '/apis/pub-media/GETPUBMEDIALINKS', urlencode(params)))
-        r = requests.get(url)
+        r = browser.open(url)
         print(f'{r.status_code=!r}')
         assert r.status_code == 200
 
         url = r.json()['files'][self.language.meps_symbol]['EPUB'][0]['file']['url']
-        with requests.get(url, stream=True) as r:
+        with browser.open(url, stream=True) as r:
             with open(self.epub_file, mode="wb") as f:
                 for chunk in r.iter_content(chunk_size=128*1024):
                     f.write(chunk)

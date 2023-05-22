@@ -1,8 +1,8 @@
 import re
-import requests
 import json
 from pathlib import Path
 
+from bot.utils.browser import browser
 from bot.logs import get_logger
 
 
@@ -10,9 +10,7 @@ logger = get_logger(__name__)
 DIR = Path(__file__).parent / 'fonts'
 DIR.mkdir(exist_ok=True)
 FFDIR = DIR / 'font-family.json'
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'
-}
+
 
 def weight_style(font_face):
     font_weight = re.search('font-weight:(\d+)', font_face.group(1))
@@ -50,9 +48,11 @@ def find_best_url_font(font_faces: list):
 
 
 def fetch_fonts():
-    css = requests.get(
-        'https://wol.jw.org/assets/css/+2+17b206c9be641a997763d161730d8a9075df42b3.css',
-        headers=HEADERS
+    wol = browser.open('https://wol.jw.org/en/wol/h/r1/lp-e')
+    href = wol.soup.find('link', rel='stylesheet', href=re.compile(r'^/assets/css/\+2.*\.css')).get('href')
+    css = browser.open(
+        # 'https://wol.jw.org/assets/css/+2+cac2f578122dabb5cc955c02ab51b708b49077e6.css',
+        'https://wol.jw.org' + href
     ).content.decode()
     data = dict()
     for match in re.finditer(r'\.jwac\.ms-(\w+),\.ms-\w+\{font-family:(\w+)', css):
@@ -71,17 +71,9 @@ def fetch_fonts():
 def download_fonts():
     for url in json.load(FFDIR.open('r')).values():
         with open(DIR / Path(url).name, 'wb') as f:
-            f.write(requests.get(url, headers=HEADERS).content)
+            f.write(browser.open(url).content)
 
 
 def select_font(script):
     url = json.load(FFDIR.open('r'))[script]
     return Path(DIR) / Path(url).name
-
-
-if __name__ == '__main__':
-    logger.info('fetching fonts')
-    # fetch_fonts()
-    logger.info('downloading fonts')
-    download_fonts()
-    logger.info(select_font('ROMAN'))

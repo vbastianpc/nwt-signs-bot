@@ -21,7 +21,7 @@ from bot.database import report as rdb
 from bot.database.schema import Language
 from bot.utils import list_of_lists
 from bot.utils.decorators import vip, forw, log
-from bot.utils.browser import LazyBrowser
+from bot.utils.browser import browser
 from bot.secret import ADMIN
 from bot import strings
 from bot.utils import how_to_say
@@ -55,17 +55,15 @@ def show_current_settings(update: Update, _: CallbackContext) -> None:
     )
 
 
-def build_signlangs(update: Update, context: CallbackContext):
+def build_signlangs(update: Update, _: CallbackContext):
     user = get.user(update.effective_user.id)
-    if not context.user_data.get('languages'):
-        context.user_data['languages'] = LazyBrowser().open(f'https://www.jw.org/{user.bot_language.code}/languages/') \
-            .json()['languages']
+    res = browser.open(f'https://www.jw.org/{user.bot_language.code}/languages/')
     return list_of_lists(
         [{
             'text': f'{sign_language["symbol"]} - {sign_language["name"]}',
             'callback_data': f'{SELECT_SIGNLANGUAGE}|{sign_language["symbol"]}' # symbol == language_code
         } for sign_language in sorted(
-            filter(lambda l: l['isSignLanguage'], context.user_data['languages']),
+            filter(lambda l: l['isSignLanguage'], res.json()['languages']),
             key=lambda x: x['symbol'])
         ],
         columns=1
@@ -147,10 +145,7 @@ def set_sign_language(update: Update, context: CallbackContext, sign_language_co
         update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
     else:
         update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    try:
-        del context.user_data['languages']
-    except KeyError:
-        pass
+
     if not get.edition(language_code=sign_language_code):
         fetch.editions()
     if not get.books(sign_language_code):
