@@ -11,3 +11,4 @@ dependencies:
     - ruamel.yaml
     - numpy
     - Pillow
+    - python-dotenv
