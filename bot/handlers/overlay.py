@@ -32,7 +32,7 @@ def overlay_info(update: Update, context: CallbackContext) -> None:
     msg = context.bot.send_photo(
         update.effective_user.id,
         photo=context.bot_data.get('overlay_info') or Path('./assets/overlay.jpg').read_bytes(),
-        caption=tt.overlay_info,
+        caption=tt.overlay_info(MyCommand.OVERLAY),
         parse_mode=ParseMode.MARKDOWN
     )
     context.bot_data['overlay_info'] = max(msg.photo, key=lambda p: p.height).file_id

@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 @vip
 def help(update: Update, context: CallbackContext) -> None:
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(text=tt.help,
+    update.message.reply_text(text=tt.help(MyCommand.SIGNLANGUAGE, MyCommand.BOTLANGUAGE, MyCommand.PROTIPS),
                               parse_mode=ParseMode.MARKDOWN)
 
 @forw
@@ -25,7 +25,8 @@ def help(update: Update, context: CallbackContext) -> None:
 def protips(update: Update, context: CallbackContext) -> None:
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     update.effective_message.reply_text(
-        text=tt.pro_tips('https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
+        text=tt.pro_tips(MyCommand.FEEDBACK,
+                         'https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
                          context.bot.name),
         parse_mode=ParseMode.MARKDOWN,
         disable_web_page_preview=True)
