@@ -9,11 +9,21 @@ from bs4.element import NavigableString, Tag
 
 from bot.jw import BiblePassage
 from bot.utils.browser import browser
+from bot.database.schema import Book
 
 
 EPUB_PATH = Path('bible-epub')
+EPUB_PATH.mkdir(exist_ok=True)
 
 class BibleEpub(BiblePassage):
+    def __init__(self, book: Book, chapternumber: int | None = None,
+                 verses: int | str | list[int | str] | None = None, download=True, unzip=True):
+        super().__init__(book, chapternumber, verses)
+        if download is True:
+            self.download()
+        if unzip is True:
+            self.unzip()
+
     def dirpath(self):
         path = EPUB_PATH / f'nwt_{self.language.meps_symbol}' # nwt_E
         if path.exists() and path.is_dir():
