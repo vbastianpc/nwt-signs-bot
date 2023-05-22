@@ -61,8 +61,7 @@ Corrección de bugs:
     [ ] Explicarlo en help.
 [x] Buscar tipografía que tenga todos los idiomas
 """
-import sys
-print(*sys.path, sep='\n')
+
 from telegram.ext import Updater
 from bot.secret import TOKEN
 from bot.logs import get_logger
