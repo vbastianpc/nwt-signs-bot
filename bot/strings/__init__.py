@@ -23,20 +23,21 @@ class Self:
 
     def __get__(self, obj, type=None) -> str | MyCallable: # pylint: disable=redefined-builtin
         p = STRINGS_PATH / f'{obj.language_code}.yaml'
+        pt = r'{[ f.:<>\d]*}'
         try:
             value = yaml.load(p.read_text())[self.name]
         except (KeyError, FileNotFoundError):
             value = yaml.load(DEFAULT_PATH.read_text())[self.name]
 
         if isinstance(value, str):
-            if re.search(r'{[ .:<>\d]+}', value):
+            if re.search(pt, value):
                 def f(*args: str | int):
                     return value.format(*args)
             else:
                 return value
 
         elif isinstance(value, list):
-            if any([re.search(r'{[ .:<>\d]+}', v) for v in value]):
+            if any([re.search(pt, v) for v in value]):
                 def f(*args: str | int):
                     return choice(value).format(*args)
             else:
@@ -103,6 +104,8 @@ class TextTranslator:
     feedback_1 = Self()
     feedback_2 = Self()
     feedback_3 = Self()
+    stat = Self()
+    stats = Self()
     waiting_list = Self()
     from_github = Self()
     introduced_himself = Self()
@@ -146,4 +149,4 @@ def botlangs() -> list[str]:
 
 
 if __name__ == '__main__':
-    print(*map(lambda k: f'{k} = Self()', yaml.load(DEFAULT_PATH.read_text()).keys()), sep='\n')
+    print(*map(lambda k: f'    {k} = Self()', yaml.load(DEFAULT_PATH.read_text()).keys()), sep='\n')

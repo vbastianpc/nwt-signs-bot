@@ -28,6 +28,7 @@ def vip(func):
                 chat_id=LOG_CHANNEL_ID,
                 from_chat_id=update.message.chat.id,
                 message_id=update.message.message_id,
+                disable_notification=True
             )
             return
         else:
@@ -41,7 +42,8 @@ def admin(func):
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
         tuser = update.effective_user
         if tuser.id != ADMIN:
-            context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.effective_message.message_id)
+            context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.effective_message.message_id,
+                                        disable_notification=True)
             return
         return func(update, context, *args, **kwargs)
     return restricted_func

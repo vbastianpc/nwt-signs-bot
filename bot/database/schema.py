@@ -135,20 +135,25 @@ class Chapter(Base):
     @property
     def edition(self) -> Edition:
         return self.book.edition
-    
+
     @property
     def language(self) -> Language:
         return self.book.edition.language
 
     def get_file(self, verses: list[int], overlay_language_id: int | None) -> Type['File'] | None:
-        files = [file for file in self.files
-                 if file.raw_verses == ' '.join(map(str, verses)) and
-                 file.overlay_language_id == overlay_language_id]
-        return files[0] if files else None
+        if any((file := f) for f in self.files
+               if f.raw_verses == ' '.join(map(str, verses)) and
+                  f.overlay_language_id == overlay_language_id and
+                  f.is_deprecated is False):
+            return file
+        else:
+            return None
 
     def get_videomarker(self, verse: int) -> Type['VideoMarker'] | None:
         videomarkers = [videomarker for videomarker in self.video_markers if videomarker.versenum == verse]
         return videomarkers[0] if videomarkers else None
+
+
 class VideoMarker(Base):
     __tablename__ = 'VideoMarker'
 
@@ -171,7 +176,7 @@ class VideoMarker(Base):
     @property
     def edition(self) -> Edition:
         return self.chapter.book.edition
-    
+
     @property
     def language(self) -> Language:
         return self.chapter.book.edition.language
@@ -187,10 +192,11 @@ class File(Base):
     duration = Column('Duration', Integer)
     name = Column('FileName', String)
     raw_verses = Column('RawVerseNumbers', String)
-    is_single_verse = Column('IsSingleVerse', Boolean)
+    count_verses = Column('CountVerses', Integer)
     size = Column('FileSize', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
     overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
+    is_deprecated = Column('IsDeprecated', Boolean, default=False)
 
     chapter: Chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
     overlay_language: Language = relationship('Language', back_populates='overlay_files',
@@ -200,7 +206,7 @@ class File(Base):
     @property
     def book(self) -> Book:
         return self.chapter.book
-    
+
     @property
     def edition(self) -> Edition:
         return self.chapter.book.edition
@@ -208,7 +214,6 @@ class File(Base):
     @property
     def language(self) -> Language:
         return self.chapter.book.edition.language
-
 
 
 class User(Base):

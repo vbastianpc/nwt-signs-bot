@@ -197,7 +197,7 @@ def set_bot_language(update: Update, context: CallbackContext, bot_language_code
         except exc.EditionNotFound:
             text += tt.no_bible(get.language(code=bot_language_code).vernacular, user.bot_language.vernacular)
         else:
-            text += tt.books_fetch_botlang(user.bot_language.vernacular)
+            text += tt.books_fetch_botlang(how_to_say(bot_language_code, bot_language_code))
 
     if get.books(bot_language_code):
         user = add.or_update_user(update.effective_user.id,
@@ -207,9 +207,9 @@ def set_bot_language(update: Update, context: CallbackContext, bot_language_code
         set_my_commands(update.effective_user, user.bot_language)
 
         if tt.language['code'] != bot_language_code:
-            text += tt.no_botlang_but(user.bot_language.vernacular.capitalize())
+            text = tt.no_botlang_but(user.bot_language.vernacular.capitalize()) + '\n\n' + text
         else:
-            text += tt.ok_botlang(user.bot_language.vernacular.capitalize())
+            text = tt.ok_botlang(user.bot_language.vernacular.capitalize()) + '\n\n' + text
 
     if update.callback_query:
         update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)

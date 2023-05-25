@@ -23,7 +23,7 @@ from bot.database import get
 from bot.database import fetch
 from bot.database import add
 from bot import exc
-from bot.database.schema import Language
+from bot.database.schema import File
 from bot.handlers.start import all_fallback
 from bot.handlers.settings import set_sign_language
 from bot.handlers.settings import set_bot_language
@@ -109,8 +109,6 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
         return
     else:
         passage.set_language(user.sign_language.code)
-        update.effective_message.reply_text(passage.citation)
-
 
     context.user_data['msg'] = None
     if fetch.need_chapter_and_videomarks(passage.book):
@@ -267,19 +265,17 @@ def manage_verses(update: Update, context: CallbackContext, p: BiblePassage) -> 
     logger.info('(%s) %s', update.effective_user.name, p.citation)
     user = get.user(update.effective_user.id)
     epub = BibleEpub(get.book(user.bot_language.code, p.book.number), p.chapternumber, p.verses)
-    if p.chapter.get_file(p.verses, user.overlay_language_id if p.book.name != epub.book.name else None):
-        send_by_fileid(update, context, p, epub)
+    if (file := p.chapter.get_file(p.verses, user.overlay_language_id if p.book.name != epub.book.name else None)):
+        send_by_fileid(update, context, p, epub, file)
     elif len(p.verses) == 1:
         send_single_verse(update, context, p, epub)
     else:
         send_concatenate_verses(update, context, p, epub)
 
 
-def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
+def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub, file: File) -> None:
     if context.user_data.get('msg'):
         context.user_data.get('msg').delete()
-    user = get.user(update.effective_user.id)
-    file = p.chapter.get_file(p.verses,user.overlay_language_id if p.book.name != epub.book.name else None)
     try:
         msgvideo = context.bot.send_video(
             chat_id=update.effective_chat.id,
@@ -305,7 +301,8 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
         raise e
     else:
         add.file2user(file.id, get.user(update.effective_user.id).id)
-        context.bot.copy_message(LOG_CHANNEL_ID, update.effective_user.id, msgvideo.message_id)
+        context.bot.copy_message(LOG_CHANNEL_ID, update.effective_user.id,
+                                 msgvideo.message_id, disable_notification=True)
     return
 
 
@@ -363,7 +360,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
         disable_web_page_preview=True,
     )
     thumbnail.unlink()
-    context.bot.copy_message(LOG_CHANNEL_ID, update.effective_chat.id, msgvideo.message_id)
+    context.bot.copy_message(LOG_CHANNEL_ID, update.effective_chat.id, msgvideo.message_id, disable_notification=True)
     msg.delete()
     videopath.unlink()
 
@@ -440,7 +437,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     )
     thumbnail.unlink()
     msg.delete()
-    context.bot.copy_message(LOG_CHANNEL_ID, update.effective_chat.id, msgvideo.message_id)
+    context.bot.copy_message(LOG_CHANNEL_ID, update.effective_chat.id, msgvideo.message_id, disable_notification=True)
 
     file = add.file(chapter_id=p.chapter.id,
                     verses=p.verses,
@@ -469,6 +466,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             duration=round(float(stream['duration'])),
             timeout=120,
             thumb=thumbnail,
+            disable_notification=True
         )
         thumbnail.unlink()
         file = add.file(chapter_id=p.chapter.id,

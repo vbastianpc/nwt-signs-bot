@@ -1,3 +1,4 @@
+from datetime import datetime
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -22,6 +23,8 @@ from bot.database import get
 from bot.database import add
 from bot.strings import TextTranslator
 from bot.database.schema import User
+from bot.utils.browser import browser
+from bot.jw import DailyText
 
 
 logger = get_logger(__name__)
@@ -35,6 +38,7 @@ def start(update: Update, _: CallbackContext) -> None:
     tt = TextTranslator(user.bot_language.code if user else tuser.language_code)
     if user and user.is_authorized() and user.sign_language:
         update.message.reply_text(tt.start)
+        daily_text(update, _)
         return -1
     if user and user.is_authorized() and not user.sign_language:
         update.message.reply_text(tt.step_2(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.MARKDOWN)
@@ -42,7 +46,7 @@ def start(update: Update, _: CallbackContext) -> None:
     elif not user:
         add.or_update_user(tuser.id,
                            first_name=tuser.first_name,
-                           last_name=tuser.last_name,
+                           last_name=tuser.last_name or '',
                            user_name=tuser.username,
                            is_premium=tuser.is_premium,
                            bot_language_code=tuser.language_code,
@@ -86,6 +90,10 @@ def start_set_sign_language(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(tt.step_3(MyCommand.HELP))
     return -1
 
+def daily_text(update: Update, _: CallbackContext) -> None:
+    language = get.user(update.effective_user.id).bot_language
+    daily = DailyText(language, update.message.date)
+    update.message.reply_text(daily.get_text(), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
 
 start_handler = ConversationHandler(

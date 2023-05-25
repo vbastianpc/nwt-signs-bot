@@ -70,7 +70,7 @@ ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers AS
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByUser" AS
 SELECT
     User.TelegramUserId,
-    User.FullName,
+    User.FirstName || " " || User.LastName AS FullName,
     count(*) AS CountSentVersesByUser
 FROM File2User
 INNER JOIN User ON User.UserId = File2User.UserId
@@ -117,12 +117,13 @@ LEFT JOIN Language AS OverlayLanguage ON OverlayLanguage.LanguageId = User.Overl
 CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
 SELECT
 	User.TelegramUserId,
-    User.FullName,
+    User.FirstName || " " || User.LastName AS FullName,
 	Language.LanguageCode,
     OverlayLanguage.LanguageCode AS OverlayLanguageCode,
 	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
     File2User.Datetime,
-    File.FileId
+    File.FileId,
+    File.CountVerses
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
 INNER JOIN User ON User.UserId = File2User.UserId

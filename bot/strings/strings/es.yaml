@@ -340,14 +340,13 @@ choose_botlang: >
 ok_botlang:
   - ¡Perfecto! Creo que ahora nos entenderemos mejor.
   - Parlez-vous français? Solo es una broma 🤣 Hablemos en {} mejor.
-  - Möchten Sie auf Spanisch sprechen? Era una broma, yo tampoco sé alemán. {} está bien
 
 
 # {} -> English
 books_fetch_botlang:
   - Ahora aprendí cómo encontrar libros bíblicos en *{}*.
   - Gracias a ti ahora sé cómo se llaman los libros de la Biblia en *{}*.
-  - Acabo de aprender los nombres de loslibros de la Biblia en *{}*.
+  - Acabo de aprender los nombres de los libros de la Biblia en *{}*.
   - Recién eché un vistazo y ya encontré la Biblia en *{}*, así que puedes pedirme pasajes bíblicos.
 
 # {0} -> Saluan (see https://wol.jw.org/loe/wol/h/r1127/lp-sal)
@@ -368,6 +367,14 @@ no_botlang_but:
 feedback_1: ¿Tienes alguna sugerencia? ¿Algo anda mal? Puedes cancelar esta conversación cuando quieras /{}
 feedback_2: Gracias por dejarme tu comentario.
 feedback_3: ¡Ups! No te preocupes.
+
+# {0} -> count videos
+# {1} -> sign language
+stat: Has recibido un total de *{0}* videos en *{1}*.
+
+# {0} -> count videos
+# {1} -> count languages
+stats: En total has recibido *{0}* videos en *{1}* idiomas diferentes. Te dejo un resumen de tus estadísticas
 
 
 # ADMIN. You don't have to translate it

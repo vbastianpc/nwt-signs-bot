@@ -16,7 +16,7 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
         self.tabs = {}
         super().__init__(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36')
 
-    def open(self, url, translate_url=True, *args, timeout=10, **kwargs) -> Response:
+    def open(self, url, translate_url=True, *args, timeout=20, **kwargs) -> Response:
         """translate=True necessary when url hostname is www.jw.org and ip request from AWS servers"""
         url = URL_FUNCTION + url if translate_url else url
         if url in self.tabs:

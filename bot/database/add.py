@@ -36,7 +36,7 @@ def or_update_user(
         user.sign_language_id = get.language(code=sign_language_code).id
     if first_name:
         user.first_name = first_name
-    if last_name:
+    if last_name is not None:
         user.last_name = last_name
     if user_name:
         user.user_name = user_name
@@ -79,7 +79,7 @@ def file(
         size=file_size,
         added_datetime=dt_now(),
         overlay_language_id=overlay_language_id,
-        is_single_verse=True if len(verses) == 1 else False
+        count_verses=len(verses)
     )
     session.add(f)
     session.commit()

@@ -14,6 +14,9 @@ from bot.database.schema import Book
 
 EPUB_PATH = Path('bible-epub')
 EPUB_PATH.mkdir(exist_ok=True)
+OBSIDIAN = 'Obsidian'
+MARKDOWN = 'Markdown'
+HTML = 'HTML'
 
 class BibleEpub(BiblePassage):
     def __init__(self, book: Book, chapternumber: int | None = None,
@@ -65,7 +68,7 @@ class BibleEpub(BiblePassage):
     def epub_file(self) -> Path:
         return EPUB_PATH / f'nwt_{self.language.meps_symbol}.epub'
 
-    def get_text(self, fmt='HTML', head_url=True, versenum_url=True) -> str:
+    def get_text(self, fmt=HTML, head_url=True, versenum_url=True) -> str:
         return self.head(fmt, head_url) + '\n' + self.verse_texts(fmt, versenum_url)
 
     def head(self, fmt=None, with_url=False) -> str:
@@ -73,12 +76,12 @@ class BibleEpub(BiblePassage):
         if fmt == None:
             return self.citation
         url = self.url_share_jw()
-        if fmt == 'HTML':
+        if fmt == HTML:
             text = "<strong>{}</strong>"
             text = text.format(f'<a href="{url}">{c}</a>' if with_url else c)
-        elif fmt in ['Markdown', 'Obsidian']:
+        elif fmt in [MARKDOWN, OBSIDIAN]:
             text = f'[{c}]({url})' if with_url else c
-        if fmt == 'Obsidian':
+        if fmt == OBSIDIAN:
             original_verses = self.verses
             text = f'> [!BIBLE]+ {text} '
             internal_links = []
@@ -90,12 +93,11 @@ class BibleEpub(BiblePassage):
         return text
 
     def _get_target_file(self) -> Path:
-        verse = self.verses[0] if self.verses else 1
         versenav = self.dirpath() / f'OEBPS/bibleversenav{self.book.number}_{self.chapternumber}.xhtml'
         nav_soup = BeautifulSoup(versenav.read_bytes(), 'html.parser')
         try:
             target_file = nav_soup.body.table \
-                .find('a', href=re.compile(f'xhtml#chapter{self.chapternumber}_verse{verse}')) \
+                .find('a', href=re.compile(f'xhtml#chapter{self.chapternumber}_verse1')) \
                 .get('href').split('#')[0]
         except AttributeError as e:
             raise FileNotFoundError from e
@@ -105,7 +107,7 @@ class BibleEpub(BiblePassage):
         # if fmt == None:
         #     nbsp = ' '
         #     emsp = '    '
-        # elif fmt in ['HTML', 'Markdown', 'Obsidian']:
+        # elif fmt in [HTML, 'Markdown', 'Obsidian']:
         #     nbsp = '&nbsp;'
         #     emsp = '&emsp;'
         # elif fmt == 'Markdown':
@@ -115,17 +117,11 @@ class BibleEpub(BiblePassage):
         nbsp = ' '
         emsp = '    '
         b = BeautifulSoup(self._get_target_file().read_text(encoding='utf-8'), 'html.parser')
-
         text = ''
         verses = self.verses
-        for v in verses:
+        for v in filter(lambda x: x != 0, verses):
             self.verses = [v]
-            if fmt is None:
-                text_number = f'{v}'
-            elif fmt == 'HTML':
-                text_number = f'<a href="{self.url_share_jw()}">{v}</a>' if with_url else f'<strong>{v}</strong>'
-            elif fmt in ['Markdown', 'Obsidian']:
-                text_number = f'[{v}]({self.url_share_jw(v)})' if with_url else f'**{v}**'
+            text_number = hyperlink(v, self.url_share_jw(), fmt) if with_url else bold(v, fmt)
 
             e = b.find('span', id=f'chapter{self.chapternumber}_verse{v}').next
             while True:
@@ -141,7 +137,7 @@ class BibleEpub(BiblePassage):
                         continue # while
                     text += '\n'
                     if 'sz' in e.get('class'): # prosa, salmos etc
-                        text += 2*emsp if fmt in ['Markdown', 'Obsidian'] and text.endswith('\n') else emsp
+                        text += 2*emsp if fmt in [MARKDOWN, OBSIDIAN] and text.endswith('\n') else emsp
                     elif 'sb' in e.get('class'): # standard paragraph
                         text += '\n' + emsp
                     elif 'sl' in e.get('class'): # starting new verse align to left en prosa
@@ -157,7 +153,9 @@ class BibleEpub(BiblePassage):
                         text += text_number
                 e = e.next
         self.verses = verses
-        if fmt == 'Obsidian':
+        if (e := b.find('p', class_='sw')):
+            text = italic(e.text, fmt) + '\n' + text
+        if fmt == OBSIDIAN:
             text = '> ' + text.replace('\n', '\n> ')
         elif fmt == None:
             text = text.replace('\n\n', '\n')
@@ -172,6 +170,16 @@ class BibleEpub(BiblePassage):
         text = rstrip(text, [' ', '>', '&emsp;', '\n'])
         return text
 
+def bold(text: str, fmt=HTML) -> str:
+    return f'**{text}**' if fmt in [MARKDOWN, OBSIDIAN] else f'<b>{text}</b>' if fmt == HTML else str(text)
+
+def italic(text: str, fmt=HTML) -> str:
+    return f'*{text}*' if fmt in [MARKDOWN, OBSIDIAN] else f'<i>{text}</i>' if fmt == HTML else str(text)
+
+def hyperlink(text: str, url: str, fmt=HTML) -> str:
+    return f'[{text}]({url})' if fmt in [MARKDOWN, OBSIDIAN] else f'<a href="{url}">{text}</a>' if fmt == HTML else str(text)
+
+
 if __name__ == '__main__':
     from telegram import Bot
 
@@ -184,6 +192,6 @@ if __name__ == '__main__':
 
     bot = Bot(TOKEN)
 
-    bot.send_message(ADMIN, epub.get_text('HTML'), parse_mode='HTML', disable_web_page_preview=True)
+    bot.send_message(ADMIN, epub.get_text(HTML), parse_mode='HTML', disable_web_page_preview=True)
 
     print('end')

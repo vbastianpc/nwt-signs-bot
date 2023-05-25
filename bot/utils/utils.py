@@ -31,9 +31,14 @@ def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-,() ") else '_' for x in text.replace(':', '.')])
 
 
-def dt_now() -> datetime:
+def dt_now(naive: bool = False) -> datetime:
+    """Server datetime.now()"""
     tzinfo = pytz.timezone('UTC')
-    return tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago'))
+    dt = tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago'))
+    if naive is False:
+        return dt.astimezone(tz=pytz.timezone('America/Santiago')) # server datetime but shown as America/Santiago
+    else:
+        return dt.replace(tzinfo=None)
 
 def now() -> str:
     return dt_now().isoformat(sep=' ', timespec="seconds")

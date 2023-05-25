@@ -140,7 +140,7 @@ def _fetch_books_wol(edition: Edition) -> None:
 
 
 def need_chapter_and_videomarks(book: Book) -> bool:
-    _time_ago = datetime.now() - timedelta(hours=1) # TODO change hours=24
+    _time_ago = dt_now(naive=True) - timedelta(hours=1) # TODO change hours=24
     if book.refreshed and _time_ago < book.refreshed:
         logger.info(f'Too soon to request {book.name} {book.id=}')
         return False
@@ -171,6 +171,8 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
             chapter.url = doc['file']['url']
             session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
+            for file in chapter.files:
+                file.is_deprecated = True # TODO verify
             # session.commit()
         else:
             logger.info(f'Creating new chapter {book.name} {chapternumber}')

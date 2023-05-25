@@ -27,8 +27,9 @@ class BiblePassage(BibleObject):
 
     def url_pubmedia(self, all_chapters=True) -> str:
         """API JSON for sign languages get markers
-        https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten=ASL&txtCMSLang=ASL&pub=nwt&booknum=21&track=11
+        https://b.jw-cdn.org/apis/pub-media/GETPUBMEDIALINKS?pub=nwt&langwritten=ASL&txtCMSLang=ASL&booknum=19&alllangs&output=json&fileformat=MP4,M4V&track=27
         """
+        #https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten=ASL&txtCMSLang=ASL&pub=nwt&booknum=21&track=11
         query = dict(
             output='json',
             alllangs=0,
@@ -36,6 +37,7 @@ class BiblePassage(BibleObject):
             txtCMSLang=self.book.edition.language.meps_symbol,
             pub=self.book.edition.symbol,
             booknum=self.book.number,
+            fileformat="MP4,M4V"
         )
         if self.chapternumber is not None and not all_chapters:
             query['track'] = self.chapternumber

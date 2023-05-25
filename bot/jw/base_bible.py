@@ -73,10 +73,10 @@ class BibleObject:
 
     @chapternumber.setter
     def chapternumber(self, value: int | str | None) -> int | None:
-        if value is not None and not select(Bible.verse).where(
+        if value is not None and select(Bible.id).where(
                 Bible.book == self.book.number,
                 Bible.chapter == int(value)
-            ).scalar():
+            ).scalar() is None:
             raise exc.ChapterNotExists(self.book.number, self.book.name, int(value))
         if isinstance(value, (str, int)):
             self._chapternumber = int(value)
@@ -169,7 +169,7 @@ class BibleObject:
                 return True
             chapternumber = int(chapternumber)
             s = s.where(Bible.chapter == chapternumber)
-            if not session.query(s.exists()).scalar():
+            if session.query(s.exists()).scalar() is False:
                 raise exc.ChapterNotExists(booknum, bookname, chapternumber)
             if not verses:
                 return True
