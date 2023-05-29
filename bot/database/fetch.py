@@ -5,13 +5,18 @@ from datetime import datetime
 from datetime import timedelta
 from subprocess import run
 
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy import select
+from sqlalchemy import func
+from bs4 import BeautifulSoup
 
 from bot.logs import get_logger
 from bot.utils import dt_now
 from bot.utils.browser import browser
 from bot.database import session
 from bot.database import get
+from bot.database import report
 from bot.database.schema import Bible
 from bot.database.schema import Edition
 from bot.database.schema import Book
@@ -26,17 +31,23 @@ logger = get_logger(__name__)
 
 
 def languages():
+    logger.info('Fetching languages...')
     data = browser.open('https://www.jw.org/en/languages/').json()
     wol = browser.open('https://wol.jw.org/en/wol/li/r1/lp-e').soup
-    langs = []
-    for i, lang in enumerate(data['languages']):
-        meps_symbol = lang['langcode'] # other names: code, langcode, wtlocale, data-meps-symbol
-        if not get.language(meps_symbol=meps_symbol):
-            a = wol.find('a', {'data-meps-symbol': meps_symbol}) or {}
-            langs.append(
-                Language(
-                    meps_symbol=meps_symbol,
+    aa = wol.find('ul', class_='librarySelection').find_all('a')
+
+    def map_language(insert=None, update=None):
+        for lang in data['languages']:
+            if any((e := a) for a in aa if a.get('data-meps-symbol') == lang['langcode']):
+                # 40x faster than a = wol.find('a', attrs={'data-meps-symbol': lang['langcode']})
+                a = e
+            else:
+                a = {}
+            exists = session.query(select(Language).where(Language.code == lang['symbol']).exists()).scalar()
+            if (insert is True and not exists) or (update is True and exists):
+                yield dict(
                     code=lang['symbol'], # other names: symbol, locale
+                    meps_symbol=lang['langcode'], # other names: code, langcode, wtlocale, data-meps-symbol
                     name=lang['name'],
                     vernacular=lang['vernacularName'],
                     script=lang['script'],
@@ -47,12 +58,15 @@ def languages():
                     is_counted=lang['isCounted'],
                     has_web_content=lang['hasWebContent']
                 )
-            )
-    session.add_all(langs)
+    session.bulk_insert_mappings(Language, map_language(insert=True))
+    session.bulk_update_mappings(Language, map_language(update=True))
     session.commit()
+    logger.info(f'There are {report.count_languages()} languages stored in the database')
+
 
 
 def editions():
+    logger.info('Fetching Bible Editions...')
     data = browser.open("https://www.jw.org/en/library/bible/json/").json()
     edts = []
     for d in data['langs'].values():
@@ -64,20 +78,24 @@ def editions():
         for e in d['editions']:
             if not get.edition(language_code=language.code):
                 edts.append(Edition(
-                    language_id=language.id,
+                    language_code=language.code,
                     name=e['title'],
                     symbol=e['symbol'],
                     url=e.get('contentAPI')
                 ))
     session.add_all(edts)
     session.commit()
+    logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
 
 
 def books(language_code: str):
+    logger.info(f'Fetching books language_code={language_code!r}')
     edition = get.edition(language_code)
     if not edition:
-        logger.warning('No books found in because Bible not exists')
-        raise exc.EditionNotFound(language_code)
+        logger.warning(f'No books found in {language_code!r} because Bible not exists')
+        edition = Edition(language_code=language_code, symbol='nwt')
+        session.add(edition)
+        session.commit()
     if edition.url:
         _fetch_books_json(edition)
     else:
@@ -112,7 +130,7 @@ def _fetch_books_json(edition: Edition) -> None:
 
 def _fetch_books_wol(edition: Edition) -> None:
     "https://wol.jw.org/wol/finder?wtlocale=BRS&pub=nwt"
-    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={edition.language.meps_symbol}&pub=nwt', translate_url=False)
+    browser.open(f'https://wol.jw.org/wol/finder?wtlocale={edition.language.meps_symbol}&pub=nwt')
     books = browser.page.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
             browser.page.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
     bks = []
@@ -140,7 +158,7 @@ def _fetch_books_wol(edition: Edition) -> None:
 
 
 def need_chapter_and_videomarks(book: Book) -> bool:
-    _time_ago = dt_now(naive=True) - timedelta(hours=1) # TODO change hours=24
+    _time_ago = dt_now(naive=True) - timedelta(hours=24) # TODO change hours=24
     if book.refreshed and _time_ago < book.refreshed:
         logger.info(f'Too soon to request {book.name} {book.id=}')
         return False
@@ -150,7 +168,7 @@ def need_chapter_and_videomarks(book: Book) -> bool:
 
 def chapters_and_videomarkers(book: Book, all_chapters=True):
     url = BiblePassage(book).url_pubmedia(all_chapters)
-    res = browser.open(url, translate_url=False)
+    res = browser.open(url)
     if res.status_code != 200:
         raise exc.PubmediaNotExists
     data = res.json()['files'][book.edition.language.meps_symbol]
@@ -172,7 +190,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             chapter.url = doc['file']['url']
             session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
             for file in chapter.files:
-                file.is_deprecated = True # TODO verify
+                file.is_deprecated = True
             # session.commit()
         else:
             logger.info(f'Creating new chapter {book.name} {chapternumber}')
@@ -223,7 +241,7 @@ def videomarkers_by_ffmpeg(chapter: Chapter):
     No use for bulk. It's slow and expensive. 
     """
     url = BiblePassage(chapter.book, chapter.number).url_pubmedia(all_chapters=False)
-    res = browser.open(url, translate_url=False)
+    res = browser.open(url)
     if res.status_code != 200:
         raise exc.PubmediaNotExists
 

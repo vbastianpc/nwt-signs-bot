@@ -84,6 +84,10 @@ class BibleObject:
         elif value is None:
             self._chapternumber = None
             self._chapter = None
+    
+    @property
+    def raw_verses(self) -> str:
+        return ' '.join(map(str, self.verses))
 
     def refresh(self):
         self._book = get.book(self._language.code, self._book.number)
@@ -190,17 +194,17 @@ class BibleObject:
                     wrong_verses=BibleObject.get_verse_citation(bad),
                     count_wrong=len(bad)
                 )
-            s = s.where(Bible.verse.in_(verses), Bible.is_apocryphal == True)
+            s = s.where(Bible.verse.in_(verses), Bible.is_omitted  == True)
             if session.query(s.exists()).scalar():
-                apocryphal = session.scalars(
+                omitted = session.scalars(
                     select(Bible.verse).where(
                         Bible.book == booknum,
                         Bible.chapter == chapternumber,
                         Bible.verse.in_(verses),
-                        Bible.is_apocryphal == True
+                        Bible.is_omitted == True
                     ).order_by(Bible.verse.asc())
                 ).all()
-                raise exc.isApocrypha(f'{bookname} {chapternumber}:{BibleObject.get_verse_citation(apocryphal)}')
+                raise exc.VerseOmitted(f'{bookname} {chapternumber}:{BibleObject.get_verse_citation(omitted)}')
         except exc.BaseBibleException as e:
             if raise_error:
                 raise e

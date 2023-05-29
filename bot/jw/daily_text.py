@@ -18,10 +18,10 @@ class DailyText:
                f'/{self.date.year}/{self.date.month}/{self.date.day}'
 
     def get_text(self) -> str:
-        res = browser.open(self.url, translate_url=False)
+        res = browser.open(self.url)
         soup = BeautifulSoup(res.json()['items'][0]['content'], 'html.parser')
-        url = f'https://wol.jw.org/{self.language.code}/wol/h/{self.language.rsconf}/{self.language.lib}' \
-              f'/{self.date.year}/{self.date.month}/{self.date.day}'
+        url = f'https://www.jw.org/finder?wtlocale={self.language.meps_symbol}&alias=daily-text' \
+              f'&date={self.date.year}-{self.date.month:02d}-{self.date.day:02d}'
         header = f'<b><a href="{url}">' + soup.find('header').text.replace('\n', '') + '</a></b>\n\n'
         text = '<i>' + soup.find('p').text.replace('\xa0', ' ') + '</i>\n\n'
         comment = soup.findAll('p')[1].text.replace('\xa0', ' ')

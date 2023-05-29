@@ -41,7 +41,7 @@ class VerseNotExists(BaseBibleException):
         self.count_wrong = count_wrong
 
 
-class isApocrypha(BaseBibleException):
+class VerseOmitted(BaseBibleException):
     def __init__(self, citation: str):
         self.citation = citation
 

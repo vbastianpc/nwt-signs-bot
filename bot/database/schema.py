@@ -12,9 +12,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.sqltypes import Boolean
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy.sql.sqltypes import String
-from sqlalchemy.sql.sqltypes import DateTime
+from sqlalchemy.dialects.sqlite import DATETIME
 
-
+DateTime = DATETIME(storage_format="%(year)04d-%(month)02d-%(day)02d %(hour)02d:%(minute)02d:%(second)02d")
 class Base:
     """https://stackoverflow.com/a/55749579
     https://stackoverflow.com/a/54034230"""
@@ -32,7 +32,7 @@ class Bible(Base):
     book = Column('BookNumber', Integer)
     chapter = Column('ChapterNumber', Integer)
     verse = Column('VerseNumber', Integer)
-    is_apocryphal = Column('IsApocryphal', Boolean, default=False)
+    is_omitted = Column('IsOmitted', Boolean, default=False)
 
     video_markers: list['VideoMarker'] = relationship('VideoMarker',
                                                       back_populates='verse',
@@ -40,9 +40,8 @@ class Bible(Base):
 
 class Language(Base):
     __tablename__ = 'Language'
-    id = Column('LanguageId', Integer, primary_key=True)
+    code = Column('LanguageCode', String, primary_key=True)
     meps_symbol = Column('LanguageMepsSymbol', String, unique=True, nullable=False)
-    code = Column('LanguageCode', String, unique=True, nullable=False)
     name = Column('LanguageName', String)
     vernacular = Column('LanguageVernacular', String)
     rsconf = Column('RsConfigSymbol', String)
@@ -53,28 +52,28 @@ class Language(Base):
     has_web_content = Column('HasWebContent', Boolean)
     is_counted = Column('IsCounted', Boolean)
 
-    edition = relationship('Edition', back_populates='language', foreign_keys='[Edition.language_id]')
+    edition = relationship('Edition', back_populates='language', foreign_keys='[Edition.language_code]')
     sign_language_users: list['User'] = relationship('User', back_populates='sign_language',
-                                                           foreign_keys='[User.sign_language_id]')
+                                                           foreign_keys='[User.sign_language_code]')
     bot_language_users: list['User'] = relationship('User', back_populates='bot_language',
-                                                           foreign_keys='[User.bot_language_id]')
+                                                           foreign_keys='[User.bot_language_code]')
     overlay_users: list['User'] = relationship('User', back_populates='overlay_language',
-                                                     foreign_keys='[User.overlay_language_id]')
+                                                     foreign_keys='[User.overlay_language_code]')
     overlay_files: list['File'] = relationship('File', back_populates='overlay_language',
-                                                     foreign_keys='[File.overlay_language_id]')
+                                                     foreign_keys='[File.overlay_language_code]')
 
 
 class Edition(Base):
     __tablename__ = 'Edition'
-    __table_args__ = (UniqueConstraint('LanguageId', 'SymbolEdition'), )
+    __table_args__ = (UniqueConstraint('LanguageCode', 'SymbolEdition'), )
 
     id = Column('EditionId', Integer, primary_key=True)
-    language_id = Column('LanguageId', Integer, ForeignKey('Language.LanguageId'), nullable=False)
+    language_code = Column('LanguageCode', Integer, ForeignKey('Language.LanguageCode'), nullable=False)
     name = Column('Name', String)
     symbol = Column('SymbolEdition', String)
     url = Column('URL', String)
 
-    language: Language = relationship('Language', back_populates='edition', foreign_keys=[language_id])
+    language: Language = relationship('Language', back_populates='edition', foreign_keys=[language_code])
     books: 'Book' = relationship('Book', back_populates='edition', foreign_keys='[Book.edition_id]')
 
 
@@ -140,10 +139,10 @@ class Chapter(Base):
     def language(self) -> Language:
         return self.book.edition.language
 
-    def get_file(self, verses: list[int], overlay_language_id: int | None) -> Type['File'] | None:
-        if any((file := f) for f in self.files
+    def get_file(self, verses: list[int], overlay_language_code: str | None) -> Type['File'] | None:
+        if any((file := f) for f in reversed(self.files)
                if f.raw_verses == ' '.join(map(str, verses)) and
-                  f.overlay_language_id == overlay_language_id and
+                  f.overlay_language_code == overlay_language_code and
                   f.is_deprecated is False):
             return file
         else:
@@ -189,18 +188,18 @@ class File(Base):
     chapter_id = Column('ChapterId', Integer, ForeignKey('Chapter.ChapterId'), nullable=False)
     telegram_file_id = Column('TelegramFileId', String, unique=True)
     telegram_file_unique_id = Column('TelegramFileUniqueId', String, unique=True)
+    size = Column('FileSize', Integer)
     duration = Column('Duration', Integer)
-    name = Column('FileName', String)
+    citation = Column('Citation', String)
     raw_verses = Column('RawVerseNumbers', String)
     count_verses = Column('CountVerses', Integer)
-    size = Column('FileSize', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
-    overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
+    overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     is_deprecated = Column('IsDeprecated', Boolean, default=False)
 
     chapter: Chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
     overlay_language: Language = relationship('Language', back_populates='overlay_files',
-                                    foreign_keys=[overlay_language_id])
+                                    foreign_keys=[overlay_language_code])
     users: list['User'] = relationship('User', back_populates='files', secondary='File2User')
 
     @property
@@ -228,20 +227,20 @@ class User(Base):
     last_name = Column('LastName', String)
     user_name = Column('UserName', String)
     is_premium = Column('IsPremium', Boolean)
-    sign_language_id = Column('SignLanguageId', Integer, ForeignKey('Language.LanguageId'))
-    bot_language_id = Column('BotLanguageId', Integer, ForeignKey('Language.LanguageId'))
-    overlay_language_id = Column('OverlayLanguageId', Integer, ForeignKey('Language.LanguageId'))
+    sign_language_code = Column('SignLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
+    bot_language_code = Column('BotLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
+    overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     sign_language_name = Column('SignLanguageName', String) # sign language name in bot language
     status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
 
     bot_language: Language = relationship('Language', back_populates='bot_language_users',
-                                foreign_keys=[bot_language_id])
+                                foreign_keys=[bot_language_code])
     sign_language: Language = relationship('Language', back_populates='sign_language_users',
-                                 foreign_keys=[sign_language_id])
+                                 foreign_keys=[sign_language_code])
     overlay_language: Language = relationship('Language', back_populates='overlay_users',
-                                    foreign_keys=[overlay_language_id])
+                                    foreign_keys=[overlay_language_code])
     files: list[File] = relationship('File', back_populates='users', secondary='File2User')
 
     def is_authorized(self) -> bool:
@@ -256,6 +255,10 @@ class User(Base):
     def is_active(self) -> bool:
         _30_days_ago = datetime.now() - timedelta(days=30)
         return self.last_active_datetime > _30_days_ago
+    
+    @property
+    def  full_name(self) -> str:
+        return self.first_name + (f' {self.last_name}' if self.last_name else '')
 
 
 class File2User(Base):

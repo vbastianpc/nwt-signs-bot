@@ -5,7 +5,7 @@ import sqlite3
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from zipfile import ZipFile
-
+import time
 from telegram import Bot
 
 from bot.logs import get_logger
@@ -37,7 +37,7 @@ def get_nwt_db(overwrite=False):
         logger.info('Downloading nwt Bible')
         with open(nwt, 'wb') as f:
             logger.info(f'Downloading {url}')
-            f.write(browser.open(url, translate_url=False).content)
+            f.write(browser.open(url).content)
     with ZipFile(nwt) as jwpub:
         with jwpub.open(contents, 'r') as c:
             with open(contents, 'wb') as f:
@@ -67,17 +67,17 @@ def fetch_nwtdb():
     cur = con.cursor()
     chapters = nwt_cur.execute('SELECT BookNumber, ChapterNumber, FirstVerseId, LastVerseId ' \
                                'FROM BibleChapter').fetchall()
-    cur.execute('INSERT INTO Bible (VerseId, BookNumber, ChapterNumber, VerseNumber, IsApocryphal) ' \
+    cur.execute('INSERT INTO Bible (VerseId, BookNumber, ChapterNumber, VerseNumber, IsOmitted) ' \
                 'VALUES (0, 0, 0, 0, 0) ON CONFLICT DO NOTHING')
     for data in chapters:
         booknum, chapternum, first_verse_id, last_verse_id = data
         labels = [label[0] for label in nwt_cur.execute(f'SELECT Label FROM BibleVerse ' \
                                  f'WHERE BibleVerseId BETWEEN {first_verse_id} AND {last_verse_id}')]
         for versenum in map(parse_label_verse, labels):
-            cur.execute('INSERT INTO Bible(BookNumber, ChapterNumber, VerseNumber, IsApocryphal) ' \
+            cur.execute('INSERT INTO Bible(BookNumber, ChapterNumber, VerseNumber, IsOmitted) ' \
                             'VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING', (booknum, chapternum, versenum, False))
     # https://www.jw.org/finder?wtlocale=E&docid=1001070203&srcid=share&par=17-18
-    apocryphals = [
+    omitted= [
         (40, 17, 21, 21), # Mat 17:21
         (40, 18, 11, 11), # Mat 18:11
         (40, 23, 14, 14), # Mat 23:14
@@ -86,41 +86,40 @@ def fetch_nwtdb():
         (41, 9, 46, 46),  # Mar 9:46
         (41, 11, 26, 26), # Mar 11:26
         (41, 15, 28, 28), # Mar 15:28
-        (41, 16, 9, 20), # Mar 16:9-20
+        (41, 16, 9, 20),  # Mar 16:9-20
         (42, 17, 36, 36), # Luc 17:36
         (42, 23, 17, 17), # Luc 23:17
-        (43, 5, 4, 4),   # John 5:4
+        (43, 5, 4, 4),    # John 5:4
         (43, 7, 53, 53),  # John 7:53
-        (43, 8, 1, 11),  # John 8:1-11
+        (43, 8, 1, 11),   # John 8:1-11
         (44, 8, 37, 37),  # Acts 8:37
         (44, 15, 34, 34), # Acts 15:34
-        (44, 24, 7, 7),  # Acts 24:7
+        (44, 24, 7, 7),   # Acts 24:7
         (44, 28, 29, 29), # Acts 28:29
         (45, 16, 24, 24), # Rom 16:24
     ]
-    for booknum, chapternum, first, last in apocryphals:
+    for booknum, chapternum, first, last in omitted:
         for verse in range(first, last + 1):
-            cur.execute('INSERT INTO Bible(BookNumber, ChapterNumber, VerseNumber, IsApocryphal) ' \
-                        'VALUES (?, ?, ?, ?) ON CONFLICT DO UPDATE SET IsApocryphal=excluded.IsApocryphal',
+            cur.execute('INSERT INTO Bible(BookNumber, ChapterNumber, VerseNumber, IsOmitted) ' \
+                        'VALUES (?, ?, ?, ?) ON CONFLICT DO UPDATE SET IsOmitted=excluded.IsOmitted',
                         (booknum, chapternum, verse, True))
     con.commit()
     con.close()
     nwt_con.close()
+    logger.info('nwt bible ok')
 
 
 if __name__ == '__main__':
+    
     your_sign_language_code = input('Type your sign language code: (csg) ') or 'csg'
     your_bot_language_code = input('Type you bot language: (en|es|vi) ') or 'es'
     logger.info('Starting configuration...')
     get_nwt_db(overwrite=False)
     fetch_nwtdb()
-    logger.info('nwt bible ok')
-    logger.info('Fetching languages...')
+    t0 = time.time()
     fetch.languages()
-    logger.info(f'There are {report.count_languages()} languages stored in the database')
-    logger.info('Fetching Bible Editions...')
+    print(f'{time.time() - t0:.2f}')
     fetch.editions()
-    logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
     for language_code in set([
         your_bot_language_code,
         your_sign_language_code,
@@ -131,13 +130,7 @@ if __name__ == '__main__':
     #     'vi',
     #     'csg',
     ]):
-        logger.info(f'Fetching books language_code={language_code}')
         fetch.books(language_code=language_code)
-    # logger.info('Fetching some chapters and videomarkers')
-    # for book_code in [('csg', 19), ('csg', 40), ('csg', 1), ('ase', 19)]:
-    #     book = get.book(book_code[0], book_code[1])
-    #     assert book
-    #     fetch.chapters_and_videomarkers(book)
     logger.info('Connecting to Telegram API Bot')
     bot = Bot(TOKEN)
     member = bot.get_chat_member(chat_id=ADMIN, user_id=ADMIN)

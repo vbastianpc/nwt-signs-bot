@@ -4,6 +4,7 @@ from telegram import BotCommandScopeChat
 from telegram import BotCommandScopeDefault
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
+from telegram.error import BadRequest
 
 from bot.utils.decorators import admin
 from bot import strings
@@ -19,7 +20,10 @@ logger = get_logger(__name__)
 @admin
 def reset_commands(update: Update, context: CallbackContext):
     for language_code in strings.botlangs():
-        context.bot.set_my_commands(commands=strings.get_commands(language_code), language_code=language_code)
+        try:
+            context.bot.set_my_commands(commands=strings.get_commands(language_code), language_code=language_code)
+        except BadRequest:
+            pass
 
     for user in get.users():
         member = context.bot.get_chat_member(chat_id=user.telegram_user_id, user_id=user.telegram_user_id)

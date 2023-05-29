@@ -1,6 +1,8 @@
 """
-https://dbdiagram.io/d/61417a16825b5b0146029d49
+https://dbdiagram.io/d/641e6e955758ac5f172402c2
 """
+from pathlib import Path
+
 from sqlalchemy import Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -159,7 +161,7 @@ from sqlalchemy.engine import Engine
 
 
 
-OLD_DB = '/Users/bastianpalavecino/githubprojects/vbastianpc/nwt-signs-bot/bot/migration/2023-05-22 21 32 06-04 00 database.db'
+OLD_DB = Path(__file__).parent / '2023-05-26 00 47 13-04 00 database.db'
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):

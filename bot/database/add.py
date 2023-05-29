@@ -33,7 +33,7 @@ def or_update_user(
         session.add(user)
 
     if sign_language_code:
-        user.sign_language_id = get.language(code=sign_language_code).id
+        user.sign_language_code = sign_language_code
     if first_name:
         user.first_name = first_name
     if last_name is not None:
@@ -43,19 +43,17 @@ def or_update_user(
     if is_premium is not None:
         user.is_premium = is_premium
     if bot_language_code:
-        user.bot_language_id = get.language(code=bot_language_code).id
+        user.bot_language_code = bot_language_code
     if with_overlay is False:
-        user.overlay_language_id = None
+        user.overlay_language_code = None
     elif with_overlay is True:
-        user.overlay_language_id = user.bot_language.id
+        user.overlay_language_code = user.bot_language.code
     if sign_language_name:
         user.sign_language_name = sign_language_name
     if last_active_datetime:
         user.last_active_datetime = last_active_datetime
     if status is not None:
         user.status = status
-    if (sign_language_code or bot_language_code) and not sign_language_name:
-        logger.warning('You must set sign_language_name according to new sign_language_code or new bot_language')
     session.commit()
     return user
 
@@ -65,21 +63,21 @@ def file(
         telegram_file_id: str,
         telegram_file_unique_id: str,
         duration: int,
-        file_name: str,
+        citation: str,
         file_size: int,
-        overlay_language_id: int | None,
+        overlay_language_code: str | None,
     ) -> File:
     f = File(
         chapter_id=chapter_id,
-        raw_verses=' '.join(map(str, verses)),
         telegram_file_id=telegram_file_id,
         telegram_file_unique_id=telegram_file_unique_id,
-        duration=duration,
-        name=file_name,
         size=file_size,
+        duration=duration,
+        citation=citation,
+        raw_verses=' '.join(map(str, verses)),
+        count_verses=len(verses),
         added_datetime=dt_now(),
-        overlay_language_id=overlay_language_id,
-        count_verses=len(verses)
+        overlay_language_code=overlay_language_code,
     )
     session.add(f)
     session.commit()

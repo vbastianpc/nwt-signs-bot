@@ -32,7 +32,8 @@ def vip(func):
             )
             return
         else:
-            return func(update, context, *args, **kwargs)
+            func(update, context, *args, **kwargs)
+            return
 
     return restricted_func
 

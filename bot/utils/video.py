@@ -80,7 +80,7 @@ def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list
     run(shlex.split(cmd), capture_output=True, check=True)
     for i in intermediates:
         Path(i).unlink()
-    metapath.unlink() # TODO uncomment
+    metapath.unlink()
     return output
 
 
@@ -129,21 +129,20 @@ def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int]:
         shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
         capture_output=True, check=True
     )
-    image = Image.open(frame) # already mode L, grayscale because edgedetect
-    frame.unlink()
-    box = [0, 30, 150, 80] # width= 150, height 50
+    image = Image.open(frame) # already mode L, grayscale because -vf edgedetect
+    # frame.unlink()
+    box = [0, 30, 150, 80] # horizontal box width=150, height=50
     for _ in range(300):
-        if 255 not in np.array(image.crop(box)):
+        if not np.array(image.crop(box)).any():
             y = box[1] + round(25 * image.height / 720)
-            print(box)
             break
         box[1] += 1
         box[3] += 1
 
-    box2 = [0, 0, 1, 150]
+    box2 = [0, 0, 1, 150] # vertical line width=1, height=150
     for _ in range(200):
-        if 255 in np.array(image.crop(box2)):
-            x = box2[2]
+        if np.array(image.crop(box2)).any():
+            x = box2[0]
             break
         box2[0] += 1
         box2[2] += 1

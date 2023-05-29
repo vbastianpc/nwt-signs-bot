@@ -2,7 +2,7 @@
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.utils.helpers import mention_markdown
+from telegram.utils.helpers import mention_html
 from telegram.error import Unauthorized
 
 from bot import MyCommand
@@ -42,9 +42,9 @@ def autorizacion(update: Update, context: CallbackContext):
     
     new_user = add.or_update_user(new_telegram_id, status=User.AUTHORIZED)
     update.message.reply_text(
-        text=tt.user_added(mention_markdown(new_telegram_id, f'{new_user.first_name} {new_user.last_name}'),
+        text=tt.user_added(mention_html(new_telegram_id, f'{new_user.first_name} {new_user.last_name}'),
                            new_telegram_id),
-        parse_mode=ParseMode.MARKDOWN)
+        parse_mode=ParseMode.HTML)
 
     if not get.edition(new_user.bot_language.code):
         fetch.editions()
@@ -67,20 +67,20 @@ def delete_user(update: Update, context: CallbackContext):
 
 @admin
 def sending_users(update: Update, context: CallbackContext):
-    def print_users(users: User, title: str = ''):
-        text = f'*{title}*'
+    def print_users(users: list[User], title: str = ''):
+        text = f'<b>{title}</b>'
         for i, user in enumerate(users, 1):
             text += (
-                f'\n{mention_markdown(user.telegram_user_id, user.first_name.split()[0])} '
+                f'\n{mention_html(user.telegram_user_id, user.first_name.split()[0])} '
                 f'{user.signlanguage.meps_symbol if user.signlanguage else None} '
                 f'{user.bot_language.name} '
                 f'`{user.telegram_user_id}`'
                 )
-            if i % 10 == 0:
-                update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            if i % 20 == 0:
+                update.message.reply_text(text, parse_mode=ParseMode.HTML)
                 text = ''
         if text:
-            update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            update.message.reply_text(text, parse_mode=ParseMode.HTML)
     print_users(get.accepted_users(), User.AUTHORIZED)
     print_users(get.banned_users(), User.DENIED)
     print_users(get.waiting_users(), User.WAITING)

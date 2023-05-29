@@ -47,12 +47,12 @@ def notify(update: Update, context: CallbackContext):
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     if not context.args:
         update.message.reply_text(
-            text=t.wrong_notify.format(AdminCommand.NOTIFY),
-            parse_mode=ParseMode.MARKDOWN
+            text=t.wrong_notify(AdminCommand.NOTIFY),
+            parse_mode=ParseMode.HTML
         )
         return -1
     context.user_data['user_ids'] = context.args
-    update.message.reply_text(t.notify.format(MyCommand.OK, MyCommand.CANCEL))
+    update.message.reply_text(t.notify(MyCommand.OK, MyCommand.CANCEL))
     context.user_data['advice_note'] = []
     return 1
 

@@ -56,11 +56,11 @@ class TextTranslator:
     language = Self()
     commands = Self()
     admin_commands = Self()
+    hi = Self()
     barrier_to_entry = Self()
     wait = Self()
     step_1 = Self()
     step_2 = Self()
-    step_3 = Self()
     start = Self()
     yes = Self()
     no = Self()
@@ -77,7 +77,7 @@ class TextTranslator:
     but_these_chapters = Self()
     that_book_no = Self()
     but_these_books = Self()
-    is_apocrypha = Self()
+    is_omitted = Self()
     not_language = Self()
     not_signlanguage = Self()
     choose_book = Self()
@@ -88,7 +88,6 @@ class TextTranslator:
     trimming = Self()
     sending = Self()
     help = Self()
-    pro_tips = Self()
     overlay_info = Self()
     overlay_activated = Self()
     overlay_deactivated = Self()
@@ -98,7 +97,6 @@ class TextTranslator:
     ok_signlanguage_code = Self()
     choose_botlang = Self()
     ok_botlang = Self()
-    books_fetch_botlang = Self()
     no_bible = Self()
     no_botlang_but = Self()
     feedback_1 = Self()
@@ -109,6 +107,7 @@ class TextTranslator:
     waiting_list = Self()
     from_github = Self()
     introduced_himself = Self()
+    get_feedback = Self()
     db_summary = Self()
     wrong_notify = Self()
     notify = Self()
@@ -120,9 +119,6 @@ class TextTranslator:
     warn_user = Self()
     user_banned = Self()
     user_stopped_bot = Self()
-    checksum_touched = Self()
-    checksum_failed = Self()
-
 
     def __init__(self, language_code) -> None:
         self.language_code = language_code
@@ -145,7 +141,7 @@ def botlangs_vernacular() -> Iterator[tuple[str, str]]:
 
 
 def botlangs() -> list[str]:
-    return [p.stem for p in STRINGS_PATH.glob('*.yaml')]
+    return [yaml.load(p.read_text())['language']['iso_code'] for p in STRINGS_PATH.glob('*.yaml')]
 
 
 if __name__ == '__main__':

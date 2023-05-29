@@ -51,7 +51,7 @@ def show_current_settings(update: Update, _: CallbackContext) -> None:
                                  user.bot_language.vernacular,
                                  tt.enabled if user.overlay_language else tt.disabled,
         ),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.HTML
     )
 
 
@@ -71,7 +71,9 @@ def build_signlangs(update: Update, _: CallbackContext):
 
 
 @forw
+@vip
 def show_sign_languages(update: Update, context: CallbackContext):
+    update.effective_message.reply_chat_action(ChatAction.TYPING)
     fetch.languages()
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     send_buttons(
@@ -102,13 +104,21 @@ def send_buttons(message: Message,
     for row in data:
         buttons.append([InlineKeyboardButton(**kwargs) for kwargs in row])
     total_pages = ceil(len(info_for_buttons) / max_buttons)
-    if page != total_pages:
-        buttons.append([
-            InlineKeyboardButton('◀️', callback_data=f'{suffix}|{page - 1}|◀️'),
-            InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
-            InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}|▶️')
-        ])
-    kwargs = {'text': text, 'reply_markup': InlineKeyboardMarkup(buttons), 'parse_mode': ParseMode.MARKDOWN}
+    if page == total_pages == 1:
+        pass
+    elif page == 1:
+        buttons.append([InlineKeyboardButton('-', callback_data='None'),
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
+                        InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}|▶️')])
+    elif 1 < page < total_pages:
+        buttons.append([InlineKeyboardButton('◀️', callback_data=f'{suffix}|{page - 1}|◀️'),
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
+                        InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}|▶️')])
+    elif page == total_pages:
+        buttons.append([InlineKeyboardButton('◀️', callback_data=f'{suffix}|{page - 1}|◀️'),
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
+                        InlineKeyboardButton('-', callback_data='None')])
+    kwargs = {'text': text, 'reply_markup': InlineKeyboardMarkup(buttons), 'parse_mode': ParseMode.HTML}
     if edit_message:
         try:
             return message.edit_text(**kwargs)
@@ -142,9 +152,9 @@ def set_sign_language(update: Update, context: CallbackContext, sign_language_co
                               sign_language_name=how_to_say(sign_language_code, user.bot_language.code))
     text = t.ok_signlanguage_code(user.sign_language_name)
     if update.callback_query:
-        update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+        update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)
     else:
-        update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
 
     if not get.edition(language_code=sign_language_code):
         fetch.editions()
@@ -196,25 +206,23 @@ def set_bot_language(update: Update, context: CallbackContext, bot_language_code
             fetch.books(bot_language_code)
         except exc.EditionNotFound:
             text += tt.no_bible(get.language(code=bot_language_code).vernacular, user.bot_language.vernacular)
-        else:
-            text += tt.books_fetch_botlang(how_to_say(bot_language_code, bot_language_code))
 
     if get.books(bot_language_code):
         user = add.or_update_user(update.effective_user.id,
                                   bot_language_code=bot_language_code,
-                                  sign_language_name=how_to_say(user.sign_language.code, user.bot_language.code),
+                                  sign_language_name=how_to_say(user.sign_language.code, bot_language_code),
                                   with_overlay=True if user.overlay_language else False)
         set_my_commands(update.effective_user, user.bot_language)
 
         if tt.language['code'] != bot_language_code:
-            text = tt.no_botlang_but(user.bot_language.vernacular.capitalize()) + '\n\n' + text
+            text = tt.no_botlang_but(user.bot_language.vernacular.capitalize(), MyCommand.FEEDBACK) + '\n\n' + text
         else:
             text = tt.ok_botlang(user.bot_language.vernacular.capitalize()) + '\n\n' + text
 
     if update.callback_query:
-        update.effective_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+        update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)
     else:
-        update.effective_message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
     return ConversationHandler.END
 
 

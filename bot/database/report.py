@@ -37,10 +37,10 @@ def count_bible_editions() -> int:
     return _count(Bible.id).scalar()
 
 def count_signlanguage() -> int:
-    return _count(Language.id).filter(Language.is_sign_language == True).scalar()
+    return _count(Language.code).filter(Language.is_sign_language == True).scalar()
 
 def count_languages() -> int:
-    return _count(Language.id).scalar()
+    return _count(Language.code).scalar()
 
 def count_sentverseuser() -> int:
     return _count(File2User.id).scalar()
@@ -57,22 +57,30 @@ def count_user_brother() -> int:
 def count_user_waiting() -> int:
     return _count(User.id).filter(User.status == 0).scalar()
 
-def stats_user(telegram_user_id: int) -> list[tuple[str, int]]:
-    result = session.query(Language.code, func.sum(File.count_verses)) \
-        .select_from(File2User) \
-        .join(User, User.id == File2User.user_id) \
+def stats_user(user_id: int) -> list[tuple[str, int]]:
+    return session.query(Language.code, func.sum(File.count_verses)) \
+        .select_from(File) \
         .join(Chapter, Chapter.id == File.chapter_id) \
         .join(Book, Book.id == Chapter.book_id) \
         .join(Edition, Edition.id == Book.edition_id) \
-        .join(Language, Language.id == Edition.language_id) \
-        .join(File, File2User.file_id == File.id) \
-        .where(User.telegram_user_id == telegram_user_id) \
+        .join(Language, Language.code == Edition.language_code) \
+        .where(File.id.in_(select(File2User.file_id).filter(File2User.user_id == user_id).distinct())) \
         .group_by(Language.code) \
         .all()
-    return result
+
+def duration_size(user_id: int) -> tuple[int, int]:
+    result = session.query(func.sum(File.duration), func.sum(File.size)) \
+        .select_from(File2User) \
+        .join(File, File2User.file_id == File.id) \
+        .where(File2User.user_id == user_id) \
+        .one()
+    return round(result[0] / 60), round(result[1] / 1024 /1024)
 
     
 if __name__ == '__main__':
     telegram_user_id = 58736295
-    print(stats_user(telegram_user_id))
+    print(duration_size(telegram_user_id))
+    data = stats_user(telegram_user_id)
+    total = sum(map(lambda x: x[1], data))
+    print(total, '\n'.join([f'{code} - {count}' for code, count in data]))
     print('end')

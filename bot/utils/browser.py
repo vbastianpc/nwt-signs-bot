@@ -15,18 +15,27 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
     def __init__(self):
         self.tabs = {}
         super().__init__(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36')
+        self.translate_url = None
 
-    def open(self, url, translate_url=True, *args, timeout=20, **kwargs) -> Response:
+    def open(self, url, *args, timeout=60, **kwargs) -> Response:
         """translate=True necessary when url hostname is www.jw.org and ip request from AWS servers"""
-        url = URL_FUNCTION + url if translate_url else url
+        if self.translate_url is None:
+            prefix = URL_FUNCTION if 'www.jw.org' in url else ''
+        else:
+            prefix = URL_FUNCTION if self.translate_url else ''
+        url = prefix + url
         if url in self.tabs:
-            expires = self.tabs[url].headers.get('Expires')
-            expires = datetime.strptime(expires, "%a, %d %b %Y %H:%M:%S %Z") if expires else datetime.now()
-            if expires > datetime.now():
-                logger.info(f'Not expired yet {expires.isoformat()}')
+            try:
+                header_expires = self.tabs[url].headers.get('Expires')
+                dt_expires = datetime.strptime(header_expires, "%a, %d %b %Y %H:%M:%S %Z")
+            except:
+                logger.info("Expiration datetime not found. Return cache tab")
+                return self.tabs[url]
+            if header_expires and dt_expires > datetime.now():
+                logger.info(f'Not expired yet {dt_expires.isoformat()}')
                 return self.tabs[url]
             else:
-                logger.info(f'Expired {expires.isoformat()}')
+                logger.info('Expired')
 
         if len(self.tabs) >= 10:
             old_tab = list(self.tabs)[0]

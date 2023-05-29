@@ -20,18 +20,12 @@ def sign_languages() -> list[Language]:
 def languages() -> list[Language]:
     return session.query(Language).order_by(Language.meps_symbol.asc()).all()
 
-def language(
-        id: int | None = None, # pylint: disable=redefined-builtin
-        meps_symbol: str | None = None,
-        code: str | None = None
-    ) -> Language | None:
+def language(code: str | None = None, meps_symbol: str | None = None) -> Language | None:
     q = session.query(Language)
-    if id is not None:
-        q = q.filter(Language.id == id)
+    if code is not None:
+        q = q.filter(Language.code == code)
     elif meps_symbol is not None:
         q = q.filter(Language.meps_symbol == meps_symbol)
-    elif code is not None:
-        q = q.filter(Language.code == code)
     else:
         raise TypeError('get_language expected one argument')
     return q.one_or_none()
@@ -70,15 +64,12 @@ def edition(language_code: str) -> Edition | None:
     )
 
 
-def books(
-        language_code: str = None,
-        booknum: int = None,
-    ) -> list[Book]:
+def books(language_code: str = None, booknum: int = None) -> list[Book]:
     q = session.query(Book)
     if isinstance(language_code, str):
         q = (q
              .join(Edition, Edition.id == Book.edition_id)
-             .join(Language, Language.id == Edition.language_id)
+             .join(Language, Language.code == Edition.language_code)
              .filter(Language.code == language_code)
         )
     if isinstance(booknum, int):
@@ -86,14 +77,11 @@ def books(
     return q.order_by(Book.number.asc()).all()
 
 
-def book(language_code: str,
-             booknum: int | str,
-             edition_id: int | None = None
-             ) -> Book | None:
+def book(language_code: str, booknum: int | str, edition_id: int | None = None) -> Book | None:
     q = (
         session.query(Book)
         .join(Edition, Edition.id == Book.edition_id)
-        .join(Language, Language.id == Edition.language_id)
+        .join(Language, Language.code == Edition.language_code)
         .filter(
             Book.number == int(booknum),
             Language.code == language_code,
@@ -107,8 +95,8 @@ def chapter(chapternum: int, book: Book, checksum: str | None = None) -> Chapter
     q = (session.query(Chapter)
          .join(Book, Book.id == Chapter.book_id)
          .join(Edition, Edition.id == Book.edition_id)
-         .join(Language, Language.id == Edition.language_id)
-         .filter(Language.id == book.edition.language.id,
+         .join(Language, Language.code == Edition.language_code)
+         .filter(Language.code == book.edition.language.code,
                  Book.number == book.number,
                  Chapter.number == chapternum
         ).order_by(Chapter.id.desc()).limit(1)
@@ -122,8 +110,8 @@ def chapters(book: Book) -> list[Chapter | None]:
     return (session.query(Chapter)
          .join(Book, Book.id == Chapter.book_id)
          .join(Edition, Edition.id == Book.edition_id)
-         .join(Language, Language.id == Edition.language_id)
-         .filter(Language.id == book.edition.language.id,
+         .join(Language, Language.code == Edition.language_code)
+         .filter(Language.code == book.edition.language.code,
                  Book.number == book.number,
         ).order_by(Chapter.id.asc())
     ).all()
@@ -156,7 +144,7 @@ def file(chapter: Chapter,
         .join(Chapter, Chapter.id == File.chapter_id) \
         .join(Book, Book.id == Chapter.book_id) \
         .join(Edition, Edition.id == Book.edition_id) \
-        .join(Language, Language.id == Edition.language_id) \
+        .join(Language, Language.code == Edition.language_code) \
         .filter(Language.code == chapter.book.edition.language.code,
                 Chapter.number == chapter.number,
                 File.raw_verses == ' '.join(map(str, verses)),
@@ -164,7 +152,6 @@ def file(chapter: Chapter,
     if checksum:
         q = q.filter(Chapter.checksum == checksum)
     return q.all()
-        
 
 def files(
         sign_language_code: str = None,
@@ -172,31 +159,30 @@ def files(
         chapternum: int = None,
         raw_verses: str = None,
         checksum: str = None,
-        overlay_language_code: int = None,
+        overlay_language_code: str | None = False,
+        is_deprecated: bool = None
     ) -> list[File | None]:
     q = (
         session.query(File)
         .join(Chapter, Chapter.id == File.chapter_id)
         .join(Book, Book.id == Chapter.book_id)
         .join(Edition, Edition.id == Book.edition_id)
-        .join(Language, Language.id == Edition.language_id)
+        .join(Language, Language.code == Edition.language_code)
     )
     if sign_language_code is not None:
         q = q.filter(Language.code == sign_language_code)
     if booknum is not None:
         q = q.filter(Book.number == booknum)
     if chapternum is not None:
-        q = q.filter(File.chapter == chapternum)
-    if raw_verses is not None:
+        q = q.filter(Chapter.number == chapternum)
+    if raw_verses:
         q = q.filter(File.raw_verses == raw_verses)
     if checksum is not None:
-        q = q.filter(File.checksum == checksum)
-    if overlay_language_code is not None:
-        q = (q
-             .filter(
-            File.overlay_language_id == language(code=overlay_language_code).id if overlay_language_code else None
-            )
-        )
+        q = q.filter(Chapter.checksum == checksum)
+    if overlay_language_code is not False:
+        q = q.filter(File.overlay_language_code == overlay_language_code)
+    if is_deprecated is not None:
+        q = q.filter(File.is_deprecated == is_deprecated)
     return q.all()
 
 
@@ -207,6 +193,5 @@ if __name__ == '__main__':
     ).all()
     bk = book('csg', 40)
     chp = chapter(28, bk)
-    
 
     print()

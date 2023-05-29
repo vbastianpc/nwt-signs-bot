@@ -4,89 +4,90 @@
 
 language:
   code: en
+  iso_code: en
   name: English
   vernacular: English
 
 commands:
-  start: Welcome
-  signlanguage: Choose a sign language
-  botlanguage: Choose a bot language
+  start: Start
+  signlanguage: Set a sign language
+  botlanguage: Set bot language
   overlay: Text overlay
   settings: Show your settings
   help: Need help?
-  protips: Advanced tips
-  stats: Know your stats
-  feedback: Send a comment to the developer
+  stats: View your statistics
+  feedback: Send feedback to the developer
 
 admin_commands:
   add: Add or unblock a user
   ban: Block a user
-  users: Displays a list of all users
-  setcommands: Sets commands by language scope
-  notify: Notifies messages to a user
-  backup: Sends a backup of the database
-  logs: Displays the most recent log entries
-  logfile: Sends a copy of the log file
-  stats: Displays a summary of the database
-  test: Displays the variables in memory
-  reset_chapter: Alters the checksum of a chapter
+  users: Show all users
+  setcommands: Set commands by language scope
+  notify: Notify messages to a user
+  backup: Send a database backup
+  logs: Show the most recent log entries
+  logfile: Send a copy of the log file
+  test: Show the variables in memory
+
 
 # {} -> First name
+hi: Hello {}!
+
+
 barrier_to_entry: >
-  Hello {}! I'm a bot that will help you get biblical passages.
-  
+  I'm a bot that will help you get Bible passages.
 
-  Please wait for the developer to accept your entry. In the meantime you can tell me why you want to use this bot and
-  where you are from.
-  
 
-  If you want to learn more about God and his Word, or if you just want to learn sign language, please visit the
-  official Jehovah's Witnesses website JW.ORG or the [ONLINE LIBRARY](https://wol.jw.org)
+  Please wait for the developer to accept your entry. In the meantime, you can tell me why you want to use this bot and
+  where you're from.
 
-wait: Thank you! I will let you know when you are accepted.
+
+  If you want to learn more about God and His Word, or if you just want to learn any sign language, visit the official
+  website of Jehovah's Witnesses JW.ORG or the [Watchtower ONLINE LIBRARY](https://wol.jw.org)
+
+
+
+wait: Thank you! I will notify you when you are accepted.
+
 
 # {0} -> First name
 # {1} -> start command
-step_1: >
-  Congratulations {0}! You can now use this bot. Press /{1} to start
+step_1: Congratulations {0}! You can now use this bot. Press /{1} to get started.
+
 
 # {} -> signlanguage command
-# instead of /ase American Sign Language, you can put yours sign language. e.g /hab or /slv to Vietnamese Sign Language)
 step_2: >
-  *Choose a sign language.
-  
-  Press /{} and select one.
-  
-  
-  Or type its code. For example /ase for American Sign Language.
+  <b>Choose a sign language.</b>
+
+  Press /{signlanguage}, navigate through the menu, and select one.
+
+
+  Alternatively, you can enter its code. For example, /ASL or /ase for American Sign Language.
+
 
 # {} -> help command
-step_3: >
-  Ok! Now you can ask me for Bible passages. I will try to understand everything you ask for. You can use the
-  full name or its abbreviation, for example:
+start: >
+  You can ask me for Bible passages. I will try to understand everything you ask. You can use the full name
+  or its abbreviation, for example:
 
 
   Ecclesiastes 11:10
 
-  Philippians 4:6, 7
+  Phil 4:6, 7
 
   2 Tim 3:1-5
 
-  Prov 19:19-22, 27 
+  Prov 19:19-22, 27
 
   Psalm 119
 
   Jude 20
 
-  Matthew
+  Mt
 
 
-  If you need help, click on /{}
+  If you need more help, click on /{}
 
-
-
-start:
-  - Hello
 
 yes: Yes
 no: No
@@ -97,23 +98,23 @@ disabled: Disabled
 # Example: abcdef 1:1
 # {} -> abcdef
 book_not_found:
-  - As far as I know, the book *{}* does not exist. If you tell me the language I will probably find it in another attempt.
-  - The book *{}* does not exist in any Bible that I know of. Unless it is in the new scrolls. But my
-    knowledge doesn't go that far.
-  - I did not find the book *{}* in any Bible. could you try again with a different term?
-  - I can't find the book *{}* you are looking for. Could you try again with a different word?
-  - Could you repeat that *{}*?
-  - I think I forgot my comprehension skills somewhere, because I didn't understand *{}*. 
-  - Try as I might, I can't find *{}*. Could you write it differently?
-  - Try as I might, I can't find *{}* in any edition of the Bible. could you try again?
-  - As far as I know, *{}* does not exist in any Bible. 
+  - As far as I know, the book <b>{}</b> doesn't exist. If you provide the language, I might find it in another attempt.
+  - The book <b>{}</b> doesn't exist in any Bible that I know of. Unless it's in another scroll, scroll of life. But my
+    knowledge doesn't reach that far.
+  - I couldn't find the book <b>{}</b> in any Bible. Could you try again with a different term?
+  - I can't find the book <b>{}</b> you're looking for. Could you try again with a different word?
+  - Could you repeat that <b>{}</b>?
+  - I think I left my comprehension ability somewhere because I didn't understand <b>{}</b>.
+  - No matter how much I search, I can't find <b>{}</b>. Could you write it in a different way?
+  - No matter how hard I try, I can't find <b>{}</b> in any Bible edition. Could you try again?
+  - As far as I know, <b>{}</b> doesn't exist in any Bible.
 
 
 # Example: mat 1, 2, 3
 # {} -> Matthew
 missing_chapter:
-  - I think you forgot to tell me something.... the chapter of *{}* maybe?
-  - Uhm... I seem to be missing something... ahh I know. the CHAPTER of *{}*.
+  - It seems like you forgot to tell me something... the <b>chapter</b> of <b>{}</b> perhaps?
+  - Uhm... it looks like something is missing... ah, I know! I need {} <b>CHAPTER</b>.
 
 
 # Example: mat 100:1
@@ -121,11 +122,12 @@ missing_chapter:
 # {1} -> 100
 # {2} -> 28 (max chapter number for Matthew)
 chapter_not_exists:
-  - "*{0}* does not have the chapter *{1}*. Unless it's in the new rolls. But for now it only has *{2}* chapters."
-  - Of all the editions of the Bible that I know of, *{0}* does not have chapter *{1}*.
-  - No matter how hard I look, I can't find the *{1}* chapter of *{0}*.
-  - Uhm... chapter *{1}* is not in *{0}*. Or so I understand.
-  - Could you tell me in which Bible I find *{0}* *{1}*? It is not in the New World Translation.
+  - "<b>{0}</b> doesn't have chapter <b>{1}</b>. Unless it's in another scroll, scroll of life. But for now, it only has <b>{2}</b>
+    chapters."
+  - Out of all the Bible editions I know, <b>{0}</b> doesn't have chapter <b>{1}</b>.
+  - No matter how much I search, I can't find chapter <b>{1}</b> of <b>{0}</b>.
+  - Uhm... chapter <b>{1}</b> is not in <b>{0}</b>. That's what I understand, at least.
+  - Could you tell me in which Bible I can find <b>{0}</b> <b>{1}</b>? It's not in the New World Translation.
 
 
 # Example: mat 28:1, 50 
@@ -134,10 +136,10 @@ chapter_not_exists:
 # {2} -> 50 (wrong verse)
 # {3} -> 20 (max verse number for Matthew 28)
 verse_not_exists:
-  - *{2}* verse does not exist in *{0}* *{1}*.
-  - "*{0}* *{1}* does not have that many verses. At most you can ask me up to verse *{3}*."
-  - "*{0}* *{1}* has only *{3}* verses."
-  - I cannot give you verse *{2}*, because *{0}* *{1}* has only *{3}* verses.
+  - Verse <b>{2}</b> doesn't exist in <b>{0}</b> <b>{1}</b>.
+  - "<b>{0}</b> <b>{1}</b> doesn't have that many verses. At most, you can ask me up to verse <b>{3}</b>."
+  - "<b>{0}</b> <b>{1}</b> only has <b>{3}</b> verses."
+  - I can't provide verse <b>{2}</b> because <b>{0}</b> <b>{1}</b> only has <b>{3}</b> verses.
 
 
 # Example: mat 28:1, 50, 51
@@ -146,24 +148,25 @@ verse_not_exists:
 # {2} -> 50, 51 (wrong verses)
 # {3} -> 20 (max versenumber for Mathhew 28)
 verses_not_exists:
-  - Verses *{2}* do not exist in *{0}* *{1}*.
-  - "*{0}* *{1}* does not have that many verses. At most you can ask me up to verse *{3}*."
-  - I cannot give you verses *{2}*, because *{0}* *{1}* has only *{3}* verses.
- 
+  - "<b>{0}</b> <b>{1}</b> doesn't have that many verses. At most, you can ask me up to verse <b>{3}</b>."
+  - Verses <b>{2}</b> don't exist in <b>{0}</b> <b>{1}</b>.
+  - I can't provide verses <b>{2}</b>, because <b>{0}</b> <b>{1}</b> only has <b>{3}</b> verses.
 
- # Example: Isaiah 6:8 not in SLV
- # {0} -> Isaiah 6:8
- # {1} -> Vietnamese Sign Language
+
+# Example: Isaiah 6:8 not in SLV
+# {0} -> Isaiah 6:8
+# {1} -> Vietnamese Sign Language
 that_verse_no:
-  - At the moment *{0}* is not available in *{1}*. 
-  - Oh too bad, *{0}* is not yet interpreted in *{1}*. 
-  - At the moment *{0}* is not yet in *{1}*. A little patience.
-  - Maybe soon *{0}* will be available in *{1}*.
+  - Currently, <b>{0}</b> is not available in <b>{1}</b>.
+  - Oh, what a pity! <b>{0}</b> is not yet interpreted in <b>{1}</b>.
+  - "<b>{0}</b> is not available in <b>{1}</b> at the moment. Please be patient."
+  - It's possible that <b>{0}</b> will be available in <b>{1}</b> soon.
 
- # Example: Isaiah 6:8 not in SLV, but 1, 9, 11, 13 verses are available.
+
+# Example: Isaiah 6:8 not in SLV, but 1, 9, 11, 13 verses are available.
 but_these_verses:
-  - You can try changing the sign language, or try these verses.
-  - But you can see these verses if you want.
+  - You can try changing the sign language or take a look at these verses.
+  - But you can see these verses if you'd like.
   - But these verses are available.
   - But you can choose one of these verses.
 
@@ -172,12 +175,13 @@ but_these_verses:
 # {0} -> Psalms 45
 # {1} -> Vietnamese Sign Language
 that_chapter_no:
-  - At the moment there are no *{0}* verses available in *{1}*.
-  - There are no verses of *{0}* in *{1}* yet. 
+  - Currently, there are no available verses from <b>{0}</b> in <b>{1}</b>.
+  - There are no verses from <b>{0}</b> in <b>{1}</b> yet.
+
 
 # Example: Psalms 45 not in SLV, but 1, 9, 11, 19, 22 chapter are available.
 but_these_chapters:
-  - But you can try these chapters.
+  - But you can try with these chapters.
   - But these chapters are available.
 
 
@@ -185,38 +189,41 @@ but_these_chapters:
 # {0} -> Habakkuk
 # {1} -> Vietnamese Sign Language
 that_book_no:
-  - Wow, there is no *{0}* verse in *{1}*. When one becomes available, I can show it to you.
-  - For now there is no translated verse of *{0}* in *{1}*. 
+  - Oops! There are no verses from <b>{0}</b> in <b>{1}</b>. When there are any available, I'll be able to show them to you.
+  - Currently, there are no translated verses from <b>{0}</b> in <b>{1}</b>.
+
 
 but_these_books:
-  - But I show you the books that are available.
+  - But let me show you the books that are available.
   - But these books have translated verses.
-  - Here are some books available.
+  - Here are some available books.
+
 
 # Example: john 8:1
 # {} -> John 8:1
-is_apocrypha:
-  - Uhm... *{}* is not inspired by God.
-  - I don't think *{}* would be of much interest to you, because it is apocryphal.
-  - I would choose another passage in the Bible, one that is inspired by God. Because *{}* is not.
+is_omitted:
+  - Uhm... <b>{}</b> is not inspired by God. It is a passage that was added many centuries later and is not authentic.
+  - I don't think <b>{}</b> would be of much interest to you because it is not inspired by God.
+  - I would choose another passage from the Bible, one that is inspired by God. Because <b>{}</b> is not.
+
 
 # Example: /abc
 not_language:
-  - I think you want to change the language, but I don't know any language with the code *{}*.
-  - I don't know that language. Try again
-  - I think that language does not exist.
+  - I think you want to change the language, but I don't know any language with the code <b>{}</b>.
+  - I'm not familiar with the language <b>{}</b>. Please try again.
+  - I believe this code <b>{}</b> is not associated with any language.
+
 
 # Example: /en
 not_signlanguage:
-  - The language *{}* is not a sign language. Try another language.
-  - Choose a sign language. *{}* is a spoken language.
-
-choose_book: "*Choose a book*".
-choose_chapter: "*Choose a chapter*".
-choose_verse: "*Choose a verse*".
+  - The language <b>{}</b> is not a sign language. Please try another language.
+  - Choose a sign language. <b>{}</b> is a spoken language.
 
 
-fetching_videomarkers: Getting available verses
+choose_book: "Choose a book"
+choose_chapter: "Choose a chapter"
+choose_verse: "Choose a verse"
+fetching_videomarkers: Fetching available verses
 downloading: Downloading
 trimming: Trimming
 sending: Sending
@@ -224,39 +231,24 @@ sending: Sending
 
 # {0} -> signlanguage command
 # {1} -> botlanguage command
-# {2} -> protips command
+# {2} -> feedback command
+# {3} -> url
+# {4} -> bot username @nwtsigns_bot
 help: >
-  *Sign Language
+  <b>Sign Language</b>
 
-  Change the sign language by typing its code as a command. For example, for American Sign Language, you can
-  type /asl or /ase
-
-
-  If you don't know its code, use /{0}, browse the menu and choose one.
+  Set sign language by typing it's code as a command. For example, for American Sign Language, type /ase or /ASL.
 
 
-
-  *Bot language
-
-  I can talk to you in some languages. Click /{1} and choose one.
+  If you don't know the code, use /{0}, navigate through the menu, and choose one.
 
 
+  <b>Bible Passages</b>
 
-  *Pro Tips
-
-  Want to know more advanced tips? Click /{2}
-
-# {0} -> feedback command
-# {1} -> url
-# {2} -> bot username @nwtsigns_bot
-pro_tips: >
-  *Various biblical passages.
-  
-  You can ask me for up to 5 Bible quotes in one message.
+  You can request up to 5 Bible passages in a single message. Use the full name of the book or its abbreviation.
 
 
-  You can also momentarily change your sign language. Type your code followed by the Bible passage.
-  For example:
+  You can also temporarily change your sign language. Write it's code followed by the Bible passage. For example:
 
 
   `/ase 1 Tim 2:6`
@@ -264,47 +256,49 @@ pro_tips: >
   `/hab 1 Tim 2:6`
 
 
+  <b>Bot Language</b>
 
-  *Language of the bot
-
-  You can change the language if you know its code. For example, for English you can type /en or /E.
-
-
-  Even if you choose a language I do not yet know how to speak, I will be able to understand you when you ask me for biblical quotations in the new language.
-  I will also try to send you the text of the biblical passages in that language. If you want to help translate the bot into more
-  languages, leave me a comment /{0} and start translating [from here]({1}). 
+  I can speak to you in several languages. Click on /{1} and select one. If you know the code, use it directly.
+  For example, for English, you can write /en or /E.
 
 
-  *Inline Mode
+  Even if you choose a language that I don't know yet, I will be able to understand you when you request Bible passages
+  in your language. I will also try to send you the written text of the Bible passages in your language.
+  If you want to help translate the bot into more languages, leave me a /{2} and [start translating]({3}).
 
-  Type `{2}` in any Telegram chat to send Bible passages.
+
+  <b>Inline Mode</b>
+
+  Write <code>{4}</code> in any Telegram chat to send Bible passages.
 
 
 # {} -> overlay command
 overlay_info: >
-  *Text overlay
+  <b>Text Overlay</b>
 
-  When you activate /{}, you will see the Bible quote in your language. Technically you can use any combination of 
-  languages available on the [JW](https://www.jw.org) site.
-
-
-  Note that if the book name is spelled the same in your _written_ language and in your sign language, you will not see the text overlay,
-  you will not see the text overlay.
+  When you activate /{}, you will see the Bible passage in your language. Technically, you can use any combination of
+  languages available on the [JW](https://www.jw.org) website.
 
 
-overlay_activated: You have *activated* the text overlay.
-overlay_deactivated: You have *deactivated* the text overlay.
+  If the book is written the same way in both your _written language_ and your _sign language_,
+  you won't see the text overlay.
+
+
+overlay_activated: You have <b>activated</b> the text overlay.
+overlay_deactivated: You have <b>deactivated</b> the text overlay.
 
 
 # {0} -> help command
+# {1} -> total sign languages
 fallback:
-  - That doesn't look like biblical text.
-  - Sorry, I can't help you with that.
-  - Even though it looks like it, I'm not an artificial intelligence.
-  - Uhm... it sounds like you don't want a Bible passage, do you?
+  - That doesn't seem to be a Bible passage.
+  - I'm sorry, I can't help you with that.
+  - Even though it may seem like it, I'm not an artificial intelligence.
+  - Uhm... that doesn't appear to be a Bible verse, right?
   - If you need help, you can find it at /{0}
-  - I can't help you with that, but I can send you Bible passages in many sign languages.
+  - I can't assist with that, but I can send you Bible passages in {} sign languages.
   - Ahhh, how interesting!
+
 
 # {0} -> ase
 # {1} -> American Sign Language
@@ -312,27 +306,28 @@ fallback:
 # {3} -> English
 # {4} -> Enabled or Disabled
 current_settings: |
-  Sign Language: *{0} - {1}*
-  Bot language: *{2} - {3}*
-  Text overlay: *{4}*
+  Sign Language: <b>{0} - {1}</b>
+  Bot Language: <b>{2} - {3}</b>
+  Text Overlay: <b>{4}</b>
+
 
 menu_signlanguage: |
-  🧏‍♂️ *Choose a sign language*.
-  🌎 Total *{}*
+  🧏‍♂️ <b>Select a sign language</b>
+  🌎 Total <b>{}</b>
 
 
 # {} -> American Sign Language
 ok_signlanguage_code:
-  - Very good! I will now send you videos in *{}*.
-  - Perfect! Now I'll look up Bible passages in *{}*.
-  - Ok! Now I'll send you Bible passages in *{}*.
+  - Great! Now I will send you videos in <b>{}</b>.
+  - Perfect! Now I will look for Bible passages in <b>{}</b>.
+  - Okay! Now I will send you Bible passages in <b>{}</b>.
 
 
 choose_botlang: >
-  *Choose a language so we can understand each other.
+  <b>Choose a language</b> so we can understand each other
 
 
-  You can also change it quickly with its code. For example: /en, /es or /vi.
+  You can also quickly change it with its code. For example: /en, /es, or /vi.
 
 
   You can even use /ko if you want to read the Bible in Korean.
@@ -341,76 +336,78 @@ choose_botlang: >
 # {} -> English
 ok_botlang:
   - Perfect! I think we will understand each other better now.
-  - Parlez-vous français? Just kidding 🤣 Let's talk in {} better.
-  - Möchten Sie auf Spanisch sprechen? Just kidding, I don't know German either. {} is fine
+  - Parlez-vous français? Just kidding 🤣 Let's speak in {} instead.
+  - "{} is my heart's language."
 
-
-# {} -> English
-books_fetch_botlang:
-  - Now I learned how to find Bible books in *{}*.
-  - Thanks to you I now know what the Bible books are called in *{}*.
-  - I just learned the names of the Bible books in *{}*.
-  - I just took a look and already found the Bible in *{}*, so you can ask me for Bible passages.
 
 # {0} -> Saluan (see https://wol.jw.org/loe/wol/h/r1127/lp-sal)
 # {1} -> English
 no_bible:
-  - There seems to be no *{0}* language version of the Bible. I will continue to use the Bible in *{1}*.
-  - I did not find the Bible in the *{0}* language. So I will continue to use the Bible in *{1}*.
+  - It seems that there is no Bible version in the <b>{0}</b> language. I will continue using the Bible in <b>{1}</b>.
+  - I couldn't find the Bible in the <b>{0}</b> language. So I will continue using the Bible in <b>{1}</b>.
 
-# {0} -> English
+
+# {0} -> Italian
+# {1} -> feedback command
 no_botlang_but:
-  - Although I can't speak *{0}* yet, I can understand you if you ask me for books in that language. If you want to help me with my 
-    translation, write to the developer /feedback
-  - I am not yet programmed to speak *{0}*, but you can help me. Leave a message for the developer, otherwise he will
-    he won't know /feedback. For now I can understand you if you ask me for biblical passages in *{0}*.
+  - Although I can't speak <b>{0}</b> yet, I can understand you if you ask me for books in that language.
+    If you want to help me with the translation, leave feedback for the developer /{1}.
+  - I am not programmed to speak <b>{0}</b> yet, but you can help me. Leave a /{1} for the developer so that
+    they know. For now, I will understand you if you ask me for Bible passages in <b>{0}</b>.
 
 
-# Feedback
-feedback_1: Do you have any suggestions, is something wrong? You can cancel this conversation anytime /{}
-feedback_2: Thanks for leaving me your feedback.
-feedback_3: Oops! No worries.
+# Feedback conversation handler
+feedback_1: Do you have any suggestions? Is something wrong? You can cancel this conversation whenever you want /{}
+feedback_2: Thank you for leaving your feedback.
+feedback_3: Oops! Don't worry.
+
+
+# {0} -> count verses
+# {1} -> your sign language
+# {2} -> count overlay
+# {3} -> duration
+# {4} -> file size
+stat: >
+  You have received a total of <b>{0}</b> verses in <b>{1}</b>. <b>{2}</b> verses have text overlay.
+  These videos have a total duration of <b>{3}</b> minutes and a size of <b>{4}</b> MB.
+
+
+# {0} -> count verses
+# {1} -> count sign languages
+# {2} -> count overlay
+# {3} -> duration
+# {4} -> file size
+stats: >
+  You have received a total of <b>{0}</b> verses in <b>{1}</b> different sign languages. <b>{2}</b> verses have text overlay.
+  These videos have a total duration of <b>{3}</b> minutes and a size of <b>{4}</b> MB.
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} `{}` has been placed in the waiting room."
-from_github: "{}` has been entered from the github link."
-introduced_himself: "{} {} `{}` has been introduced."
-
+waiting_list: "{} @{} <code>{}</code> has been added to the waiting list."
+from_github: "{} has joined from the GitHub link."
+introduced_himself: "{} {} @{} <code>{}</code> has introduced themselves."
+get_feedback: "{} @{} has send you a feedback."
 db_summary: |
-  ```
-  {:>5} Saved bookmarks
-  {:>5} Verses submitted
-  {:>5} Chapters searched
-  {:>5} Books searched
+  <pre>
+  {:>5} Saved markers
+  {:>5} Sent verses
+  {:>5} Searched chapters
+  {:>5} Searched books
   {:>5} Sign Language
   {:>5} Allowed users
   {:>5} Blocked users
-  {:>5} Waiting list users
+  {:>5} Users in the waiting list
   {:>5} Total users
-  ```
-
-wrong_notify: >
-  The correct syntax is:
-  `/{} <user_id1>...`
-
+  </pre>
+wrong_notify: Correct syntax is `/{} user_id1...`
 notify: >
-  Send me the messages you want me to forward. They can be stickers, gifs, videos, images, whatever. When you are ready, type /{}.
-  ready, type /{}. To cancel use /{}.
-
-notify_success: Sent messages.
+  Send me the messages you want me to forward. They can be stickers, gifs, videos, images, anything. When you're ready,
+  type /{}. To cancel, use /{}.
+notify_success: Messages sent.
 notify_cancel: Canceled.
-
-logfile_notfound: No logfile.
-
-setcommands: Commands with language scope and user specific set.
-
+logfile_notfound: Log file not found.
+setcommands: Language-scoped and user-specific commands set.
 user_added: "{} {} has been added."
-warn_user: I could not perform the operation because the user was not registered in the database.
-user_banned: The user has been blocked.
-user_stopped_bot: I could not add it because the user has stopped the bot.
-
-checksum_touched: >
-  I have altered the checksum of:
-  {}
-checksum_failed: I could not alter the checksum because {} {} has not been registered in the database.
+warn_user: I couldn't perform the operation because the user was not registered in the database.
+user_banned: The user has been banned.
+user_stopped_bot: I couldn't add them because the user has stopped the bot.

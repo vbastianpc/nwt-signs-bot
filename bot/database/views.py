@@ -5,14 +5,13 @@ views = '''
 CREATE VIEW IF NOT EXISTS ViewBooks AS
 SELECT
     Book.BookId,
-    Language.LanguageId,
     Language.LanguageCode,
     Language.LanguageMepsSymbol,
     Book.BookNumber,
     Book.StandardName
 FROM
     Book
-INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
+INNER JOIN Language ON Language.LanguageCode = Edition.LanguageCode
 INNER JOIN Edition ON Edition.EditionId = Book.EditionId
 ;
 
@@ -32,7 +31,7 @@ FROM
 LEFT JOIN VideoMarker ON VideoMarker.ChapterId = Chapter.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
 INNER JOIN Edition ON Edition.EditionId = Book.EditionId
-INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
+INNER JOIN Language ON Language.LanguageCode = Edition.LanguageCode
 GROUP BY Chapter.ChapterId
 ORDER BY
     Language.LanguageCode ASC,
@@ -42,22 +41,21 @@ ORDER BY
 
 CREATE VIEW IF NOT EXISTS ViewEdition AS
 SELECT
-	Language.LanguageId,
-	Edition.EditionId,
 	Language.LanguageCode,
+	Edition.EditionId,
 	Language.LanguageMepsSymbol AS MepsSymbol,
 	Language.LanguageName,
 	Edition.SymbolEdition AS Pub,
 	Edition.Name,
 	Edition.URL
 FROM Language
-LEFT JOIN Edition ON Language.LanguageId = Edition.LanguageId
+LEFT JOIN Edition ON Language.LanguageCode = Edition.LanguageCode
 ;
 
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByCitation" AS
 SELECT
     Book.BookNumber,
-    Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+    File.Citation AS Verse,
     count(*) AS CountVerseHistoricByCitation
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
@@ -81,14 +79,14 @@ ORDER BY User.TelegramUserId ASC
 CREATE VIEW IF NOT EXISTS "ViewCountVerseHistoricByLang" AS
 SELECT
 	Language.LanguageCode,
-	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+	File.Citation,
 	count(*) AS CountVerseHistoricByLang
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
 INNER JOIN Edition ON Edition.EditionId = Book.EditionId
-INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
+INNER JOIN Language ON Language.LanguageCode = Edition.LanguageCode
 GROUP BY Language.LanguageCode, Book.BookNumber, Chapter.ChapterNumber , File.RawVerseNumbers
 ORDER BY Book.BookNumber ASC, Chapter.ChapterNumber ASC, File.RawVerseNumbers ASC
 ;
@@ -109,20 +107,23 @@ SELECT
 	BotLanguage.LanguageCode AS BotLanguageCode,
 	OverlayLanguage.LanguageCode AS OverlayLanguageCode
 FROM User
-LEFT JOIN Language AS SignLanguage ON SignLanguage.LanguageId = User.SignLanguageId
-LEFT JOIN Language AS BotLanguage ON BotLanguage.LanguageId = User.BotLanguageId
-LEFT JOIN Language AS OverlayLanguage ON OverlayLanguage.LanguageId = User.OverlayLanguageId
+LEFT JOIN Language AS SignLanguage ON SignLanguage.LanguageCode = User.SignLanguageCode
+LEFT JOIN Language AS BotLanguage ON BotLanguage.LanguageCode = User.BotLanguageCode
+LEFT JOIN Language AS OverlayLanguage ON OverlayLanguage.LanguageCode = User.OverlayLanguageCode
 ;
 
-CREATE VIEW IF NOT EXISTS "ViewSentVerseUser" AS
+CREATE VIEW IF NOT EXISTS "ViewFile2User" AS
 SELECT
+    File2User.File2UserId,
+    File.FileId,
 	User.TelegramUserId,
     User.FirstName || " " || User.LastName AS FullName,
 	Language.LanguageCode,
     OverlayLanguage.LanguageCode AS OverlayLanguageCode,
-	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+	File.Citation,
+    File.Duration,
+    File.FileSize,
     File2User.Datetime,
-    File.FileId,
     File.CountVerses
 FROM File2User
 INNER JOIN File ON File.FileId = File2User.FileId
@@ -130,25 +131,26 @@ INNER JOIN User ON User.UserId = File2User.UserId
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
 INNER JOIN Edition ON Edition.EditionId = Book.EditionId
-INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
-LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
+INNER JOIN Language ON Language.LanguageCode = Edition.LanguageCode
+LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageCode = OverlayLanguage.LanguageCode
 ORDER BY File2User.Datetime DESC
 ;
 
-CREATE VIEW IF NOT EXISTS "ViewSentVerse" AS
+CREATE VIEW IF NOT EXISTS "ViewFile" AS
 SELECT
+    File.FileId,
     Language.LanguageCode,
 	OverlayLanguage.LanguageCode AS OverlayLanguageCode,
 	Book.BookNumber,
-	Book.StandardName || " " || Chapter.ChapterNumber || ":" || File.RawVerseNumbers AS Verse,
+	File.Citation,
 	File.AddedDatetime,
 	File.TelegramFileId,
-    File.FileId
+    File.CountVerses
 FROM File
 INNER JOIN Chapter ON Chapter.ChapterId = File.ChapterId
 INNER JOIN Book ON Book.BookId = Chapter.BookId
 INNER JOIN Edition ON Edition.EditionId = Book.EditionId
-INNER JOIN Language ON Language.LanguageId = Edition.LanguageId
-LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageId = OverlayLanguage.LanguageId
+INNER JOIN Language ON Language.LanguageCode = Edition.LanguageCode
+LEFT JOIN Language AS OverlayLanguage ON File.OverlayLanguageCode = OverlayLanguage.LanguageCode
 ORDER BY File.FileId DESC
 ;'''.split(';')

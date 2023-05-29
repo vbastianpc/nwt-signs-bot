@@ -1,5 +1,6 @@
 
 from typing import Final
+import random
 from urllib.parse import urlunsplit
 from urllib.parse import urlencode
 from urllib.parse import unquote
@@ -25,11 +26,15 @@ class BiblePassage(BibleObject):
                  verses: int | str | list[int | str] | None = None):
         super().__init__(book, chapternumber, verses)
 
-    def url_pubmedia(self, all_chapters=True) -> str:
+    def url_pubmedia(self, all_chapters=True, domain: str | None = None) -> str:
         """API JSON for sign languages get markers
         https://b.jw-cdn.org/apis/pub-media/GETPUBMEDIALINKS?pub=nwt&langwritten=ASL&txtCMSLang=ASL&booknum=19&alllangs&output=json&fileformat=MP4,M4V&track=27
+        https://pubmedia.jw-api.org/GETPUBMEDIALINKS?pub=nwt&langwritten=ASL&txtCMSLang=ASL&booknum=19&alllangs&output=json&fileformat=MP4,M4V&track=27
         """
-        #https://pubmedia.jw-api.org/GETPUBMEDIALINKS?output=json&alllangs=0&langwritten=ASL&txtCMSLang=ASL&pub=nwt&booknum=21&track=11
+        if domain not in [Domain.JW_CDN, Domain.PUBMEDIA_JWAPI, None]:
+            raise ValueError
+        if not self.language.is_sign_language:
+            logger.warning(f'url it may not work because language {self.language.code!r} is not sign language')
         query = dict(
             output='json',
             alllangs=0,
@@ -43,8 +48,8 @@ class BiblePassage(BibleObject):
             query['track'] = self.chapternumber
         return urlunsplit((
             'https',
-            'pubmedia.jw-api.org',
-            'GETPUBMEDIALINKS',
+            (dm := domain if domain else random.choice([Domain.PUBMEDIA_JWAPI, Domain.JW_CDN])),
+            'GETPUBMEDIALINKS' if dm == Domain.PUBMEDIA_JWAPI else 'apis/pub-media/GETPUBMEDIALINKS',
             urlencode(query),
             None
         ))
@@ -175,7 +180,7 @@ class BiblePassage(BibleObject):
 
     @property
     def available_booknums(self) -> list[int | None]:
-        wol = browser.open(self.url_wol_binav, translate_url=False).soup
+        wol = browser.open(self.url_wol_binav).soup
         books = wol.find('ul', class_='books hebrew clearfix').findChildren('li', recursive=False) + \
                 wol.find('ul', class_='books greek clearfix').findChildren('li', recursive=False)
         return [int(book.findChildren('a')[0].get('data-bookid'))

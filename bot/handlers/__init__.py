@@ -10,15 +10,13 @@ from bot.handlers.settings import show_botlang_handler
 from bot.handlers.settings import set_botlang_handler
 from bot.handlers.settings import page_botlang_handler
 from bot.handlers.help import help_handler
-from bot.handlers.help import protips_handler
-# from bot.handlers.inline_bible import inline_handler
+from bot.handlers.inline_bible import inline_handler
 from bot.handlers.admin.logs import test_handler
 from bot.handlers.feedback import feedback_handler
 from bot.handlers.start import start_handler
 from bot.handlers.start import all_fallback_handler
 from bot.handlers.booknames import bookname_handler
 from bot.handlers.overlay import overlay_handler
-from bot.handlers.overlay import overlay_info_handler
 from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
@@ -33,13 +31,11 @@ from bot.handlers.admin.logs import error_handler
 
 # Order matters
 handlers = [
-    feedback_handler,
-    notice_handler,
 
     # basic commands
+    start_handler,
     set_signlang_handler,
     page_signlang_handler,
-    start_handler,
     show_signlangs_handler,
     show_botlang_handler,
     set_botlang_handler,
@@ -47,13 +43,13 @@ handlers = [
     auth_handler,
     bookname_handler,
     help_handler,
-    protips_handler,
     show_settings_handler,
     overlay_handler,
-    overlay_info_handler,
+    feedback_handler,
+    notice_handler,
 
     # inline
-    # inline_handler,
+    inline_handler,
 
     # admin handlers
     test_handler,
