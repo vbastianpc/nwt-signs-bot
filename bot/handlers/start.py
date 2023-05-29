@@ -55,8 +55,8 @@ def start(update: Update, context: CallbackContext) -> None:
         context.bot.send_message(
             chat_id=ADMIN,
             text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
-                tuser.full_name, tuser.username or '', tuser.id
-            )
+                tuser.full_name, tuser.username or '', tuser.id),
+            parse_mode=ParseMode.HTML
         )
     update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
                               parse_mode=ParseMode.HTML,
