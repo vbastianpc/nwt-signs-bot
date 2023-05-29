@@ -260,9 +260,9 @@ help: >
   Por ejemplo:
 
 
-  `/ase 1 Tim 2:6`
+  <code>/ase 1 Tim 2:6</code>
 
-  `/hab 1 Tim 2:6`
+  <code>/hab 1 Tim 2:6</code>
 
 
 
@@ -273,7 +273,7 @@ help: >
 
   Aunque elijas un idioma que aún no sé hablar, podré entenderte cuando me pidas citas bíblicas en tu idioma.
   También intentaré enviarte el texto escrito de los pasajes bíblicos en tu idioma. Si quieres ayudar a traducir el bot
-  a más idiomas, déjame un comentario /{2} y [comienza a traducir]({3}). 
+  a más idiomas, déjame un comentario /{2} y <a href="{3}">comienza a traducir</a>. 
 
 
 
@@ -289,10 +289,10 @@ overlay_info: >
   <b>Superposición de texto</b>
 
   Cuando actives /{}, verás la cita bíblica en tu idioma. Técnicamente puedes usar cualquier combinación de 
-  idiomas disponibles en el sitio [JW](https://www.jw.org)
+  idiomas disponibles en el sitio <a href="https://www.jw.org">JW</a>
 
 
-  Si el libro se escribe igual tanto en tu _idioma escrito_ como en tu _lengua de señas_,
+  Si el libro se escribe igual tanto en tu <i>idioma escrito</i> como en tu <i>lengua de señas</i>,
   no verás la superposición de texto.
 
 
@@ -412,7 +412,7 @@ db_summary: |
   {:>5} Usuarios en lista de espera
   {:>5} Usuarios en total
   </pre>
-wrong_notify: La sintaxis correcta es `/{} <user_id1>...`
+wrong_notify: La sintaxis correcta es <code>/{} <user_id1>...</code>
 notify: >
   Envíame los mensajes que quieres que reenvíe. Pueden ser stickers, gifs, vídeos, imágenes, lo que sea. Cuando estés
   listo, escribe /{}. Para cancelar usa /{}.

@@ -251,9 +251,9 @@ help: >
   You can also temporarily change your sign language. Write it's code followed by the Bible passage. For example:
 
 
-  `/ase 1 Tim 2:6`
+  <code>/ase 1 Tim 2:6</code>
 
-  `/hab 1 Tim 2:6`
+  <code>/hab 1 Tim 2:6</code>
 
 
   <b>Bot Language</b>
@@ -264,7 +264,7 @@ help: >
 
   Even if you choose a language that I don't know yet, I will be able to understand you when you request Bible passages
   in your language. I will also try to send you the written text of the Bible passages in your language.
-  If you want to help translate the bot into more languages, leave me a /{2} and [start translating]({3}).
+  If you want to help translate the bot into more languages, leave me a /{2} and <a href="{3}">start translating</a>.
 
 
   <b>Inline Mode</b>
@@ -277,10 +277,10 @@ overlay_info: >
   <b>Text Overlay</b>
 
   When you activate /{}, you will see the Bible passage in your language. Technically, you can use any combination of
-  languages available on the [JW](https://www.jw.org) website.
+  languages available on the <a href="https://www.jw.org">JW</a> website.
 
 
-  If the book is written the same way in both your _written language_ and your _sign language_,
+  If the book is written the same way in both your <i>written language</i> and your <i>sign language</i>,
   you won't see the text overlay.
 
 
@@ -399,7 +399,7 @@ db_summary: |
   {:>5} Users in the waiting list
   {:>5} Total users
   </pre>
-wrong_notify: Correct syntax is `/{} user_id1...`
+wrong_notify: Correct syntax is <code>/{} user_id1...</code>
 notify: >
   Send me the messages you want me to forward. They can be stickers, gifs, videos, images, anything. When you're ready,
   type /{}. To cancel, use /{}.
