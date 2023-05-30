@@ -360,7 +360,10 @@ no_botlang_but:
 
 
 # Feedback conversation handler
-feedback_1: ¿Tienes alguna sugerencia? ¿Algo anda mal? Puedes cancelar esta conversación cuando quieras /{}
+# {} ok command
+feedback_1: >
+  ¿Tienes alguna sugerencia? ¿Encontraste un bug? Envíame todos los mensajes que quieras (texto, imágenes, videos,
+  sticker, etc). Presiona /{} cuando estés listo.
 feedback_2: Gracias por dejarme tu comentario.
 feedback_3: ¡Ups! No te preocupes.
 

@@ -352,7 +352,10 @@ no_botlang_but:
 
 
 # Feedback conversation handler
-feedback_1: Do you have any suggestions? Is something wrong? You can cancel this conversation whenever you want /{}
+# {0} ok command
+feedback_1: >
+  Do you have any suggestion? Did you find any bugs? Send me all the messages you want (text, images, videos, stickers,
+  etc.) Press /{} when you are ready.
 feedback_2: Thank you for leaving your feedback.
 feedback_3: Oops! Don't worry.
 

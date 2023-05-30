@@ -32,21 +32,22 @@ from bot.handlers.admin.logs import error_handler
 # Order matters
 handlers = [
 
-    # basic commands
+    # Command Handlers
+    feedback_handler,
     start_handler,
-    set_signlang_handler,
-    page_signlang_handler,
-    show_signlangs_handler,
-    show_botlang_handler,
-    set_botlang_handler,
-    page_botlang_handler,
     auth_handler,
     bookname_handler,
     help_handler,
-    show_settings_handler,
     overlay_handler,
-    feedback_handler,
-    notice_handler,
+    show_settings_handler,
+    show_botlang_handler,
+    show_signlangs_handler,
+
+    # Callback Query Handlers
+    page_signlang_handler,
+    page_botlang_handler,
+    set_signlang_handler,
+    set_botlang_handler,
 
     # inline
     inline_handler,
@@ -60,6 +61,8 @@ handlers = [
     set_commands_handler,
     getting_user_handler,
     database_status_handler,
+    notice_handler,
+
     # reset_chapter_handler,
 
     # parse bible citation
