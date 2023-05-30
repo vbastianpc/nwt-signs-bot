@@ -9,7 +9,7 @@ from telegram import BotCommand
 
 
 STRINGS_PATH = Path(__file__).parent / 'strings'
-DEFAULT_LANGUAGE = 'es'
+DEFAULT_LANGUAGE = 'en'
 DEFAULT_PATH = STRINGS_PATH / f'{DEFAULT_LANGUAGE}.yaml'
 yaml = YAML(typ='safe')
 
