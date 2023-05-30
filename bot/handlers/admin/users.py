@@ -50,7 +50,8 @@ def autorizacion(update: Update, context: CallbackContext):
         fetch.editions()
     if not get.books(new_user.bot_language.code):
         fetch.books(new_user.bot_language.code)
-    context.bot.send_message(chat_id=new_telegram_id, text=tt.step_1(new_user.first_name, MyCommand.START))
+    tt2 = TextTranslator(new_user.bot_language_code)
+    context.bot.send_message(chat_id=new_telegram_id, text=tt2.step_1(new_user.first_name, MyCommand.START))
 
 
 @admin
