@@ -6,7 +6,7 @@ from telegram import ParseMode
 from telegram.ext import CommandHandler
 
 from bot.logs import get_logger
-from bot.utils.decorators import vip, forw
+from bot.utils.decorators import vip
 from bot import MyCommand
 from bot.strings import TextTranslator
 from bot.database import get
@@ -14,7 +14,6 @@ from bot.database import get
 
 logger = get_logger(__name__)
 
-@forw
 @vip
 def help(update: Update, context: CallbackContext) -> None:
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)

@@ -305,11 +305,9 @@ overlay_deactivated: Has <b>desactivado</b> la superposición de texto.
 fallback:
   - Eso no parece un texto bíblico.
   - Lo siento, no puedo ayudarte con eso.
-  - Aunque lo parezca, no soy una inteligencia artificial.
   - Uhm... parece que eso no es una cita bíblica, ¿verdad?
   - Si necesitas ayuda, puedes encontrarla en /{0}
   - No puedo ayudarte con eso, pero puedo enviarte pasajes de la Biblia en {} lenguas de señas.
-  - Ahhh, ¡qué interesante!
 
 
 # {0} -> ase
@@ -396,7 +394,7 @@ stats: >
 
 
 # ADMIN. There's no need translate it
-waiting_list: "{} @{} <code>{}</code> ha sido puesto en la sala de espera."
+waiting_list: "{} @{} <code>{}</code> está en la sala de espera."
 from_github: "{} ha entrado desde el enlace de github."
 introduced_himself: "{} {} @{} <code>{}</code> se ha presentado."
 get_feedback: "{} @{} te ha dejado un feedback."

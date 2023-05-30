@@ -293,11 +293,9 @@ overlay_deactivated: You have <b>deactivated</b> the text overlay.
 fallback:
   - That doesn't seem to be a Bible passage.
   - I'm sorry, I can't help you with that.
-  - Even though it may seem like it, I'm not an artificial intelligence.
   - Uhm... that doesn't appear to be a Bible verse, right?
   - If you need help, you can find it at /{0}
   - I can't assist with that, but I can send you Bible passages in {} sign languages.
-  - Ahhh, how interesting!
 
 
 # {0} -> ase
@@ -383,7 +381,7 @@ stats: >
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} @{} <code>{}</code> has been added to the waiting list."
+waiting_list: "{} @{} <code>{}</code> is in the waiting list."
 from_github: "{} has joined from the GitHub link."
 introduced_himself: "{} {} @{} <code>{}</code> has introduced themselves."
 get_feedback: "{} @{} has send you a feedback."

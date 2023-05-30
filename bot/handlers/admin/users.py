@@ -66,24 +66,24 @@ def delete_user(update: Update, context: CallbackContext):
 
 
 @admin
-def sending_users(update: Update, context: CallbackContext):
+def sending_users(update: Update, _: CallbackContext):
     def print_users(users: list[User], title: str = ''):
-        text = f'<b>{title}</b>'
+        text = ''
         for i, user in enumerate(users, 1):
             text += (
                 f'\n{mention_html(user.telegram_user_id, user.first_name.split()[0])} '
-                f'{user.signlanguage.meps_symbol if user.signlanguage else None} '
-                f'{user.bot_language.name} '
-                f'`{user.telegram_user_id}`'
+                f'{user.sign_language.meps_symbol if user.sign_language else None} '
+                f'{user.bot_language.code} '
+                f'<code>{user.telegram_user_id}</code>'
                 )
             if i % 20 == 0:
                 update.message.reply_text(text, parse_mode=ParseMode.HTML)
                 text = ''
         if text:
-            update.message.reply_text(text, parse_mode=ParseMode.HTML)
-    print_users(get.accepted_users(), User.AUTHORIZED)
-    print_users(get.banned_users(), User.DENIED)
-    print_users(get.waiting_users(), User.WAITING)
+            update.message.reply_text(f'<b>{title}</b>' + text, parse_mode=ParseMode.HTML)
+    print_users(get.accepted_users(), 'AUTHORIZED')
+    print_users(get.banned_users(), 'DENIED')
+    print_users(get.waiting_users(), 'WAITING')
 
 
 @admin

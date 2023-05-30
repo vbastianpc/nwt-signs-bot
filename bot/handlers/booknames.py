@@ -6,12 +6,11 @@ from telegram.ext import CommandHandler
 from bot.logs import get_logger
 from bot import MyCommand
 from bot.database import get
-from bot.utils.decorators import forw, vip
+from bot.utils.decorators import vip
 
 
 logger = get_logger(__name__)
 
-@forw
 @vip
 def send_booknames(update: Update, _: CallbackContext) -> None:
     user = get.user(update.effective_user.id)

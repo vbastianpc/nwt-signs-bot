@@ -1,4 +1,5 @@
 from html import escape
+from collections.abc import Callable
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -24,7 +25,6 @@ from bot.database import get
 from bot.database import add
 from bot.strings import TextTranslator
 from bot.database.schema import User
-from bot.database import report
 
 
 logger = get_logger(__name__)
@@ -52,12 +52,12 @@ def start(update: Update, context: CallbackContext) -> None:
                            is_premium=tuser.is_premium,
                            bot_language_code=bot_language_code,
                            status=User.WAITING)
-        context.bot.send_message(
-            chat_id=ADMIN,
-            text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
-                tuser.full_name, tuser.username or '', tuser.id),
-            parse_mode=ParseMode.HTML
-        )
+    context.bot.send_message(
+        chat_id=ADMIN,
+        text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
+            tuser.full_name, tuser.username or '', tuser.id),
+        parse_mode=ParseMode.HTML
+    )
     update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
                               parse_mode=ParseMode.HTML,
                               disable_web_page_preview=True)
@@ -72,7 +72,7 @@ def whois(update: Update, context: CallbackContext):
     msg = context.bot.send_message(
         chat_id=ADMIN,
         text=t.introduced_himself(TAG_START, mention_html(tuser.id, tuser.full_name),
-                                  escape(tuser.username or '', tuser.id)),
+                                  escape(tuser.username or ''), tuser.id),
         parse_mode=ParseMode.HTML,
     )
     context.bot.forward_message(chat_id=ADMIN, from_chat_id=tuser.id, message_id=update.effective_message.message_id)
@@ -102,29 +102,29 @@ def start_set_sign_language(update: Update, context: CallbackContext) -> None:
     return -1
 
 
+def echo(value: int) -> Callable[[Update, CallbackContext], int]:
+    def fun(update: Update, context: CallbackContext) -> int:
+        context.bot.forward_message(chat_id=ADMIN,
+                                    from_chat_id=update.message.chat_id,
+                                    message_id=update.message.message_id)
+        return value
+    return fun
+
 start_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.START, start)],
     states={1: [MessageHandler(Filters.text & (~ Filters.command), whois)],
-            2: [MessageHandler(Filters.all, lambda x, y: 2)],  # loop logging
+            2: [MessageHandler(Filters.all, echo(2))],  # loop logging
             3: [CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE),
                 CallbackQueryHandler(start_set_sign_language, pattern=SELECT_SIGNLANGUAGE),
                 CommandHandler(MyCommand.SIGNLANGUAGE, show_sign_languages),
                 MessageHandler(Filters.text, start_set_sign_language)
                 ]},
-    fallbacks=[MessageHandler(Filters.all, lambda x, y: 1)],
-    conversation_timeout=600,
+    fallbacks=[MessageHandler(Filters.all, echo(1))],
     allow_reentry=True
 )
 
 @forw
-def all_fallback(update: Update, _: CallbackContext, query: str = None) -> None:
-    user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
-    text = tt.fallback(MyCommand.HELP, report.count_signlanguage())
-    if query:
-        text = f'<b>{query}:</b> ' + text
-    update.effective_message.reply_text(text)
+def all_fallback(u: Update, c: CallbackContext) -> None:
     return
 
-# all_fallback_handler = MessageHandler(Filters.all, all_fallback)
-all_fallback_handler = MessageHandler(Filters.all, lambda u, c: -1)
+all_fallback_handler = MessageHandler(Filters.all, all_fallback)

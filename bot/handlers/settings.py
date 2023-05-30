@@ -39,7 +39,6 @@ SELECT_BOTLANGUAGE = 'SELECT_BOTLANGUAGE'
 PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 
 
-@forw
 @vip
 def show_current_settings(update: Update, _: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
@@ -70,7 +69,6 @@ def build_signlangs(update: Update, _: CallbackContext):
     )
 
 
-@forw
 @vip
 def show_sign_languages(update: Update, context: CallbackContext):
     update.effective_message.reply_chat_action(ChatAction.TYPING)
@@ -171,7 +169,6 @@ def build_botlangs():
     )
 
 
-@forw
 @vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
@@ -186,7 +183,6 @@ def show_botlangs(update: Update, context: CallbackContext) -> None:
 
 
 
-@forw
 @log
 def set_bot_language(update: Update, context: CallbackContext, bot_language_code=None) -> None:
     if update.callback_query:
