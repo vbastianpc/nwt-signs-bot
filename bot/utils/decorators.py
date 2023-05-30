@@ -21,7 +21,7 @@ def vip(func):
         tuser = update.effective_user
         if not isinstance(tuser, User):
             return
-        logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
+        logger.info(f'{update.effective_user.mention_html()}: {update.effective_message.text}')
         user = get.user(tuser.id)
         if user.telegram_user_id != ADMIN:
             context.bot.forward_message(
