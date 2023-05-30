@@ -110,7 +110,11 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
     except exc.VerseOmitted as e:
         update.effective_message.reply_text(tt.is_omitted(e.citation), parse_mode=HTML)
         return
-    passage.set_language(user.sign_language.code)
+    try:
+        passage.set_language(user.sign_language.code)
+    except exc.BookNameNotFound:
+        fetch.books(language_code=user.sign_language.code)
+        passage.set_language(user.sign_language.code)
     context.user_data['msg'] = None
     if fetch.need_chapter_and_videomarks(passage.book):
         try:
