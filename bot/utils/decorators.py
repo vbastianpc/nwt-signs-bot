@@ -32,7 +32,7 @@ def vip(func):
             )
         if user is None or not user.is_authorized():
             return
-        func(update, context, *args, **kwargs)
+        return func(update, context, *args, **kwargs)
     return restricted_func
 
 
