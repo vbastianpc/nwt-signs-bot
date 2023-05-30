@@ -64,7 +64,7 @@ step_1: Congratulations {0}! Now you can use this bot. Press /{1}.
 step_2: >
   <b>Choose a sign language.</b>
 
-  Press /{signlanguage}, navigate through the menu, and select one.
+  Press /{}, navigate through the menu, and select one.
 
 
   Alternatively, you can enter its code. For example, /ASL or /ase for American Sign Language.
