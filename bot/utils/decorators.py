@@ -22,18 +22,17 @@ def vip(func):
         if not isinstance(tuser, User):
             return
         logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
-        context.bot.forward_message(
-            chat_id=LOG_CHANNEL_ID,
-            from_chat_id=update.message.chat.id,
-            message_id=update.message.message_id,
-            disable_notification=True
-        )
         user = get.user(tuser.id)
+        if user.telegram_user_id != ADMIN:
+            context.bot.forward_message(
+                chat_id=LOG_CHANNEL_ID,
+                from_chat_id=update.message.chat.id,
+                message_id=update.message.message_id,
+                disable_notification=True
+            )
         if user is None or not user.is_authorized():
             return
-        else:
-            func(update, context, *args, **kwargs)
-            return
+        func(update, context, *args, **kwargs)
     return restricted_func
 
 
