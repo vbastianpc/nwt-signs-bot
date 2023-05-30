@@ -1,5 +1,4 @@
 from functools import wraps
-import json
 
 from telegram import User
 from telegram import Update
@@ -7,10 +6,10 @@ from telegram import ParseMode
 from telegram.ext import CallbackContext
 import telegram.error
 
-from bot import get_logger
-from bot import ADMIN
-from bot import CHANNEL_ID
-from bot.database import localdatabase as db
+from bot.logs import get_logger
+from bot.secret import ADMIN
+from bot.secret import LOG_CHANNEL_ID
+from bot.database import get
 
 
 logger = get_logger(__name__)
@@ -19,30 +18,32 @@ logger = get_logger(__name__)
 def vip(func):
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
-        user = update.effective_user
-        if not isinstance(user, User):
+        tuser = update.effective_user
+        if not isinstance(tuser, User):
             return
-        db_user = db.get_user(user.id)
-        if db_user is None or not db_user.is_brother():
-            logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
-            context.bot.forward_message(
-                chat_id=CHANNEL_ID,
-                from_chat_id=update.message.chat.id,
-                message_id=update.message.message_id,
-            )
+        logger.info(f'{update.effective_user.mention_markdown_v2()}: {update.effective_message.text}')
+        context.bot.forward_message(
+            chat_id=LOG_CHANNEL_ID,
+            from_chat_id=update.message.chat.id,
+            message_id=update.message.message_id,
+            disable_notification=True
+        )
+        user = get.user(tuser.id)
+        if user is None or not user.is_authorized():
             return
         else:
-            return func(update, context, *args, **kwargs)
-
+            func(update, context, *args, **kwargs)
+            return
     return restricted_func
 
 
 def admin(func):
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args, **kwargs):
-        user = update.effective_user
-        if user.id != ADMIN:
-            context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+        tuser = update.effective_user
+        if tuser.id != ADMIN:
+            context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.effective_message.message_id,
+                                        disable_notification=True)
             return
         return func(update, context, *args, **kwargs)
     return restricted_func
@@ -51,30 +52,34 @@ def admin(func):
 def forw(func):
     @wraps(func)
     def forward_function(update: Update, context: CallbackContext, *args, **kwargs):
-        user = update.effective_user
-        if user and user.id != ADMIN:
+        tuser = update.effective_user
+        if tuser and tuser.id != ADMIN:
             if update.callback_query:
                 context.bot.send_message(
-                    chat_id=CHANNEL_ID,
+                    chat_id=LOG_CHANNEL_ID,
                     text=f'{update.effective_user.mention_html()}\n{update.callback_query.data}',
-                    parse_mode=ParseMode.HTML
-                    )
+                    parse_mode=ParseMode.HTML, disable_notification=True
+                )
             else:
                 try:
-                    context.bot.forward_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+                    context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.effective_message.message_id,
+                                                disable_notification=True)
                 except telegram.error.BadRequest:
-                    context.bot.send_message(CHANNEL_ID, update.effective_user.mention_html(), parse_mode=ParseMode.HTML)
-                    context.bot.copy_message(CHANNEL_ID, user.id, update.effective_message.message_id)
+                    context.bot.send_message(LOG_CHANNEL_ID, update.effective_user.mention_html(),
+                                             parse_mode=ParseMode.HTML, disable_notification=True)
+                    context.bot.copy_message(LOG_CHANNEL_ID, tuser.id, update.effective_message.message_id,
+                                             disable_notification=True)
 
         return func(update, context, *args, **kwargs)
     return forward_function
 
 
 def log(func):
+    # TODO new database logs. Not text. Not LOG_CHANNEL
     @wraps(func)
     def log_function(update: Update, context: CallbackContext, *args, **kwargs):
-        user = update.effective_user
+        tuser = update.effective_user
         payload = update.callback_query.data if update.callback_query else update.effective_message.text
-        logger.info(f'{user.id} {user.full_name} {payload}')
+        logger.info(f'{tuser.id} {tuser.first_name} {payload}')
         return func(update, context, *args, **kwargs)
     return log_function

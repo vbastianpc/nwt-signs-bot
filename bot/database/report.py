@@ -1,14 +1,17 @@
 from sqlalchemy import func
+from sqlalchemy import select
 
-from bot import get_logger
-from bot.database import SESSION
-from bot.database.schemedb import Language
-from bot.database.schemedb import BibleBook
-from bot.database.schemedb import BibleChapter
-from bot.database.schemedb import VideoMarker
-from bot.database.schemedb import SentVerse
-from bot.database.schemedb import SentVerseUser
-from bot.database.schemedb import User
+from bot.logs import get_logger
+from bot.database import session
+from bot.database.schema import Language
+from bot.database.schema import Bible
+from bot.database.schema import Book
+from bot.database.schema import Edition
+from bot.database.schema import Chapter
+from bot.database.schema import VideoMarker
+from bot.database.schema import File
+from bot.database.schema import File2User
+from bot.database.schema import User
 
 
 logger = get_logger(__name__)
@@ -16,28 +19,31 @@ logger = get_logger(__name__)
 
 
 def _count(primary_key) -> int:
-    return SESSION.query(func.count(primary_key))
+    return session.query(func.count(primary_key))
 
 def count_sentverse() -> int:
-    return _count(SentVerse.id).scalar()
+    return _count(File.id).scalar()
 
 def count_videomarker() -> int:
     return _count(VideoMarker.id).scalar()
 
 def count_biblechapter() -> int:
-    return _count(BibleChapter.id).scalar()
+    return _count(Chapter.id).scalar()
 
 def count_biblebook() -> int:
-    return _count(BibleBook.id).scalar()
+    return _count(Book.id).scalar()
+
+def count_bible_editions() -> int:
+    return _count(Bible.id).scalar()
 
 def count_signlanguage() -> int:
-    return _count(Language.id).filter(Language.is_sign_lang == True).scalar()
+    return _count(Language.code).filter(Language.is_sign_language == True).scalar()
 
 def count_languages() -> int:
-    return _count(Language.id).scalar()
+    return _count(Language.code).scalar()
 
 def count_sentverseuser() -> int:
-    return _count(SentVerseUser.id).scalar()
+    return _count(File2User.id).scalar()
 
 def count_user() -> int:
     return _count(User.id).scalar()
@@ -51,3 +57,30 @@ def count_user_brother() -> int:
 def count_user_waiting() -> int:
     return _count(User.id).filter(User.status == 0).scalar()
 
+def stats_user(user_id: int) -> list[tuple[str, int]]:
+    return session.query(Language.code, func.sum(File.count_verses)) \
+        .select_from(File) \
+        .join(Chapter, Chapter.id == File.chapter_id) \
+        .join(Book, Book.id == Chapter.book_id) \
+        .join(Edition, Edition.id == Book.edition_id) \
+        .join(Language, Language.code == Edition.language_code) \
+        .where(File.id.in_(select(File2User.file_id).filter(File2User.user_id == user_id).distinct())) \
+        .group_by(Language.code) \
+        .all()
+
+def duration_size(user_id: int) -> tuple[int, int]:
+    result = session.query(func.sum(File.duration), func.sum(File.size)) \
+        .select_from(File2User) \
+        .join(File, File2User.file_id == File.id) \
+        .where(File2User.user_id == user_id) \
+        .one()
+    return round(result[0] / 60), round(result[1] / 1024 /1024)
+
+    
+if __name__ == '__main__':
+    telegram_user_id = 58736295
+    print(duration_size(telegram_user_id))
+    data = stats_user(telegram_user_id)
+    total = sum(map(lambda x: x[1], data))
+    print(total, '\n'.join([f'{code} - {count}' for code, count in data]))
+    print('end')

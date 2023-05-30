@@ -1,20 +1,30 @@
+from html import escape
+from collections.abc import Callable
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
+from telegram.ext import CallbackQueryHandler
 from telegram.ext import ConversationHandler
 from telegram.ext import MessageHandler
 from telegram.ext import Filters
-from telegram.ext.messagehandler import MessageHandler
-from telegram.utils.helpers import mention_markdown
+from telegram.utils.helpers import mention_html
 
 from bot import MyCommand
-from bot import ADMIN
-from bot import CHANNEL_ID
-from bot import get_logger
+from bot.handlers.settings import show_sign_languages
+from bot.handlers.settings import set_sign_language
+from bot.handlers.settings import prev_next_signlanguage
+from bot.handlers.settings import SELECT_SIGNLANGUAGE
+from bot.handlers.settings import PAGE_SIGNLANGUAGE
+from bot.secret import ADMIN
+from bot.secret import LOG_CHANNEL_ID
+from bot.logs import get_logger
 from bot.utils.decorators import forw
-from bot.database import localdatabase as db
-from bot.strings import TextGetter
+from bot.utils import how_to_say
+from bot.database import get
+from bot.database import add
+from bot.strings import TextTranslator
+from bot.database.schema import User
 
 
 logger = get_logger(__name__)
@@ -22,71 +32,99 @@ logger = get_logger(__name__)
 TAG_START = '#start'
 
 @forw
-def start(update: Update, context: CallbackContext, chat_id: int = None, full_name: str = None) -> None:
-    user = update.effective_user
-    full_name = full_name or user.first_name
-    db_user = db.get_user(chat_id or update.effective_user.id)
-    t = TextGetter(update.effective_user.language_code if db_user is None else db_user.bot_lang)
-
-    if context.args and context.args[0] == 'github':
-        context.bot.send_message(
-            chat_id=ADMIN,
-            text=t.from_github.format(mention_markdown(user.id, user.full_name)),
-            parse_mode=ParseMode.MARKDOWN
-        )
-    
-    if db_user is None or not db_user.is_brother():
-        db.add_waiting_user(update.effective_user.id, update.effective_user.full_name, update.effective_user.language_code)
-        context.bot.send_message(
-            chat_id=ADMIN,
-            text=t.waiting_list.format(mention_markdown(user.id, user.first_name), user.id),
-            parse_mode=ParseMode.MARKDOWN
-        )
-        context.bot.send_message(update.effective_user.id, '🔒👤')
-        context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=t.barrier_to_entry.format(full_name),
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        return 1
-
+def start(update: Update, context: CallbackContext) -> None:
+    tuser = update.effective_user
+    user = get.user(update.effective_user.id)
+    bot_language = get.language(code=tuser.language_code)
+    bot_language_code = bot_language.code if bot_language else 'en'
+    tt = TextTranslator(user.bot_language.code if user else bot_language_code)
+    if user and user.is_authorized() and user.sign_language:
+        update.message.reply_text(tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
+        return -1
+    if user and user.is_authorized() and not user.sign_language:
+        update.message.reply_text(tt.step_2(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
+        return 3
+    elif not user:
+        add.or_update_user(tuser.id,
+                           first_name=tuser.first_name,
+                           last_name=tuser.last_name or '',
+                           user_name=tuser.username,
+                           is_premium=tuser.is_premium,
+                           bot_language_code=bot_language_code,
+                           status=User.WAITING)
     context.bot.send_message(
-        chat_id=chat_id if chat_id else update.effective_user.id,
-        text=t.greetings.format(user.first_name, MyCommand.SIGNLANGUAGE, MyCommand.HELP),
-        parse_mode=ParseMode.MARKDOWN,
+        chat_id=ADMIN,
+        text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
+            tuser.full_name, tuser.username or '', tuser.id),
+        parse_mode=ParseMode.HTML
     )
+    update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
+                              parse_mode=ParseMode.HTML,
+                              disable_web_page_preview=True)
+    return 1
 
 
 def whois(update: Update, context: CallbackContext):
-    user = update.effective_user
-    t = TextGetter(user.language_code)
+    tuser = update.effective_user
+    user = get.user(tuser.id)
+    t = TextTranslator(user.bot_language_code)
     update.message.reply_text(t.wait)
-    context.bot.send_message(
+    msg = context.bot.send_message(
         chat_id=ADMIN,
-        text=t.introduced_himself.format(TAG_START, mention_markdown(user.id, user.first_name), user.id),
-        parse_mode=ParseMode.MARKDOWN,
+        text=t.introduced_himself(TAG_START, mention_html(tuser.id, tuser.full_name),
+                                  escape(tuser.username or ''), tuser.id),
+        parse_mode=ParseMode.HTML,
     )
-    context.bot.forward_message(
-        CHANNEL_ID,
-        user.id,
-        update.message.message_id
-    )
-    return ConversationHandler.END
+    context.bot.forward_message(chat_id=ADMIN, from_chat_id=tuser.id, message_id=update.effective_message.message_id)
+    context.bot.forward_message(chat_id=LOG_CHANNEL_ID, from_chat_id=ADMIN, message_id=msg.message_id)
+    context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.message.message_id)
+    return 2
 
+
+def start_set_sign_language(update: Update, context: CallbackContext) -> None:
+    user = get.user(update.effective_user.id)
+    tt = TextTranslator(user.bot_language_code)
+    if update.callback_query:
+        set_sign_language(update, context)
+    else:
+        like_code_or_meps = update.message.text.strip('/')
+        language = get.parse_language(like_code_or_meps)
+        if language and language.is_sign_language:
+            set_sign_language(update, context, language.code)
+        elif language:
+            update.message.reply_text(tt.not_signlanguage(how_to_say(language.code, user.bot_language_code)),
+                                      parse_mode=ParseMode.HTML)
+            return
+        else:
+            update.message.reply_text(tt.not_language(like_code_or_meps), parse_mode=ParseMode.HTML)
+            return
+    update.message.reply_text(tt.start(MyCommand.HELP))
+    return -1
+
+
+def echo(value: int) -> Callable[[Update, CallbackContext], int]:
+    def fun(update: Update, context: CallbackContext) -> int:
+        context.bot.forward_message(chat_id=ADMIN,
+                                    from_chat_id=update.message.chat_id,
+                                    message_id=update.message.message_id)
+        return value
+    return fun
 
 start_handler = ConversationHandler(
     entry_points=[CommandHandler(MyCommand.START, start)],
-    states={
-        1: [MessageHandler(Filters.text & (~ Filters.command), whois),
-            MessageHandler(Filters.command, lambda x, y: 1)
-        ],
-    },
-    fallbacks=[CommandHandler(MyCommand.CANCEL, lambda x, y: -1)],
-    conversation_timeout=600
+    states={1: [MessageHandler(Filters.text & (~ Filters.command), whois)],
+            2: [MessageHandler(Filters.all, echo(2))],  # loop logging
+            3: [CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE),
+                CallbackQueryHandler(start_set_sign_language, pattern=SELECT_SIGNLANGUAGE),
+                CommandHandler(MyCommand.SIGNLANGUAGE, show_sign_languages),
+                MessageHandler(Filters.text, start_set_sign_language)
+                ]},
+    fallbacks=[MessageHandler(Filters.all, echo(1))],
+    allow_reentry=True
 )
 
 @forw
-def all_fallback(update: Update, context: CallbackContext) -> None:
+def all_fallback(u: Update, c: CallbackContext) -> None:
     return
 
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)

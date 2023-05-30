@@ -4,47 +4,46 @@ from telegram import InlineQueryResultCachedVideo
 from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.ext import InlineQueryHandler
+from telegram.error import BadRequest
 
-from bot import get_logger
-from bot.utils import parse_chapter, BooknumNotFound, MultipleBooknumsFound
+from bot.logs import get_logger
 from bot.utils.decorators import vip
-from bot.utils.utils import parse_booknum, parse_verses
-import bot.database.localdatabase as db
+from bot.jw import BibleObject
+from bot import exc
+from bot.database import get
 
 
 logger = get_logger(__name__)
 
 
 @vip
-def inlineBibleReady(update: Update, context: CallbackContext) -> None:
+def inline_bible(update: Update, _: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
-    try:
-        booknums = [parse_booknum(update.inline_query.query)]
-    except BooknumNotFound:
-        booknums = [None]
-    except MultipleBooknumsFound as e:
-        booknums = e.booknums
-    finally:
-        chapter = parse_chapter(update.inline_query.query)
-        verses = parse_verses(update.inline_query.query)
-    db_user = db.get_user(update.effective_user.id)
+    user = get.user(update.effective_user.id)
+    if update.inline_query.query:
+        try:
+            p = BibleObject.from_human(update.inline_query.query, user.bot_language_code)
+        except exc.BaseBibleException:
+            return
+        else:
+            files = get.files(user.sign_language_code, p.book.number, p.chapternumber, p.raw_verses, is_deprecated=False)
+    else:
+        files = get.files(user.sign_language_code, is_deprecated=False)
     results = []
-    for booknum in booknums:
-        sent_verses = db.query_sent_verses(
-            lang_code=db_user.signlanguage.code,
-            booknum=booknum,
-            chapter=chapter,
-            raw_verses=' '.join(verses) or None,
-        )
-        results += [
+    for file in files:
+        title = f'{file.citation} - {user.sign_language.meps_symbol}'
+        title += f' ({file.overlay_language_code})' if file.overlay_language_code else ''
+        results.append(
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
-                video_file_id=sent_verse.telegram_file_id,
-                title=f'{sent_verse.citation} - {db_user.signlanguage.code}',
-                caption=f'{sent_verse.citation} - {db_user.signlanguage.code}',
+                video_file_id=file.telegram_file_id,
+                title=title,
+                caption=title,
             )
-            for sent_verse in sent_verses
-        ]
-    update.inline_query.answer(results, auto_pagination=True, cache_time=5)
+        )
+    try:
+        update.inline_query.answer(results, auto_pagination=True, cache_time=5)
+    except BadRequest:
+        return
 
-inline_handler = InlineQueryHandler(inlineBibleReady)
+inline_handler = InlineQueryHandler(inline_bible)

@@ -1,6 +1,8 @@
 """
-https://dbdiagram.io/d/61417a16825b5b0146029d49
+https://dbdiagram.io/d/641e6e955758ac5f172402c2
 """
+from pathlib import Path
+
 from sqlalchemy import Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -148,3 +150,31 @@ class BookNamesAbbreviation(Base):
     def __repr__(self):
         return f"<BookNamesAbbreviation(lang_locale={self.lang_locale!r}, booknum={self.booknum!r}, " \
             f"full_name={self.full_name!r}, long_abbr_name={self.long_abbr_name!r}, abbr_name={self.abbr_name!r})>"
+
+
+
+from sqlalchemy import create_engine
+from sqlalchemy import event
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.engine import Engine
+
+
+
+OLD_DB = Path(__file__).parent / '2023-05-26 00 47 13-04 00 database.db'
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+def start_database() -> scoped_session:
+    engine = create_engine(rf'sqlite:///{OLD_DB}', echo=False)
+    Base.metadata.bind = engine
+    Base.metadata.create_all(engine)
+    return scoped_session(sessionmaker(bind=engine))()
+
+
+old_session = start_database()

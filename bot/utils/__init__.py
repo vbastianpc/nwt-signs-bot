@@ -1,15 +1,5 @@
-
-from .utils import (
-    BIBLE_BOOKALIAS_NUM,
-    BIBLE_NUM_BOOKALIAS,
-    list_of_lists,
-    BIBLE_BOOKNAMES,
-    safechars,
-    parse_bible_pattern,
-    parse_booknum,
-    parse_chapter,
-    parse_verses,
-    seems_bible,
-    BooknumNotFound,
-    MultipleBooknumsFound,
-)
+from bot.utils.utils import list_of_lists
+from bot.utils.utils import safechars
+from bot.utils.utils import now
+from bot.utils.utils import dt_now
+from bot.utils.utils import how_to_say

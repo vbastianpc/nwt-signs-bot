@@ -1,0 +1,87 @@
+Table "BibleBook" {
+  "BibleBookId" INTEGER [pk, not null]
+  "LanguageId" INTEGER [unique, not null]
+  "BookNumber" INTEGER [unique]
+  "BookName" VARCHAR
+}
+
+Table "BibleChapter" {
+  "BibleChapterId" INTEGER [pk, not null]
+  "BibleBookId" INTEGER [unique, not null]
+  "ChapterNumber" INTEGER [unique]
+  "Checksum" VARCHAR [unique]
+}
+
+Table "BookNamesAbbreviation" {
+  "BookNamesAbbreviationId" INTEGER [pk, not null]
+  "LangLocale" VARCHAR [unique]
+  "BookNumber" INTEGER [unique]
+  "BookFullName" VARCHAR
+  "BookLongAbbreviationName" VARCHAR
+  "BookAbbreviationName" VARCHAR
+}
+
+Table "Language" {
+  "LanguageId" INTEGER [pk, not null]
+  "LanguageCode" VARCHAR [unique, not null]
+  "LanguageLocale" VARCHAR [unique]
+  "LanguageName" VARCHAR
+  "LanguageVernacular" VARCHAR
+  "RsConfigSymbol" VARCHAR
+  "LibrarySymbol" VARCHAR
+  "IsSignLanguage" BOOLEAN
+}
+
+Table "SentVerse" {
+  "SentVerseId" INTEGER [pk, not null]
+  "BibleBookId" INTEGER [not null]
+  "Checksum" VARCHAR
+  "ChapterNumber" INTEGER
+  "RawVerseNumbers" VARCHAR
+  "Citation" VARCHAR
+  "Quality" VARCHAR
+  "TelegramFileId" VARCHAR [unique]
+  "Size" INTEGER
+  "AddedDatetime" VARCHAR
+}
+
+Table "SentVerseUser" {
+  "SentVerseUserId" INTEGER [pk, not null]
+  "SentVerseId" INTEGER [not null]
+  "UserId" INTEGER
+  "Datetime" VARCHAR
+}
+
+Table "User" {
+  "UserId" INTEGER [pk, not null]
+  "TelegramUserId" INTEGER [unique]
+  "LanguageId" INTEGER
+  "FullName" VARCHAR
+  "Status" INTEGER
+  "AddedDatetime" VARCHAR
+  "BotLanguage" VARCHAR
+}
+
+Table "VideoMarker" {
+  "VideoMarkerId" INTEGER [pk, not null]
+  "BibleChapterId" INTEGER [not null]
+  "Label" VARCHAR
+  "StartTime" VARCHAR
+  "Duration" VARCHAR
+  "VerseNumber" INTEGER
+  "EndTransitionDuration" VARCHAR
+}
+
+Ref:"Language"."LanguageId" < "BibleBook"."LanguageId"
+
+Ref:"BibleBook"."BibleBookId" < "BibleChapter"."BibleBookId"
+
+Ref:"BibleBook"."BibleBookId" < "SentVerse"."BibleBookId"
+
+Ref:"SentVerse"."SentVerseId" < "SentVerseUser"."SentVerseId"
+
+Ref:"User"."UserId" < "SentVerseUser"."UserId"
+
+Ref:"Language"."LanguageId" < "User"."LanguageId"
+
+Ref:"BibleChapter"."BibleChapterId" < "VideoMarker"."BibleChapterId"

@@ -2,22 +2,20 @@
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.utils.helpers import mention_markdown
+from telegram.utils.helpers import mention_html
 from telegram.error import Unauthorized
-from telegram import BotCommandScopeChat
 
+from bot import MyCommand
+from bot.utils import now
 from bot.utils.decorators import admin
-from bot.database import localdatabase as db
+from bot.database import get
+from bot.database import add
+from bot.database import fetch
 from bot.database import PATH_DB
-from bot.handlers.start import start
+from bot.database.schema import User
 from bot import AdminCommand
-from bot import get_logger
-from bot import strings
-from bot.strings import TextGetter
-from bot.strings import botlangs
-from bot.booknames import booknames
-from bot.database.schemedb import User
-
+from bot.logs import get_logger
+from bot.strings import TextTranslator
 
 
 logger = get_logger(__name__)
@@ -26,85 +24,74 @@ logger = get_logger(__name__)
 @admin
 def autorizacion(update: Update, context: CallbackContext):
     try:
-        new_member_id = int(context.args[0])
-    except:
+        new_telegram_id = int(context.args[0])
+    except (IndexError, ValueError):
         return
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    admin_user = get.user(update.effective_user.id)
+    tt = TextTranslator(admin_user.bot_language.code)
 
-    if not db.get_user(new_member_id):
-        update.message.reply_text(t.warn_user)
+    if not get.user(new_telegram_id):
+        update.message.reply_text(tt.warn_user)
         return
 
     try:
-        context.bot.send_message(chat_id=new_member_id, text='🔐')
+        context.bot.send_message(chat_id=new_telegram_id, text='🔐')
     except Unauthorized:
-        update.message.reply_text(t.user_stopped_bot)
+        update.message.reply_text(tt.user_stopped_bot)
         return
     
-    new_db_user = db.set_user(new_member_id, brother=True)
+    new_user = add.or_update_user(new_telegram_id, status=User.AUTHORIZED)
     update.message.reply_text(
-        text=t.user_added.format(mention_markdown(new_member_id, new_db_user.full_name)),
-        parse_mode=ParseMode.MARKDOWN,
-    )
-    if new_db_user.bot_lang not in botlangs():
-        booknames.add_booknames(new_db_user.bot_lang)
-        context.bot.set_my_commands(
-            commands=(
-                strings.get_commands('en') +
-                booknames.get_commands(new_db_user.bot_lang)
-            ),
-            scope=BotCommandScopeChat(new_member_id)
-        )
-    start(
-        update,
-        context,
-        chat_id=new_member_id,
-        full_name=new_db_user.full_name
-    )
+        text=tt.user_added(mention_html(new_telegram_id, f'{new_user.first_name} {new_user.last_name}'),
+                           new_telegram_id),
+        parse_mode=ParseMode.HTML)
+
+    if not get.edition(new_user.bot_language.code):
+        fetch.editions()
+    if not get.books(new_user.bot_language.code):
+        fetch.books(new_user.bot_language.code)
+    tt2 = TextTranslator(new_user.bot_language_code)
+    context.bot.send_message(chat_id=new_telegram_id, text=tt2.step_1(new_user.first_name, MyCommand.START))
 
 
 @admin
 def delete_user(update: Update, context: CallbackContext):
-    t = TextGetter(db.get_user(update.effective_user.id).bot_lang)
+    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     try:
-        user_id = int(context.args[0])
-    except IndexError:
-        return
-
-    if not db.get_user(user_id):
+        user = get.user(int(context.args[0]))
+    except (IndexError, ValueError):
         update.message.reply_text(t.warn_user)
         return
-    db.set_user(user_id, blocked=True)
+    add.or_update_user(user.telegram_user_id, status=User.DENIED)
     update.message.reply_text(t.user_banned)
 
 
 @admin
-def sending_users(update: Update, context: CallbackContext):
-    def print_users(users: User, title: str = ''):
-        text = f'*{title}*'
+def sending_users(update: Update, _: CallbackContext):
+    def print_users(users: list[User], title: str = ''):
+        text = ''
         for i, user in enumerate(users, 1):
             text += (
-                f'\n{mention_markdown(user.telegram_user_id, user.full_name.split()[0])} '
-                f'{user.signlanguage.code if user.signlanguage else None} '
-                f'{user.bot_lang} '
-                f'`{user.telegram_user_id}`'
+                f'\n{mention_html(user.telegram_user_id, user.first_name.split()[0])} '
+                f'{user.sign_language.meps_symbol if user.sign_language else None} '
+                f'{user.bot_language.code} '
+                f'<code>{user.telegram_user_id}</code>'
                 )
-            if i % 10 == 0:
-                update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+            if i % 20 == 0:
+                update.message.reply_text(text, parse_mode=ParseMode.HTML)
                 text = ''
         if text:
-            update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    print_users(db.get_active_users(), "ACTIVE")
-    print_users(db.get_banned_users(), 'BANNED')
-    print_users(db.get_waiting_users(), 'WAITING')
+            update.message.reply_text(f'<b>{title}</b>' + text, parse_mode=ParseMode.HTML)
+    print_users(get.accepted_users(), 'AUTHORIZED')
+    print_users(get.banned_users(), 'DENIED')
+    print_users(get.waiting_users(), 'WAITING')
+
 
 @admin
 def backup(update: Update, context: CallbackContext):
-    context.bot.send_document(
-        chat_id=update.effective_chat.id,
-        document=open(PATH_DB, 'rb'),
-        filename= f'{db.now()} {PATH_DB}'
-    )
+    context.bot.send_document(chat_id=update.effective_chat.id,
+                              document=open(PATH_DB, 'rb'),
+                              filename= f'{now()} {PATH_DB}')
 
 
 auth_handler = CommandHandler(AdminCommand.ADD, autorizacion)
