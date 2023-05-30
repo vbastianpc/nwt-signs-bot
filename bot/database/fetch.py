@@ -191,9 +191,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
             for file in chapter.files:
                 file.is_deprecated = True
-            # session.commit()
         else:
-            logger.info(f'Creating new chapter {book.name} {chapternumber}')
             chapter = Chapter(
                 book_id=book.id,
                 number=chapternumber,
@@ -221,7 +219,6 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             logger.warning(f'{book.name} {chapter.number} no videomarkers on datajson api {book.edition.language.code}')
         session.commit()
     book.refreshed = dt_now()
-    # session.add()
     session.commit()
 
 
@@ -230,10 +227,9 @@ def need_ffmpeg(chapter: Chapter) -> bool:
         vms = get.videomarkers(chapter)
     except exc.IncompleteVideoMarkers:
         return True
-    else:
-        if vms:
-            return False
-        return True
+    if vms:
+        return False
+    return True
 
 
 def videomarkers_by_ffmpeg(chapter: Chapter):
