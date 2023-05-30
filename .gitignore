@@ -12,6 +12,7 @@ bot/utils/fonts/
 *.db-journal
 *.jwpub
 /test
+**/*.zip
 
 .DS_Store
 .vscode/
