@@ -118,7 +118,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
             fetch.chapters_and_videomarkers(passage.book)
         except exc.PubmediaNotExists:
             passage.set_language(user.bot_language.code)
-            update.effective_message.reply_text(text=tt.that_book_no(passage.book.name, user.sign_language.vernacular),
+            update.effective_message.reply_text(text=tt.that_book_no(passage.book.name, user.sign_language_name),
                                                 parse_mode=HTML)
             show_books(update, context, passage.set_language(user.sign_language.code))
             return

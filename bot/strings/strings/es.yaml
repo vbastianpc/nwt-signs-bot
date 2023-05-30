@@ -333,14 +333,7 @@ ok_signlanguage_code:
   - ¡Ok! Ahora te enviaré pasajes de la Biblia en <b>{}</b>.
 
 
-choose_botlang: >
-  <b>Elige un idioma</b> para que nos podamos entender
-
-
-  También puedes cambiarlo rápidamente con su código. Por ejemplo: /en, /es o /vi.
-
-
-  Incluso puedes usar /ko si quieres leer la Biblia en coreano.
+choose_botlang: <b>Elige un idioma</b> para que nos entendamos mejor
 
 
 # {} -> English

@@ -2,6 +2,11 @@
 # https://stackoverflow.com/a/21699210/9505959
 # https://yaml-multiline.info
 
+
+# code: jw language code. example jw.org/es
+# iso_code: A two-letter ISO 639-1 language code https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+# In most cases iso_code and code are the same. But there are some exceptions like Catalan. code: cat, iso_code: ca
+# iso_code required for setcommands by language scope https://core.telegram.org/bots/api#setmycommands
 language:
   code: en
   iso_code: en
@@ -10,7 +15,7 @@ language:
 
 commands:
   start: Start
-  signlanguage: Set a sign language
+  signlanguage: Set sign language
   botlanguage: Set bot language
   overlay: Text overlay
   settings: Show your settings
@@ -52,7 +57,7 @@ wait: Thank you! I will notify you when you are accepted.
 
 # {0} -> First name
 # {1} -> start command
-step_1: Congratulations {0}! You can now use this bot. Press /{1} to get started.
+step_1: Congratulations {0}! Now you can use this bot. Press /{1}.
 
 
 # {} -> signlanguage command
@@ -321,15 +326,7 @@ ok_signlanguage_code:
   - Okay! Now I will send you Bible passages in <b>{}</b>.
 
 
-choose_botlang: >
-  <b>Choose a language</b> so we can understand each other
-
-
-  You can also quickly change it with its code. For example: /en, /es, or /vi.
-
-
-  You can even use /ko if you want to read the Bible in Korean.
-
+choose_botlang: <b>Choose a language</b> so we can understand each other
 
 # {} -> English
 ok_botlang:

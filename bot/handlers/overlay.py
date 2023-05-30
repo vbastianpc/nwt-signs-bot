@@ -13,10 +13,10 @@ from bot.strings import TextTranslator
 
 @vip
 def toggle_overlay(update: Update, _: CallbackContext) -> None:
-    tt = TextTranslator(update.effective_user.language_code)
     user = get.user(update.effective_user.id)
     user = add.or_update_user(update.effective_user.id,
                               with_overlay=False if user.overlay_language_code else True)
+    tt = TextTranslator(user.bot_language_code)
     update.message.reply_text(tt.overlay_activated if user.overlay_language_code else tt.overlay_deactivated,
                               parse_mode=ParseMode.HTML)
 
