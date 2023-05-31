@@ -300,7 +300,7 @@ fallback:
   - I'm sorry, I can't help you with that.
   - Uhm... that doesn't appear to be a Bible verse, right?
   - If you need help, you can find it at /{0}
-  - I can't assist with that, but I can send you Bible passages in {} sign languages.
+  - I can't assist with that, but I can send you Bible passages in {1} sign languages.
 
 
 # {0} -> ase
