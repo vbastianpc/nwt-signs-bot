@@ -8,7 +8,7 @@
 # In most cases iso_code and code are the same. But there are some exceptions like Catalan. code: cat, iso_code: ca
 # iso_code required for setcommands by language scope https://core.telegram.org/bots/api#setmycommands
 language:
-  code: vt
+  code: vi
   iso_code: vi
   name: Vietnamese
   vernacular: Tiếng Việt
