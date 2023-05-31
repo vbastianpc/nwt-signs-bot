@@ -112,7 +112,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str) -> N
         return
     try:
         passage.set_language(user.sign_language.code)
-    except exc.BookNameNotFound:
+    except exc.BookNotFound:
         fetch.books(language_code=user.sign_language.code)
         passage.set_language(user.sign_language.code)
     context.user_data['msg'] = None
