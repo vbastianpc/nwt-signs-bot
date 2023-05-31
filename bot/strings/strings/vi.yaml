@@ -57,14 +57,14 @@ wait: Cám ơn bạn nhé! Khi nào bạn được phép sử dụng, mình sẽ
 
 # {0} -> First name
 # {1} -> start command
-step_1: Xin chúc mừng {0}! Giờ đây, bạn đã có thể sử dụng bot. Xin bấm /{1}.
+step_1: Xin chúc mừng {0}! Giờ đây, bạn đã có thể sử dụng bot. Xin bấm /{1} để bắt đầu sử dụng.
 
 
 # {} -> signlanguage command
 step_2: >
   <b>Hãy chọn một ngôn ngữ ký hiệu.</b>
 
-  Bấm /{}, bạn có thể di chuyển tới lui trong bảng chọn, rồi chọn một ngôn ngũ ký hiệu mà bạn muốn.
+  Bấm vào /{}, rồi bạn có thể di chuyển tới lui trong bảng chọn, sau đó chọn một ngôn ngũ ký hiệu mà bạn muốn.
 
 
   Một cách khác là bạn nhập trực tiếp mã của ngôn ngữ vào đây. Chẳng hạn, bạn có thể nhập /ASL hoặc /ase vào để chọn Hoa Kỳ (Ngôn ngữ ký hiệu).
@@ -105,11 +105,11 @@ disabled: Đã tắt
 book_not_found:
   - Theo mình biết thì không có sách hay lá thư nào mang tên <b>{}</b>. Bạn có muốn thử lại với ngôn ngữ khác không?
   - Không có sách hay lá thư nào có tên là <b>{}</b> trong Kinh Thánh đâu. Trừ khi nó nằm trong cuộn sách khác, cuộn sách sự sống. Nhưng mình chưa được đọc cuộn sách đó.
-  - Mình không tìm thấy sách hoặc lá thư mang tên <b>{}</b> trong Kinh Thánh. Bạn có thể thử điền từ khác không?
-  - Bạn muốn lấy sách hoặc lá thư tên <b>{}</b>, nhưng mình không thể tìm ra. Xin bạn thử lại bằng từ khác nhé.
+  - Mình không tìm thấy sách hoặc lá thư nào mang tên <b>{}</b> trong Kinh Thánh. Bạn có thể thử điền từ khác không?
+  - Bạn muốn lấy sách hoặc lá thư tên <b>{}</b>, nhưng mình không thể tìm ra. Xin bạn thử nhập lại từ khác nhé.
   - Bạn có chắc tên sách hoặc lá thư là <b>{}</b> không?
   - Mình cố hiểu nhưng mà hiểu không nổi, <b>{}</b> là sách hoặc lá thư gì vậy?
-  - Mình cố gắng tìm sách hoặc lá thư tên <b>{}</b> rồi nhưng không thấy. Xin bạn viết lại cách khác được không?
+  - Mình cố gắng tìm sách hoặc lá thư tên <b>{}</b> rồi, nhưng không thấy. Xin bạn viết lại cách khác được không?
   - Mình xin thua, tìm không ra <b>{}</b> trong Kinh Thánh. Bạn nhập lại giúp mình nhé?
   - Theo mình thấy thì, <b>{}</b> không phải là sách hay lá thư trong Kinh Thánh đâu.
 
@@ -171,7 +171,7 @@ but_these_verses:
   - Bạn vẫn có thể đổi ngôn ngữ ký hiệu hoặc chọn xem nhũng câu đã dịch rồi.
   - Nhưng bạn vẫn có thể xem nhũng câu này nếu muốn.
   - Dù vậy, đây là những câu đã dịch rồi.
-  - Nhưng bạn vẫn có thể chọn một trong số những câu này
+  - Nhưng bạn vẫn có thể chọn một trong số những câu này.
 
 
 # Example: Psalms 45 not in SLV
@@ -240,7 +240,7 @@ sending: Đang gửi
 help: >
   <b>Ngôn ngữ ký hiệu</b>
 
-  Chọn ngôn ngữ ký hiệu bằng cách nhập vào mã ngô ngữ như một lệnh. Ví dụ như, để chọn Hoa Kỳ (ngôn ngữ ký hiệu), nhập /ase hoặc /ASL.
+  Chọn ngôn ngữ ký hiệu bằng cách nhập vào mã ngôn ngữ như một lệnh. Ví dụ như, để chọn Hoa Kỳ (ngôn ngữ ký hiệu), nhập /ase hoặc /ASL.
 
 
   Nếu bạn không biết mã, hãy bấm /{0}, di chuyển tới lui trong bảng chọn, rồi chọn một ngôn ngũ ký hiệu mà bạn muốn.
@@ -283,7 +283,7 @@ overlay_info: >
   các ngôn ngữ có trên trang web <a href="https://www.jw.org">JW.ORG</a> lại với nhau.
 
 
-  Nếu <i>ngôn ngữ Kinh Thánh chữ viết</i> tương ứng với <i>ngôn ngữ ký hiệu</i>
+  Nếu bạn chọn <i>ngôn ngữ chữ viết</i> của Kinh Thánh tương ứng với <i>ngôn ngữ ký hiệu</i>
   thì chữ sẽ không được chèn vào.
 
 
@@ -320,8 +320,8 @@ menu_signlanguage: |
 # {} -> American Sign Language
 ok_signlanguage_code:
   - Tuyệt vời! Từ giờ, mình sẽ gửi video trong <b>{}</b> cho bạn nhé.
-  - Hết sảy! Bây giờ, mình sẽ lấy phần Kinh Thánh bằng <b>{}</b> cho bạn.
-  - Đồng ý! Mình sẽ bắt đầu gửi các phần Kinh Thánh bằng <b>{}</b> cho bạn.
+  - Hết sảy! Bây giờ, mình sẽ lấy câu Kinh Thánh bằng <b>{}</b> cho bạn.
+  - Đồng ý! Mình sẽ bắt đầu gửi các câu Kinh Thánh bằng <b>{}</b> cho bạn.
 
 
 choose_botlang: Xin bạn <b>chọn một ngôn ngữ</b> để chúng ta hiểu nhau hơn.
