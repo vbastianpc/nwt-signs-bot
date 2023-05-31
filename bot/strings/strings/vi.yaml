@@ -1,0 +1,406 @@
+# https://yaml.org/spec/1.2.2/#chapter-2-language-overview
+# https://stackoverflow.com/a/21699210/9505959
+# https://yaml-multiline.info
+
+
+# code: jw language code. example jw.org/es
+# iso_code: A two-letter ISO 639-1 language code https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+# In most cases iso_code and code are the same. But there are some exceptions like Catalan. code: cat, iso_code: ca
+# iso_code required for setcommands by language scope https://core.telegram.org/bots/api#setmycommands
+language:
+  code: vt
+  iso_code: vi
+  name: Vietnamese
+  vernacular: Tiếng Việt
+
+commands:
+  start: Bắt đầu
+  signlanguage: Chọn ngôn ngữ ký hiệu
+  botlanguage: Chọn ngôn ngữ bot
+  overlay: Chèn chữ
+  settings: Xem các cài đặt
+  help: Cần trợ giúp?
+  stats: Xem các thống kê
+  feedback: Gửi phản hồi về nhà phát triển
+
+admin_commands:
+  add: Add or unblock a user
+  ban: Block a user
+  users: Show all users
+  setcommands: Set commands by language scope
+  notify: Notify messages to a user
+  backup: Send a database backup
+  logs: Show the most recent log entries
+  logfile: Send a copy of the log file
+  test: Show the variables in memory
+
+
+# {} -> First name
+hi: Xin chào {}!
+
+
+barrier_to_entry: >
+  Mình là bot được tạo ra để giúp bạn lấy các câu Kinh Thánh.
+
+
+  Xin chờ nhà phát triển đồng ý cho bạn sử dụng bot. Bạn có thể vui lòng cho mình biết tại sao bạn muốn sử dụng bot này
+  và bạn đến từ đâu không.
+
+
+  Nếu bạn muốn tìm hiểu thêm về Đức Chúa Trời và Lời của ngài, hoặc nếu bạn muốn học một ngôn ngữ ký hiệu, xin vui lòng
+  truy cập vào trang web chính thức của Nhân chứng Giê-hô-va là JW.ORG hoặc truy cập vào <a href="https://wol.jw.org">THƯ VIỆN TRỰC TUYẾN Tháp Canh</a>
+
+
+
+wait: Cám ơn bạn nhé! Khi nào bạn được phép sử dụng, mình sẽ báo cho bạn biết.
+
+
+# {0} -> First name
+# {1} -> start command
+step_1: Xin chúc mừng {0}! Giờ đây, bạn đã có thể sử dụng bot. Xin bấm /{1} để bắt đầu sử dụng.
+
+
+# {} -> signlanguage command
+step_2: >
+  <b>Hãy chọn một ngôn ngữ ký hiệu.</b>
+
+  Bấm vào /{}, rồi bạn có thể di chuyển tới lui trong bảng chọn, sau đó chọn một ngôn ngũ ký hiệu mà bạn muốn.
+
+
+  Một cách khác là bạn nhập trực tiếp mã của ngôn ngữ vào đây. Chẳng hạn, bạn có thể nhập /ASL hoặc /ase vào để chọn Hoa Kỳ (Ngôn ngữ ký hiệu).
+
+
+# {} -> help command
+start: >
+  Bạn có thể yêu cầu mình cung cấp một đoạn Kinh Thánh. Mình sẽ cố gắng hiểu yêu cầu của bạn. Bạn có thể nhập vào tên đầy đủ của sách hoặc lá thư
+  hoặc chỉ cần nhập vào tên viết tắt cũng được, chẳng hạn như:
+
+
+  Truyền đạo 11:10
+
+  Phl 4:6, 7
+
+  2 Ti 3:1-5
+
+  Châm 19:19-22, 27
+
+  Thi 119
+
+  Giu-đe 20
+
+  Mat
+
+
+  Nếu bạn muốn được hướng dẫn thêm, xin mời bấm vào /{}
+
+
+yes: ✅
+no: ❌
+enabled: Đã bật
+disabled: Đã tắt
+
+
+# Example: abcdef 1:1
+# {} -> abcdef
+book_not_found:
+  - Theo mình biết thì không có sách hay lá thư nào mang tên <b>{}</b>. Bạn có muốn thử lại với ngôn ngữ khác không?
+  - Không có sách hay lá thư nào có tên là <b>{}</b> trong Kinh Thánh đâu. Trừ khi nó nằm trong cuộn sách khác, cuộn sách sự sống. Nhưng mình chưa được đọc cuộn sách đó.
+  - Mình không tìm thấy sách hoặc lá thư nào mang tên <b>{}</b> trong Kinh Thánh. Bạn có thể thử điền từ khác không?
+  - Bạn muốn lấy sách hoặc lá thư tên <b>{}</b>, nhưng mình không thể tìm ra. Xin bạn thử nhập lại từ khác nhé.
+  - Bạn có chắc tên sách hoặc lá thư là <b>{}</b> không?
+  - Mình cố hiểu nhưng mà hiểu không nổi, <b>{}</b> là sách hoặc lá thư gì vậy?
+  - Mình cố gắng tìm sách hoặc lá thư tên <b>{}</b> rồi, nhưng không thấy. Xin bạn viết lại cách khác được không?
+  - Mình xin thua, tìm không ra <b>{}</b> trong Kinh Thánh. Bạn nhập lại giúp mình nhé?
+  - Theo mình thấy thì, <b>{}</b> không phải là sách hay lá thư trong Kinh Thánh đâu.
+
+
+# Example: mat 1, 2, 3
+# {} -> Matthew
+missing_chapter:
+  - Hình như bạn quên... điền vào số <b>chương</b> của <b>{}</b> có phải không?
+  - Ây da... hình như có gì thiếu thiếu... à đúng rồi! Xin bạn cho mình số <b>chương</b> của <b>{}</b> nhé.
+
+
+# Example: mat 100:1
+# {0} -> Matthew
+# {1} -> 100
+# {2} -> 28 (max chapter number for Matthew)
+chapter_not_exists:
+  - "<b>{0}</b> không có chương <b>{1}</b>. Có khi nào nó nằm trong cuộn sách khác không ta, cuộn sách sự sống à? Nhưng hiện nay thì <b>{0}</b> chỉ có <b>{2}</b> chương thôi."
+  - Theo các bản dịch Kinh Thánh mà mình có thì <b>{0}</b> không có chương <b>{1}</b> đâu.
+  - Mình tìm rồi, không có chương số <b>{1}</b> của <b>{0}</b> đâu.
+  - Ờ thì... <b>{0}</b> không có chương số <b>{1}</b> đâu. Mình tin chắc là vậy.
+  - Mình nên tìm trong bản dịch Kinh Thánh nào để thấy <b>{0}</b> chương <b>{1}</b>? Chứ theo Bản dịch Kinh Thánh Thế Giới Mới thì mình không tìm thấy.
+
+
+# Example: mat 28:1, 50 
+# {0} -> Matthew
+# {1} -> 28
+# {2} -> 50 (wrong verse)
+# {3} -> 20 (max verse number for Matthew 28)
+verse_not_exists:
+  - Không có câu số <b>{2}</b> trong <b>{0}</b> chương <b>{1}</b>.
+  - "<b>{0}</b> chương <b>{1}</b> làm gì có nhiều câu đến thế. Tối đa là đến câu <b>{3}</b> thôi."
+  - "<b>{0}</b> chương <b>{1}</b> chỉ có <b>{3}</b> câu thôi bạn ơi."
+  - Mình không thể lấy được câu <b>{2}</b>, vì <b>{0}</b> chương <b>{1}</b> chỉ có đến câu <b>{3}</b> là hết.
+
+
+# Example: mat 28:1, 50, 51
+# {0} -> Matthew
+# {1} -> 28
+# {2} -> 50, 51 (wrong verses)
+# {3} -> 20 (max versenumber for Mathhew 28)
+verses_not_exists:
+  - "<b>{0}</b> chương <b>{1}</b> không có các câu đó. Tối đa là đến câu <b>{3}</b> thôi bạn ạ."
+  - Các câu <b>{2}</b> không có trong <b>{0}</b> chương <b>{1}</b> đâu.
+  - Mình không thể lấy được các câu <b>{2}</b>, vì <b>{0}</b> chương <b>{1}</b> chỉ có đến câu <b>{3}</b> thôi.
+
+
+# Example: Isaiah 6:8 not in SLV
+# {0} -> Isaiah 6:8
+# {1} -> Vietnamese Sign Language
+that_verse_no:
+  - Hiện nay, chưa có <b>{0}</b> trong <b>{1}</b>.
+  - Ôi, tiếc quá! <b>{0}</b> chưa được dịch trong <b>{1}</b>.
+  - "<b>{0}</b> chưa có trong <b>{1}</b>. Bạn chịu khó chờ đợi nhé."
+  - Có lẽ sẽ sớm có <b>{0}</b> trong <b>{1}</b> thôi.
+
+
+# Example: Isaiah 6:8 not in SLV, but 1, 9, 11, 13 verses are available.
+but_these_verses:
+  - Bạn vẫn có thể đổi ngôn ngữ ký hiệu hoặc chọn xem nhũng câu đã dịch rồi.
+  - Nhưng bạn vẫn có thể xem nhũng câu này nếu muốn.
+  - Dù vậy, đây là những câu đã dịch rồi.
+  - Nhưng bạn vẫn có thể chọn một trong số những câu này.
+
+
+# Example: Psalms 45 not in SLV
+# {0} -> Psalms 45
+# {1} -> Vietnamese Sign Language
+that_chapter_no:
+  - Hiện nay, chưa có câu Kinh Thánh nào của <b>{0}</b> trong <b>{1}</b>.
+  - Các câu Kinh Thánh của <b>{0}</b> trong <b>{1}</b> vẫn chưa được dịch.
+
+
+# Example: Psalms 45 not in SLV, but 1, 9, 11, 19, 22 chapter are available.
+but_these_chapters:
+  - Tuy nhiên, bạn có thể xem các chương khác ở đây.
+  - Thế nhưng, những chương này thì đã được dịch toàn bộ hoặc một phần.
+
+
+# Example: Habakkuk not in SLV
+# {0} -> Habakkuk
+# {1} -> Vietnamese Sign Language
+that_book_no:
+  - Ồ! Hoàn toàn chưa có câu nào của <b>{0}</b> được dịch trong <b>{1}</b>. Chừng nào có câu được dịch xong thì xin bạn hỏi mình một lần nữa, mình sẽ lấy giúp bạn nhé.
+  - Hiện nay, chưa có câu nào của <b>{0}</b> được dịch ra trong <b>{1}</b>.
+
+
+but_these_books:
+  - Tuy nhiên, những sách này thì có câu đã dịch rồi.
+  - Thế nhưng, đây là những sách và lá thư có câu đã dịch rồi.
+  - Còn đây là một số sách và lá thư có câu đã dịch rồi.
+
+
+# Example: john 8:1
+# {} -> John 8:1
+is_omitted:
+  - Hừm... <b>{}</b> không được Đức Chúa Trời soi dẫn. Phần này được thêm vào sau nhiều thế kỷ và không có thẩm quyền.
+  - Mình không nghĩ <b>{}</b> có gì đáng xem vì phần này không được Đức Chúa Trời soi dẫn.
+  - Xin chọn một phần Kinh Thánh khác. Vì <b>{}</b> không được Đức Chúa Trời soi dẫn.
+
+
+# Example: /abc
+not_language:
+  - Bạn muốn chọn một ngôn ngữ phải không? Tuy nhiên, mình không thấy có ngôn ngữ nào tương ứng với mã <b>{}</b> mà bạn vừa nhập vào.
+  - Mình không biết ngôn ngữ nào có mã là <b>{}</b>. Xin bạn thử lại nhé.
+  - Mình tin là không có ngôn ngữ nào tương ứng với mã <b>{}</b> mà bạn vừa nhập vào.
+
+
+# Example: /en
+not_signlanguage:
+  - Mã <b>{}</b> không phải là một ngôn ngữ ký hiệu. Xin bạn chọn ngôn ngữ ký hiệu nhé.
+  - Xin bạn chọn một ngôn ngữ ký hiệu. <b>{}</b> tương ứng với một ngôn ngữ nói.
+
+
+choose_book: "Chọn một sách"
+choose_chapter: "Chọn một chương"
+choose_verse: "Chọn một câu"
+fetching_videomarkers: Đang tìm và lấy các câu
+downloading: Đang tải
+trimming: Đang cắt
+sending: Đang gửi
+
+
+# {0} -> signlanguage command
+# {1} -> botlanguage command
+# {2} -> feedback command
+# {3} -> url
+# {4} -> bot username @nwtsigns_bot
+help: >
+  <b>Ngôn ngữ ký hiệu</b>
+
+  Chọn ngôn ngữ ký hiệu bằng cách nhập vào mã ngôn ngữ như một lệnh. Ví dụ như, để chọn Hoa Kỳ (ngôn ngữ ký hiệu), nhập /ase hoặc /ASL.
+
+
+  Nếu bạn không biết mã, hãy bấm /{0}, di chuyển tới lui trong bảng chọn, rồi chọn một ngôn ngũ ký hiệu mà bạn muốn.
+
+
+  <b>Các đoạn Kinh Thánh</b>
+
+  Bạn có thể yêu cầu đến 5 đoạn Kinh Thánh một lúc chỉ với một tin nhắn. Có thể dùng tên đầy đủ của sách hoặc lá thư hoặc hoặc chỉ nhập vào tên viết tắt cũng được.
+
+
+  Bạn cũng có thể tạm đổi ngôn ngữ ký hiệu bằng cách viết mã ngôn ngữ ký hiệu cùng với đoạn Kinh Thánh. Chẳng hạn như:
+
+
+  <code>/ase 1 Ti 2:6</code>
+
+  <code>/hab 1 Ti 2:6</code>
+
+
+  <b>Ngôn ngữ bot</b>
+
+  Mình có thể trò chuyện bằng một vài ngôn ngữ. Hãy bấm vào /{1} và chọn một ngôn ngữ. Nếu bạn biết mã ngôn ngữ, bạn có thể chọn nhanh.
+  Chẳng hạn như, để chọn tiếng Anh, bạn có thể chọn nhanh bằng cách nhập /en hoặc /E.
+
+
+  Ngay cả khi bạn chọn một ngôn ngữ mà mình chưa biết, mình cũng có thể hiểu được khi bạn yêu cầu các địa chỉ Kinh Thánh bằng ngôn ngữ của bạn.
+  Mình sẽ cố gắng lấy cho bạn đoạn Kinh Thánh trong ngôn ngữ nói của bạn.
+  Nếu bạn muốn dịch bot sang ngôn ngữ khác, xin bấm vào /{2} và <a href="{3}">bắt đầu dịch</a>.
+
+
+  <b>Tính năng Inline Mode của Telegram</b>
+
+  Nhập <code>{4}</code> trong bất kỳ nhóm chat hoặc kênh Telegram nào để gửi các đoạn Kinh Thánh.
+
+
+# {} -> overlay command
+overlay_info: >
+  <b>Chèn chữ</b>
+
+  Khi bật /{}, bạn sẽ thấy tên sách hoặc lá thư trong ngôn ngữ của bạn trong video ngôn ngữ ký hiệu nước ngoài. Chính xác là bạn có thể kết hợp
+  các ngôn ngữ có trên trang web <a href="https://www.jw.org">JW.ORG</a> lại với nhau.
+
+
+  Nếu bạn chọn <i>ngôn ngữ chữ viết</i> của Kinh Thánh tương ứng với <i>ngôn ngữ ký hiệu</i>
+  thì chữ sẽ không được chèn vào.
+
+
+overlay_activated: Bạn vừa <b>bật</b> tính năng chèn chữ.
+overlay_deactivated: Bạn vừa <b>tắt</b> tính năng chèn chữ.
+
+
+# {0} -> help command
+# {1} -> total sign languages
+fallback:
+  - Hình như bạn nhập vào chưa đúng. Bạn hãy nhập một địa chỉ Kinh Thánh nhé.
+  - Tiếc quá, bạn nhập thế thì mình không thể giúp được.
+  - Ừm... bạn chưa nhập đúng địa chỉ Kinh Thánh, phải không ạ?
+  - Nếu cần trợ giúp, xin mời bạn bấm /{0}
+  - Xin lỗi, mình không làm được điều đó. Nhưng mình có thể lấy cho bạn các câu Kinh Thánh trong {1} ngôn ngữ ký hiệu.
+
+
+# {0} -> ase
+# {1} -> American Sign Language
+# {2} -> en
+# {3} -> English
+# {4} -> Enabled or Disabled
+current_settings: |
+  Ngôn ngữ ký hiệu đã chọn: <b>{1}—{0}</b>
+  Ngôn ngữ bot đã chọn: <b>{3}—{2}</b>
+  Tính năng chèn chữ: <b>{4}</b>
+
+
+menu_signlanguage: |
+  🧏‍♂️ Mời bạn <b>chọn một ngôn ngữ ký hiệu</b> dưới đây
+  🌎 Tổng cộng có <b>{}</b> ngôn ngữ ký hiệu
+
+
+# {} -> American Sign Language
+ok_signlanguage_code:
+  - Tuyệt vời! Từ giờ, mình sẽ gửi video trong <b>{}</b> cho bạn nhé.
+  - Hết sảy! Bây giờ, mình sẽ lấy câu Kinh Thánh bằng <b>{}</b> cho bạn.
+  - Đồng ý! Mình sẽ bắt đầu gửi các câu Kinh Thánh bằng <b>{}</b> cho bạn.
+
+
+choose_botlang: Xin bạn <b>chọn một ngôn ngữ</b> để chúng ta hiểu nhau hơn.
+
+# {} -> English
+ok_botlang:
+  - Tuyệt cú mèo! Mình nghĩ rằng, giờ đây chúng ta sẽ hiểu nhau hơn.
+  - Parlez-vous français? Giỡn tí xíu 🤣 Chúng ta sẽ nói chuyện với nhau bằng {} nhé.
+  - "{} là ngôn ngữ của lòng mình đó."
+
+
+# {0} -> Saluan (see https://wol.jw.org/loe/wol/h/r1127/lp-sal)
+# {1} -> English
+no_bible:
+  - Dường như không có Kinh Thánh trong <b>{0}</b>. Vì vậy, mình sẽ vẫn dùng Kinh Thánh bằng <b>{1}</b> nhé.
+  - Mình không tìm được Kinh Thánh trong <b>{0}</b>. Vậy nên mình sẽ vẫn dùng Kinh Thánh trong <b>{1}</b>.
+
+
+# {0} -> Italian
+# {1} -> feedback command
+no_botlang_but:
+  - Dù mình chưa thể nói chuyện bằng <b>{0}</b>, mình vẫn có thể hiểu nếu bạn gửi cho mình tên sách Kinh Thánh bằng <b>{1}</b>.
+    Nếu bạn muốn giúp dịch, xin bạn để lại phản hồi /{1} cho nhà phát triển nhé.
+  - Mình chưa được lập trình để nói được <b>{0}</b>, nhưng bạn có thể dạy cho mình. Nếu bạn đồng ý, xin bấm /{1} để nhà phát triển biết.
+    Ngay bây giờ, mình vẫn có thể hiểu được nếu bạn gửi cho mình địa chỉ Kinh Thánh bằng <b>{0}</b>.
+
+
+# Feedback conversation handler
+feedback_1: Bạn có gợi ý gì không? Nếu không có vấn đề gì thì bạn có thể thoát khỏi cuộc trò chuyện này bằng cách bấm.
+feedback_2: Cảm ơn bạn đã phản hồi ý kiến.
+feedback_3: Ồ! Xin bạn đừng lo nhé.
+
+
+# {0} -> count verses
+# {1} -> your sign language
+# {2} -> count overlay
+# {3} -> duration
+# {4} -> file size
+stat: >
+  Bạn đã nhận được tất cả <b>{0}</b> câu trong <b>{1}</b>. Với <b>{2}</b> câu có chèn chữ.
+  Tổng thời lượng của các video là <b>{3}</b> phút và có dung lượng là <b>{4}</b> MB.
+
+
+# {0} -> count verses
+# {1} -> count sign languages
+# {2} -> count overlay
+# {3} -> duration
+# {4} -> file size
+stats: >
+  Bạn đã nhận được tất cả <b>{0}</b> câu trong <b>{1}</b> ngôn ngữ ký hiệu. Với <b>{2}</b> câu có chèn chữ.
+  Tổng thời lượng của các video là <b>{3}</b> phút và có dung lượng là <b>{4}</b> MB.
+
+
+# ADMIN. You don't have to translate it
+waiting_list: "{} @{} <code>{}</code> is in the waiting list."
+from_github: "{} has joined from the GitHub link."
+introduced_himself: "{} {} @{} <code>{}</code> has introduced themselves."
+get_feedback: "{} @{} has send you a feedback."
+db_summary: |
+  <pre>
+  {:>5} Saved markers
+  {:>5} Sent verses
+  {:>5} Searched chapters
+  {:>5} Searched books
+  {:>5} Sign Language
+  {:>5} Allowed users
+  {:>5} Blocked users
+  {:>5} Users in the waiting list
+  {:>5} Total users
+  </pre>
+wrong_notify: Correct syntax is <code>/{} user_id1...</code>
+notify: >
+  Send me the messages you want me to forward. They can be stickers, gifs, videos, images, anything. When you're ready,
+  type /{}. To cancel, use /{}.
+notify_success: Messages sent.
+notify_cancel: Canceled.
+logfile_notfound: Log file not found.
+setcommands: Language-scoped and user-specific commands set.
+user_added: "{} {} has been added."
+warn_user: I couldn't perform the operation because the user was not registered in the database.
+user_banned: The user has been banned.
+user_stopped_bot: I couldn't add them because the user has stopped the bot.
