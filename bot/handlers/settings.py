@@ -154,10 +154,8 @@ def set_sign_language(update: Update, context: CallbackContext, sign_language_co
     else:
         update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
 
-    if not get.edition(language_code=sign_language_code):
-        fetch.editions()
-    if not get.books(sign_language_code):
-        fetch.books(language_code=sign_language_code)
+    fetch.editions(sign_language_code)
+    fetch.books(language_code=sign_language_code)
 
 
 def build_botlangs():
@@ -192,28 +190,21 @@ def set_bot_language(update: Update, context: CallbackContext, bot_language_code
     else:
         bot_language_code = bot_language_code or context.args[0].lower()
     tt = TextTranslator(bot_language_code)
-    text = ''
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     user = get.user(update.effective_user.id)
-    if not get.edition(language_code=bot_language_code):
-        fetch.editions()
-    if not get.books(bot_language_code):
-        try:
-            fetch.books(bot_language_code)
-        except exc.EditionNotFound:
-            text += tt.no_bible(get.language(code=bot_language_code).vernacular, user.bot_language.vernacular)
+    fetch.editions(bot_language_code)
+    fetch.books(bot_language_code)
 
-    if get.books(bot_language_code):
-        user = add.or_update_user(update.effective_user.id,
-                                  bot_language_code=bot_language_code,
-                                  sign_language_name=how_to_say(user.sign_language.code, bot_language_code),
-                                  with_overlay=True if user.overlay_language else False)
-        set_my_commands(update.effective_user, user.bot_language)
+    user = add.or_update_user(update.effective_user.id,
+                              bot_language_code=bot_language_code,
+                              sign_language_name=how_to_say(user.sign_language.code, bot_language_code),
+                              with_overlay=True if user.overlay_language else False)
+    set_my_commands(update.effective_user, user.bot_language)
 
-        if tt.language['code'] != bot_language_code:
-            text = tt.no_botlang_but(user.bot_language.vernacular.capitalize(), MyCommand.FEEDBACK) + '\n\n' + text
-        else:
-            text = tt.ok_botlang(user.bot_language.vernacular.capitalize()) + '\n\n' + text
+    if tt.language['code'] != bot_language_code:
+        text = tt.no_botlang_but(user.bot_language.vernacular.capitalize(), MyCommand.FEEDBACK)
+    else:
+        text = tt.ok_botlang(user.bot_language.vernacular.capitalize())
 
     if update.callback_query:
         update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)

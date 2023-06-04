@@ -65,7 +65,10 @@ def languages():
 
 
 
-def editions():
+def editions(language_code: str = None):
+    if language_code is not None and get.edition(language_code):
+        logger.info(f"I'm lazy and I'm not going to fetch editions because I already have it in {language_code!r}")
+        return
     logger.info('Fetching Bible Editions...')
     data = browser.open("https://www.jw.org/en/library/bible/json/").json()
     edts = []
@@ -88,7 +91,10 @@ def editions():
     logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
 
 
-def books(language_code: str):
+def books(language_code: str, lazy=True):
+    if lazy and get.books(language_code):
+        logger.info(f"I'm lazy and I'm not going to fetch books in {language_code!r}")
+        return
     logger.info(f'Fetching books language_code={language_code!r}')
     edition = get.edition(language_code)
     if not edition:
