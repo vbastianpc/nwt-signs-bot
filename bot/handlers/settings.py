@@ -45,9 +45,12 @@ def show_current_settings(update: Update, _: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
     tt = TextTranslator(user.bot_language.code)
     update.message.reply_text(
-        text=tt.current_settings(user.sign_language.code,
-                                 user.sign_language.vernacular,
-                                 user.bot_language.code,
+        text=tt.multiple_signlanguage(
+            *(user.sign_language.meps_symbol, user.sign_language.vernacular),
+            *(user.sign_language2.meps_symbol, user.sign_language2.vernacular) if user.sign_language2 else ('', ''),
+            *(user.sign_language3.meps_symbol, user.sign_language3.vernacular) if user.sign_language3 else ('', '')
+        ) + '\n\n' +
+             tt.current_settings(user.bot_language.code,
                                  user.bot_language.vernacular,
                                  tt.enabled if user.overlay_language else tt.disabled,
         ),
@@ -87,9 +90,11 @@ def manage_sign_languages(update: Update, context: CallbackContext):
     user.sign_language_name = how_to_say(user.sign_language_code, user.bot_language_code)
     tt = TextTranslator(user.bot_language_code)
     update.message.reply_text(
-        text=tt.multiple_signlanguage(user.sign_language.vernacular if user.sign_language else '-',
-                                      user.sign_language2.vernacular if user.sign_language2 else '-',
-                                      user.sign_language3.vernacular if user.sign_language3 else '-'),
+        text=tt.multiple_signlanguage(
+            *(user.sign_language.meps_symbol, user.sign_language.vernacular),
+            *(user.sign_language2.meps_symbol, user.sign_language2.vernacular) if user.sign_language2 else ('', ''),
+            *(user.sign_language3.meps_symbol, user.sign_language3.vernacular) if user.sign_language3 else ('', '')
+        ),
         parse_mode=ParseMode.HTML)
 
 

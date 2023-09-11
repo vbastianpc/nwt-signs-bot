@@ -321,9 +321,11 @@ fallback:
 # {3} -> English
 # {4} -> Enabled or Disabled
 current_settings: |
-  Lengua de señas: <b>{0} - {1}</b>
-  Idioma del bot: <b>{2} - {3}</b>
-  Superposición de texto: <b>{4}</b>
+  <b>Idioma del bot</b>
+  {0} - {1}
+
+  <b>Superposición de texto</b>
+  {2}
 
 
 menu_signlanguage: |
@@ -340,9 +342,9 @@ ok_signlanguage_code:
 
 multiple_signlanguage: |
   <b>Lenguas de Señas</b>
-  1. {0}
-  2. {1}
-  3. {2}
+  1. {0} - {1}
+  2. {2} - {3}
+  3. {4} - {5}
 
 
 choose_botlang: <b>Elige un idioma</b> para que nos entendamos mejor

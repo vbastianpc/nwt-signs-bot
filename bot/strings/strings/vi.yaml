@@ -307,9 +307,11 @@ fallback:
 # {3} -> English
 # {4} -> Enabled or Disabled
 current_settings: |
-  Ngôn ngữ ký hiệu đã chọn: <b>{1}—{0}</b>
-  Ngôn ngữ bot đã chọn: <b>{3}—{2}</b>
-  Tính năng chèn chữ: <b>{4}</b>
+  <b>Ngôn ngữ bot đã chọn</b>
+  {0} — {1}
+  
+  <b>Tính năng chèn chữ</b>
+  {2}
 
 
 menu_signlanguage: |
