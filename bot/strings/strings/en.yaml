@@ -326,6 +326,13 @@ ok_signlanguage_code:
   - Okay! Now I will send you Bible passages in <b>{}</b>.
 
 
+multiple_signlanguage: |
+  <b>Sign Languages</b>
+  1. {0}
+  2. {1}
+  3. {2}
+
+
 choose_botlang: <b>Choose a language</b> so we can understand each other
 
 # {} -> English
@@ -381,9 +388,9 @@ stats: >
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} @{} <code>{}</code> is in the waiting list."
+waiting_list: "{} {} <code>{}</code> is in the waiting list."
 from_github: "{} has joined from the GitHub link."
-introduced_himself: "{} {} @{} <code>{}</code> has introduced themselves."
+introduced_himself: "{} {} {} <code>{}</code> has introduced themselves."
 get_feedback: "{} @{} has send you a feedback."
 db_summary: |
   <pre>
