@@ -113,7 +113,7 @@ if __name__ == '__main__':
     logger.info('Starting configuration...')
     fetch.languages()
     
-    bot_language = get.parse_language(input('Type your bot language: (en|es|vi) ') or 'es')
+    bot_language = get.parse_language(input('Type your bot language: (en|es|vi) ') or 'en')
     sign_language = get.parse_language(input('Type your main sign language code: ') or 'ase')
     sign_language2 = get.parse_language(input('Type your secondary sign language code: '))
     sign_language3 = get.parse_language(input('Type your tertiary sign language code: '))
@@ -142,8 +142,8 @@ if __name__ == '__main__':
         is_premium=member.user.is_premium,
         bot_language_code=bot_language.code,
         sign_language_code=sign_language.code,
-        sign_language_code2=sign_language2.code,
-        sign_language_code3=sign_language3.code,
+        sign_language_code2=sign_language2.code if sign_language2 else None,
+        sign_language_code3=sign_language3.code if sign_language3 else None,
         sign_language_name=how_to_say(sign_language.code, bot_language.code),
         status=User.AUTHORIZED,
     )
