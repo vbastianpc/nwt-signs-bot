@@ -34,6 +34,7 @@ class BibleCitationNotFound(BaseBibleException):
 
 class VerseNotExists(BaseBibleException):
     def __init__(self, booknum: int, bookname: str, chapternum: int, wrong_verses: str, count_wrong: int):
+        self.booknum = booknum
         self.bookname = bookname
         self.chapternum = chapternum
         self.wrong_verses = wrong_verses
