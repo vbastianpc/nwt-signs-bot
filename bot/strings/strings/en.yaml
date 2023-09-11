@@ -242,10 +242,18 @@ sending: Sending
 help: >
   <b>Sign Language</b>
 
+  Type /{0}, navigate the menu, and choose your sign language.
+
+
   Set sign language by typing it's code as a command. For example, for American Sign Language, type /ase or /ASL.
 
 
-  If you don't know the code, use /{0}, navigate through the menu, and choose one.
+  You can also configure up to 3 sign languages. If a verse is not available in the primary sign language, I will
+  look for it in the next one. Type
+
+
+  <code>/{0} csg lsc asl</code>
+
 
 
   <b>Bible Passages</b>

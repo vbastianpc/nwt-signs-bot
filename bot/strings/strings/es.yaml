@@ -243,11 +243,17 @@ sending: Enviando
 help: >
   <b>Lengua de Señas</b>
 
-  Cambia la lengua de señas escribiendo su código como comando. Por ejemplo, para lengua de señas americana, escribe
-  /ase o /ASL
+  Usa /{0}, navega por el menú y elige tu lengua de señas.
 
 
-  Si no conoces su código, usa /{0}, navega por el menú y elige una.
+  También puedes cambiar tu lengua de señas escribiendo su código como comando. Por ejemplo, para lengua de señas
+  americana, escribe /ase o /ASL.
+
+
+  También puedes configurar hasta 3 lenguas de señas. Si un versículo no está en la lengua de señas primaria, lo buscaré
+  en la siguiente. Usa
+
+  <code>/{0} csg lsc asl</code>
 
 
 
