@@ -95,6 +95,7 @@ class TextTranslator:
     current_settings = Self()
     menu_signlanguage = Self()
     ok_signlanguage_code = Self()
+    multiple_signlanguage = Self()
     choose_botlang = Self()
     ok_botlang = Self()
     no_bible = Self()
