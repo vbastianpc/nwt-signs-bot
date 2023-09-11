@@ -256,8 +256,7 @@ help: >
   Puedes pedirme hasta 5 citas bíblicas en un solo mensaje. Usa el nombre del libro bíblico completo o su abreviación.
 
 
-  También puedes cambiar momentáneamente tu lengua de señas. Escribe su código seguido del pasaje de la Biblia.
-  Por ejemplo:
+  También puedes consultar pasajes bíblicos en otras lenguas de señas. Por ejemplo:
 
 
   <code>/ase 1 Tim 2:6</code>
@@ -307,7 +306,7 @@ fallback:
   - Lo siento, no puedo ayudarte con eso.
   - Uhm... parece que eso no es una cita bíblica, ¿verdad?
   - Si necesitas ayuda, puedes encontrarla en /{0}
-  - No puedo ayudarte con eso, pero puedo enviarte pasajes de la Biblia en {} lenguas de señas.
+  - No puedo ayudarte con eso, pero puedo enviarte pasajes de la Biblia en {1} lenguas de señas.
 
 
 # {0} -> ase
@@ -331,6 +330,13 @@ ok_signlanguage_code:
   - ¡Muy bien! Ahora te enviaré videos en <b>{}</b>.
   - ¡Perfecto! Ahora buscaré pasajes bíblicos en <b>{}</b>.
   - ¡Ok! Ahora te enviaré pasajes de la Biblia en <b>{}</b>.
+
+
+multiple_signlanguage: |
+  <b>Lenguas de Señas</b>
+  1. {0}
+  2. {1}
+  3. {2}
 
 
 choose_botlang: <b>Elige un idioma</b> para que nos entendamos mejor
@@ -390,9 +396,9 @@ stats: >
 
 
 # ADMIN. There's no need translate it
-waiting_list: "{} @{} <code>{}</code> está en la sala de espera."
+waiting_list: "{} {} <code>{}</code> está en la sala de espera."
 from_github: "{} ha entrado desde el enlace de github."
-introduced_himself: "{} {} @{} <code>{}</code> se ha presentado."
+introduced_himself: "{} {} {} <code>{}</code> se ha presentado."
 get_feedback: "{} @{} te ha dejado un feedback."
 db_summary: |
   <pre>
