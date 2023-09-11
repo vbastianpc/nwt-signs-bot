@@ -123,7 +123,7 @@ def drawtext(
     return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
 
 
-def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int]:
+def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int, int]:
     frame = Path(__file__).parent / 'frame.png'
     run(
         shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
@@ -131,21 +131,25 @@ def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int]:
     )
     image = Image.open(frame) # already mode L, grayscale because -vf edgedetect
     # frame.unlink()
-    box = [0, 30, 150, 80] # horizontal box width=150, height=50
+    box = [10, 30, 160, 80] # horizontal box width=150, height=50
     for _ in range(300):
         if not np.array(image.crop(box)).any():
             y = box[1] + round(25 * image.height / 720)
             break
         box[1] += 1
         box[3] += 1
+    else:
+        raise StopIteration
 
-    box2 = [0, 0, 1, 150] # vertical line width=1, height=150
+    box2 = [10, 0, 11, 150] # vertical line width=1, height=150
     for _ in range(200):
         if np.array(image.crop(box2)).any():
             x = box2[0]
             break
         box2[0] += 1
         box2[2] += 1
+    else:
+        raise StopIteration
     return x, y, image.height
 
 
