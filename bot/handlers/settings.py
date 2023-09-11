@@ -78,14 +78,11 @@ def manage_sign_languages(update: Update, context: CallbackContext):
     user = get.user(update.effective_user.id)
     args = [*context.args, '', '', ''][:3] # len(args) == 3 -> True
     sl = list(filter(lambda x: x and x.is_sign_language, [get.parse_language(args[0]), get.parse_language(args[1]), get.parse_language(args[2])]))
-    try:
-        user.sign_language_code = sl[0].code
-        user.sign_language_code2 = sl[1].code
-        user.sign_language_code3 = sl[2].code
-    except IndexError:
-        pass
-    finally:
-        session.commit()
+    sl += [None, None, None]
+    user.sign_language_code = sl[0].code if sl[0] else user.sign_language.code
+    user.sign_language_code2 = sl[1].code if sl[1] else None
+    user.sign_language_code3 = sl[2].code if sl[2] else None
+    session.commit()
 
     user.sign_language_name = how_to_say(user.sign_language_code, user.bot_language_code)
     tt = TextTranslator(user.bot_language_code)
