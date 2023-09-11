@@ -16,6 +16,7 @@ from bot.database import get
 from bot.utils.decorators import vip, admin
 from bot import AdminCommand, MyCommand
 from bot.secret import LOG_GROUP_ID
+from bot.secret import TOPIC_ERROR
 from bot.logs import get_logger
 from bot.strings import TextTranslator
 
@@ -117,7 +118,8 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     logger.error(f'Type Error: {type(context.error)}')
     if isinstance(context.error, OperationalError) and context.error.orig.args[0] == 'database is locked':
         logger.error('database is locked')
-        context.bot.send_message(chat_id=LOG_GROUP_ID, text='<pre>database is locked</pre>', parse_mode=ParseMode.HTML)
+        context.bot.send_message(chat_id=LOG_GROUP_ID, text='<pre>database is locked</pre>',
+                                 message_thread_id=TOPIC_ERROR, parse_mode=ParseMode.HTML)
         log_error(update, context)
     else:
         log_error(update, context)

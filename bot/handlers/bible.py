@@ -16,6 +16,8 @@ from bot import MyCommand
 from bot.database import report
 from bot.secret import LOG_GROUP_ID
 from bot.secret import TOPIC_BACKUP
+from bot.secret import TOPIC_USE
+from bot.secret import TOPIC_ERROR
 from bot.logs import get_logger
 from bot.jw import BiblePassage
 from bot.jw import BibleEpub
@@ -312,12 +314,14 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
         logger.critical('Al parecer se ha eliminado de los servidores de Telegram file_id=%s', file.telegram_file_id)
         context.bot.send_message(
             LOG_GROUP_ID,
-            f'Al parecer se ha eliminado de los servidores de Telegram file_id={file.telegram_file_id}')
+            text=f'Al parecer se ha eliminado de los servidores de Telegram file_id={file.telegram_file_id}',
+            message_thread_id=TOPIC_ERROR,
+        )
         send_single_verse(update, context, p, epub)
         raise e
     add.file2user(file.id, get.user(update.effective_user.id).id)
-    context.bot.copy_message(LOG_GROUP_ID, update.effective_user.id,
-                                msgvideo.message_id, disable_notification=True)
+    context.bot.copy_message(LOG_GROUP_ID, update.effective_user.id, msgvideo.message_id,
+                             message_thread_id=TOPIC_USE, disable_notification=True)
 
 
 def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
@@ -375,7 +379,8 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
         disable_web_page_preview=True,
     )
     thumbnail.unlink()
-    context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id, disable_notification=True)
+    context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id,
+                             message_thread_id=TOPIC_USE, disable_notification=True)
     msg.delete()
     videopath.unlink()
 
@@ -453,7 +458,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     )
     thumbnail.unlink()
     msg.delete()
-    context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id, disable_notification=True)
+    context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id,
+                             message_thread_id=TOPIC_USE, disable_notification=True)
 
     file = add.file(chapter_id=p.chapter.id,
                     verses=p.verses,

@@ -46,15 +46,13 @@ def ok_feedback(update: Update, context: CallbackContext):
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     update.message.reply_text(tt.feedback_2)
     msg = context.bot.send_message(
-        chat_id=ADMIN,
+        chat_id=LOG_GROUP_ID,
         text='#feedback\n' + TextTranslator(get.user(ADMIN).bot_language_code).get_feedback(
             mention_html(update.effective_user.id, update.effective_user.full_name),
             escape(update.effective_user.username)),
         parse_mode=ParseMode.HTML
     )
-    msg.forward(LOG_GROUP_ID)
     for msg in context.chat_data['feedback']:
-        msg.forward(ADMIN)
         msg.forward(LOG_GROUP_ID)
 
 
