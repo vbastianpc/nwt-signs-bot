@@ -13,16 +13,16 @@ from telegram.parsemode import ParseMode
 from sqlalchemy.exc import OperationalError
 
 from bot.database import get
-from bot.utils.decorators import admin
+from bot.utils.decorators import vip, admin
 from bot import AdminCommand, MyCommand
-from bot.secret import LOG_CHANNEL_ID
+from bot.secret import LOG_GROUP_ID
 from bot.logs import get_logger
 from bot.strings import TextTranslator
 
 
 logger = get_logger(__name__)
 
-
+@vip
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
     if not context.args:
@@ -42,6 +42,7 @@ def test_data(update: Update, context: CallbackContext) -> None:
     update.message.reply_markdown_v2(f'```\n{json_data[:MAX_MESSAGE_LENGTH]}```')
 
 
+@vip
 @admin
 def notify(update: Update, context: CallbackContext):
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
@@ -85,6 +86,7 @@ def cancel(update: Update, context: CallbackContext):
     return -1
 
 
+@vip
 @admin
 def logs(update: Update, context: CallbackContext):
     try:
@@ -98,6 +100,7 @@ def logs(update: Update, context: CallbackContext):
     return
 
 
+@vip
 @admin
 def logfile(update: Update, context: CallbackContext):
     try:
@@ -114,7 +117,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
     logger.error(f'Type Error: {type(context.error)}')
     if isinstance(context.error, OperationalError) and context.error.orig.args[0] == 'database is locked':
         logger.error('database is locked')
-        context.bot.send_message(chat_id=LOG_CHANNEL_ID, text='<pre>database is locked</pre>', parse_mode=ParseMode.HTML)
+        context.bot.send_message(chat_id=LOG_GROUP_ID, text='<pre>database is locked</pre>', parse_mode=ParseMode.HTML)
         log_error(update, context)
     else:
         log_error(update, context)
@@ -133,10 +136,10 @@ def log_error(update: Update, context: CallbackContext) -> None:
         f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
     )
 
-    # context.bot.send_message(chat_id=LOG_CHANNEL_ID, text=message, parse_mode=ParseMode.HTML)
+    # context.bot.send_message(chat_id=LOG_GROUP_ID, text=message, parse_mode=ParseMode.HTML)
     # for tb_string in tb_list:
     #     tb_string = f'<pre>{html.escape(tb_string)}</pre>'
-    #     context.bot.send_message(chat_id=LOG_CHANNEL_ID,
+    #     context.bot.send_message(chat_id=LOG_GROUP_ID,
     #                              text=tb_string,
     #                              parse_mode=ParseMode.HTML,
     #                              disable_notification=True)

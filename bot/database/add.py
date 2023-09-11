@@ -16,6 +16,8 @@ logger = get_logger(__name__)
 def or_update_user(
         telegram_user_id: int,
         sign_language_code: str | None = None,
+        sign_language_code2: str | None = None,
+        sign_language_code3: str | None = None,
         first_name: str | None = None,
         last_name: str | None = None,
         user_name: str | None = None,
@@ -34,6 +36,10 @@ def or_update_user(
 
     if sign_language_code:
         user.sign_language_code = sign_language_code
+    if sign_language_code2:
+        user.sign_language_code2 = sign_language_code2
+    if sign_language_code3:
+        user.sign_language_code3 = sign_language_code3
     if first_name:
         user.first_name = first_name
     if last_name is not None:

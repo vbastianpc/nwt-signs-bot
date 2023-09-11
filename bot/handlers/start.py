@@ -17,7 +17,8 @@ from bot.handlers.settings import prev_next_signlanguage
 from bot.handlers.settings import SELECT_SIGNLANGUAGE
 from bot.handlers.settings import PAGE_SIGNLANGUAGE
 from bot.secret import ADMIN
-from bot.secret import LOG_CHANNEL_ID
+from bot.secret import LOG_GROUP_ID
+from bot.secret import TOPIC_WAITING
 from bot.logs import get_logger
 from bot.utils.decorators import forw
 from bot.utils import how_to_say
@@ -31,7 +32,7 @@ logger = get_logger(__name__)
 
 TAG_START = '#start'
 
-@forw
+
 def start(update: Update, context: CallbackContext) -> None:
     tuser = update.effective_user
     user = get.user(update.effective_user.id)
@@ -44,7 +45,21 @@ def start(update: Update, context: CallbackContext) -> None:
     if user and user.is_authorized() and not user.sign_language:
         update.message.reply_text(tt.step_2(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
         return 3
-    elif not user:
+    if user and not user.is_authorized():
+        context.bot.send_message(
+            chat_id=LOG_GROUP_ID,
+            message_thread_id=TOPIC_WAITING,
+            text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
+                mention_html(tuser.id, tuser.full_name),
+                f'@{tuser.username}' if tuser.username else '',
+                tuser.id),
+            parse_mode=ParseMode.HTML
+        )
+        update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
+                                parse_mode=ParseMode.HTML,
+                                disable_web_page_preview=True)
+        return 1
+    if not user:
         add.or_update_user(tuser.id,
                            first_name=tuser.first_name,
                            last_name=tuser.last_name or '',
@@ -52,16 +67,6 @@ def start(update: Update, context: CallbackContext) -> None:
                            is_premium=tuser.is_premium,
                            bot_language_code=bot_language_code,
                            status=User.WAITING)
-    context.bot.send_message(
-        chat_id=ADMIN,
-        text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
-            tuser.full_name, tuser.username or '', tuser.id),
-        parse_mode=ParseMode.HTML
-    )
-    update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
-                              parse_mode=ParseMode.HTML,
-                              disable_web_page_preview=True)
-    return 1
 
 
 def whois(update: Update, context: CallbackContext):
@@ -69,15 +74,17 @@ def whois(update: Update, context: CallbackContext):
     user = get.user(tuser.id)
     t = TextTranslator(user.bot_language_code)
     update.message.reply_text(t.wait)
-    msg = context.bot.send_message(
-        chat_id=ADMIN,
-        text=t.introduced_himself(TAG_START, mention_html(tuser.id, tuser.full_name),
-                                  escape(tuser.username or ''), tuser.id),
-        parse_mode=ParseMode.HTML,
-    )
-    context.bot.forward_message(chat_id=ADMIN, from_chat_id=tuser.id, message_id=update.effective_message.message_id)
-    context.bot.forward_message(chat_id=LOG_CHANNEL_ID, from_chat_id=ADMIN, message_id=msg.message_id)
-    context.bot.forward_message(LOG_CHANNEL_ID, tuser.id, update.message.message_id)
+    context.bot.send_message(chat_id=LOG_GROUP_ID,
+                             message_thread_id=TOPIC_WAITING,
+                             text=t.introduced_himself(TAG_START,
+                                                       mention_html(tuser.id, tuser.full_name),
+                                                       f'@{escape(tuser.username)}' if tuser.username else '',
+                                                       tuser.id),
+                             parse_mode=ParseMode.HTML)
+    context.bot.forward_message(chat_id=LOG_GROUP_ID,
+                                message_thread_id=TOPIC_WAITING,
+                                from_chat_id=tuser.id,
+                                message_id=update.effective_message.message_id)
     return 2
 
 
@@ -104,7 +111,8 @@ def start_set_sign_language(update: Update, context: CallbackContext) -> None:
 
 def echo(value: int) -> Callable[[Update, CallbackContext], int]:
     def fun(update: Update, context: CallbackContext) -> int:
-        context.bot.forward_message(chat_id=ADMIN,
+        context.bot.forward_message(chat_id=LOG_GROUP_ID,
+                                    message_thread_id=TOPIC_WAITING,
                                     from_chat_id=update.message.chat_id,
                                     message_id=update.message.message_id)
         return value

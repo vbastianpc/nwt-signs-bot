@@ -228,6 +228,8 @@ class User(Base):
     user_name = Column('UserName', String)
     is_premium = Column('IsPremium', Boolean)
     sign_language_code = Column('SignLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
+    sign_language_code2 = Column('SignLanguageCode2', Integer, ForeignKey('Language.LanguageCode'))
+    sign_language_code3 = Column('SignLanguageCode3', Integer, ForeignKey('Language.LanguageCode'))
     bot_language_code = Column('BotLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     sign_language_name = Column('SignLanguageName', String) # sign language name in bot language
@@ -236,11 +238,15 @@ class User(Base):
     last_active_datetime = Column('LastActiveDatetime', DateTime)
 
     bot_language: Language = relationship('Language', back_populates='bot_language_users',
-                                foreign_keys=[bot_language_code])
+                                          foreign_keys=[bot_language_code])
     sign_language: Language = relationship('Language', back_populates='sign_language_users',
-                                 foreign_keys=[sign_language_code])
+                                           foreign_keys=[sign_language_code])
+    sign_language2: Language = relationship('Language', back_populates='sign_language_users',
+                                            foreign_keys=[sign_language_code2])
+    sign_language3: Language = relationship('Language', back_populates='sign_language_users',
+                                            foreign_keys=[sign_language_code3])
     overlay_language: Language = relationship('Language', back_populates='overlay_users',
-                                    foreign_keys=[overlay_language_code])
+                                              foreign_keys=[overlay_language_code])
     files: list[File] = relationship('File', back_populates='users', secondary='File2User')
 
     def is_authorized(self) -> bool:

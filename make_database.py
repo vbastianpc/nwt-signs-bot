@@ -110,42 +110,41 @@ def fetch_nwtdb():
 
 
 if __name__ == '__main__':
-    
-    your_sign_language_code = input('Type your sign language code: (csg) ') or 'csg'
-    your_bot_language_code = input('Type you bot language: (en|es|vi) ') or 'es'
     logger.info('Starting configuration...')
+    fetch.languages()
+    
+    bot_language = get.parse_language(input('Type your bot language: (en|es|vi) ') or 'es')
+    sign_language = get.parse_language(input('Type your main sign language code: ') or 'ase')
+    sign_language2 = get.parse_language(input('Type your secondary sign language code: '))
+    sign_language3 = get.parse_language(input('Type your tertiary sign language code: '))
     get_nwt_db(overwrite=False)
     fetch_nwtdb()
     t0 = time.time()
-    fetch.languages()
     print(f'{time.time() - t0:.2f}')
     fetch.editions()
-    for language_code in set([
-        your_bot_language_code,
-        your_sign_language_code,
-    #     'es',
-    #     'en',
-    #     # 'ko',
-    #     # 'ase',
-    #     'vi',
-    #     'csg',
+    for lang in set([
+        bot_language,
+        sign_language,
+        sign_language2,
+        sign_language3,
     ]):
-        fetch.books(language_code=language_code)
+        if lang:
+            fetch.books(language_code=lang.code)
     logger.info('Connecting to Telegram API Bot')
     bot = Bot(TOKEN)
     member = bot.get_chat_member(chat_id=ADMIN, user_id=ADMIN)
-    sign_language = get.language(code=your_sign_language_code)
-    your_bot_language = get.language(code=your_bot_language_code)
     logger.info('Adding user admin')
-    add.or_update_user(
+    user = add.or_update_user(
         ADMIN,
         first_name=member.user.first_name,
         last_name=member.user.last_name or '',
         user_name=member.user.username,
         is_premium=member.user.is_premium,
-        bot_language_code=your_bot_language_code,
+        bot_language_code=bot_language.code,
         sign_language_code=sign_language.code,
-        sign_language_name=how_to_say(sign_language.code, your_bot_language_code),
+        sign_language_code2=sign_language2.code,
+        sign_language_code3=sign_language3.code,
+        sign_language_name=how_to_say(sign_language.code, bot_language.code),
         status=User.AUTHORIZED,
     )
     logger.info(f'User {member.user.first_name} added to database')

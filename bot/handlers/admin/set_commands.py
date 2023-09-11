@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.error import BadRequest
 
-from bot.utils.decorators import admin
+from bot.utils.decorators import vip, admin
 from bot import strings
 from bot import AdminCommand
 from bot.logs import get_logger
@@ -17,6 +17,7 @@ from bot.secret import ADMIN
 
 logger = get_logger(__name__)
 
+@vip
 @admin
 def reset_commands(update: Update, context: CallbackContext):
     for language_code in strings.botlangs():

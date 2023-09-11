@@ -15,7 +15,7 @@ from bot import MyCommand
 from bot.utils.decorators import forw, vip
 from bot.strings import TextTranslator
 from bot.database import get
-from bot.secret import ADMIN, LOG_CHANNEL_ID
+from bot.secret import ADMIN, LOG_GROUP_ID
 
 
 logger = get_logger(__name__)
@@ -52,10 +52,10 @@ def ok_feedback(update: Update, context: CallbackContext):
             escape(update.effective_user.username)),
         parse_mode=ParseMode.HTML
     )
-    msg.forward(LOG_CHANNEL_ID)
+    msg.forward(LOG_GROUP_ID)
     for msg in context.chat_data['feedback']:
         msg.forward(ADMIN)
-        msg.forward(LOG_CHANNEL_ID)
+        msg.forward(LOG_GROUP_ID)
 
 
 

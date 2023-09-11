@@ -14,6 +14,7 @@ from telegram.ext import CallbackQueryHandler
 from telegram.ext import ConversationHandler
 import telegram.error
 
+from bot.database import session
 from bot.database import get
 from bot.database import add
 from bot.database import fetch
@@ -70,6 +71,31 @@ def build_signlangs(update: Update, _: CallbackContext):
 
 
 @vip
+def manage_sign_languages(update: Update, context: CallbackContext):
+    if not context.args:
+        show_sign_languages(update, context)
+        return
+    user = get.user(update.effective_user.id)
+    args = [*context.args, '', '', ''][:3] # len(args) == 3 -> True
+    sl = list(filter(lambda x: x and x.is_sign_language, [get.parse_language(args[0]), get.parse_language(args[1]), get.parse_language(args[2])]))
+    try:
+        user.sign_language_code = sl[0].code
+        user.sign_language_code2 = sl[1].code
+        user.sign_language_code3 = sl[2].code
+    except IndexError:
+        pass
+    finally:
+        session.commit()
+
+    user.sign_language_name = how_to_say(user.sign_language_code, user.bot_language_code)
+    tt = TextTranslator(user.bot_language_code)
+    update.message.reply_text(
+        text=tt.multiple_signlanguage(user.sign_language.vernacular if user.sign_language else '-',
+                                      user.sign_language2.vernacular if user.sign_language2 else '-',
+                                      user.sign_language3.vernacular if user.sign_language3 else '-'),
+        parse_mode=ParseMode.HTML)
+
+
 def show_sign_languages(update: Update, context: CallbackContext):
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     fetch.languages()
@@ -242,7 +268,7 @@ def prev_next_botlang(update: Update, _: CallbackQueryHandler) -> None:
 
 show_settings_handler = CommandHandler(MyCommand.SETTINGS, show_current_settings)
 
-show_signlangs_handler = CommandHandler(MyCommand.SIGNLANGUAGE, show_sign_languages)
+show_signlangs_handler = CommandHandler(MyCommand.SIGNLANGUAGE, manage_sign_languages)
 set_signlang_handler = CallbackQueryHandler(set_sign_language, pattern=SELECT_SIGNLANGUAGE)
 page_signlang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE)
 

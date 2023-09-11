@@ -7,7 +7,7 @@ from telegram.error import Unauthorized
 
 from bot import MyCommand
 from bot.utils import now
-from bot.utils.decorators import admin
+from bot.utils.decorators import vip, admin
 from bot.database import get
 from bot.database import add
 from bot.database import fetch
@@ -21,6 +21,7 @@ from bot.strings import TextTranslator
 logger = get_logger(__name__)
 
 
+@vip
 @admin
 def autorizacion(update: Update, context: CallbackContext):
     try:
@@ -54,6 +55,7 @@ def autorizacion(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=new_telegram_id, text=tt2.step_1(new_user.first_name, MyCommand.START))
 
 
+@vip
 @admin
 def delete_user(update: Update, context: CallbackContext):
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
@@ -66,6 +68,7 @@ def delete_user(update: Update, context: CallbackContext):
     update.message.reply_text(t.user_banned)
 
 
+@vip
 @admin
 def sending_users(update: Update, _: CallbackContext):
     def print_users(users: list[User], title: str = ''):
@@ -87,6 +90,7 @@ def sending_users(update: Update, _: CallbackContext):
     print_users(get.waiting_users(), 'WAITING')
 
 
+@vip
 @admin
 def backup(update: Update, context: CallbackContext):
     context.bot.send_document(chat_id=update.effective_chat.id,

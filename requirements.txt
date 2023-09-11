@@ -1,0 +1,9 @@
+python-telegram-bot==13.15
+SQLAlchemy<2.0
+requests
+Unidecode
+mechanicalsoup
+ruamel.yaml
+numpy
+Pillow
+python-dotenv
