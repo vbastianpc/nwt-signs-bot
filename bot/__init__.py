@@ -10,6 +10,7 @@ class MyCommand:
     SETTINGS = 'settings'
     OVERLAY = 'overlay'
     OVERLAYINFO = 'overlayinfo'
+    DELOGO = 'delogo'
     PROTIPS = 'protips'
     
 

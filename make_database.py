@@ -112,7 +112,7 @@ def fetch_nwtdb():
 if __name__ == '__main__':
     logger.info('Starting configuration...')
     fetch.languages()
-    
+
     bot_language = get.parse_language(input('Type your bot language: (en|es|vi) ') or 'en')
     sign_language = get.parse_language(input('Type your main sign language code: ') or 'ase')
     sign_language2 = get.parse_language(input('Type your secondary sign language code: '))

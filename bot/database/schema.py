@@ -139,11 +139,12 @@ class Chapter(Base):
     def language(self) -> Language:
         return self.book.edition.language
 
-    def get_file(self, verses: list[int], overlay_language_code: str | None) -> Type['File'] | None:
+    def get_file(self, verses: list[int], overlay_language_code: str | None, delogo: bool) -> Type['File'] | None:
         if any((file := f) for f in reversed(self.files)
                if f.raw_verses == ' '.join(map(str, verses)) and
                   f.overlay_language_code == overlay_language_code and
-                  f.is_deprecated is False):
+                  f.is_deprecated is False and
+                  f.delogo is delogo):
             return file
         else:
             return None
@@ -196,6 +197,7 @@ class File(Base):
     added_datetime = Column('AddedDatetime', DateTime)
     overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     is_deprecated = Column('IsDeprecated', Boolean, default=False)
+    delogo = Column('Delogo', Boolean)
 
     chapter: Chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
     overlay_language: Language = relationship('Language', back_populates='overlay_files',
@@ -236,6 +238,7 @@ class User(Base):
     status = Column('Status', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
+    delogo = Column('Delogo', Boolean)
 
     bot_language: Language = relationship('Language', back_populates='bot_language_users',
                                           foreign_keys=[bot_language_code])

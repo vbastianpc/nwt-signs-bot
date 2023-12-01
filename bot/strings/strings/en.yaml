@@ -17,7 +17,8 @@ commands:
   start: Start
   signlanguage: Set sign language
   botlanguage: Set bot language
-  overlay: Text overlay
+  overlay: Add text overlay
+  delogo: Replace citation
   settings: Show your settings
   help: Need help?
   stats: View your statistics
@@ -285,21 +286,25 @@ help: >
   Write <code>{4}</code> in any Telegram chat to send Bible passages.
 
 
-# {} -> overlay command
+# {0} -> overlay command
+# {1} -> delogo command
 overlay_info: >
   <b>Text Overlay</b>
 
-  When you activate /{}, you will see the Bible passage in your language. Technically, you can use any combination of
-  languages available on the <a href="https://www.jw.org">JW</a> website.
+  When /{0} is <b>turned on</b>, you will see Bible citation in your language. Technically, you can use any combination
+  of languages available on the <a href="https://www.jw.org">JW</a> website.
+
+  If /{1} is <b>turned on</b>, Bible citation will be replaced by the original.
+
+  If /{1} is <b>turned off</b>, Bible citation will be added below the original bible citation.
 
 
-  If the book is written the same way in both your <i>written language</i> and your <i>sign language</i>,
-  you won't see the text overlay.
+overlay_activated: Text overlay is <b>turned on</b>.
+overlay_deactivated: Text overlay is <b>turned off</b>.
 
 
-overlay_activated: You have <b>activated</b> the text overlay.
-overlay_deactivated: You have <b>deactivated</b> the text overlay.
-
+delogo_activated: Delogo is <b>turned on</b>.
+delogo_deactivated: Delogo is <b>turned off</b>.
 
 # {0} -> help command
 # {1} -> total sign languages

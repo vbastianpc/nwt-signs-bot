@@ -62,6 +62,7 @@ def parse_query(update: Update, context: CallbackContext) -> None:
                 user = get.user(update.effective_user.id)
                 tt = TextTranslator(user.bot_language_code)
                 update.effective_message.reply_text(tt.not_language(command(text)), parse_mode=HTML)
+                continue
             if query(text):
                 if language.is_sign_language is True:
                     add.or_update_user(update.effective_user.id, sign_language_code=language.code)
@@ -283,7 +284,9 @@ def manage_verses(update: Update, context: CallbackContext, p: BiblePassage) -> 
     logger.info('(%s) %s', update.effective_user.name, p.citation)
     user = get.user(update.effective_user.id)
     epub = BibleEpub(get.book(user.bot_language.code, p.book.number), p.chapternumber, p.verses)
-    if (file := p.chapter.get_file(p.verses, user.overlay_language_code if p.book.name != epub.book.name else None)):
+    overlay = user.overlay_language_code if p.book.name != epub.book.name else None
+    delogo = bool(user.delogo and overlay)
+    if (file := p.chapter.get_file(p.verses, overlay, delogo)):
         send_by_fileid(update, context, p, epub, file)
     elif len(p.verses) == 1:
         send_single_verse(update, context, p, epub)
@@ -340,7 +343,8 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
     videopath = video.split(
         p.chapter.get_videomarker(p.verses[0]),
         overlay_text=epub.citation if with_overlay else None,
-        script=user.bot_language.script
+        script=user.bot_language.script,
+        with_delogo=bool(user.delogo and with_overlay)
     )
     update.effective_message.reply_chat_action(ChatAction.UPLOAD_VIDEO)
     msg.edit_text(f'✈️ {tt.sending} <b>{epub.citation}</b>', parse_mode=HTML)
@@ -370,7 +374,8 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
                     duration=msgvideo.video.duration,
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
-                    overlay_language_code=user.overlay_language_code if with_overlay else None)
+                    overlay_language_code=user.overlay_language_code if with_overlay else None,
+                    delogo=bool(user.delogo and user.overlay_language))
     add.file2user(file.id, user.id)
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     update.effective_message.reply_text(
@@ -419,7 +424,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             videopath = video.split(
                 p.chapter.get_videomarker(verse),
                 overlay_text=epub.citation if with_overlay else None,
-                script=user.bot_language.script
+                script=user.bot_language.script,
+                with_delogo=bool(user.delogo and with_overlay)
             )
             paths_to_concatenate.append(videopath)
             new.append((verse, videopath))
@@ -468,7 +474,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
                     duration=msgvideo.video.duration,
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
-                    overlay_language_code=user.overlay_language_code if with_overlay else None)
+                    overlay_language_code=user.overlay_language_code if with_overlay else None,
+                    delogo=bool(user.delogo and with_overlay))
     add.file2user(file.id,user.id)
 
     for verse, videopath in new:
@@ -503,7 +510,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
                         duration=msgvideo.video.duration,
                         citation=p.citation,
                         file_size=msgvideo.video.file_size,
-                        overlay_language_code=user.overlay_language_code if with_overlay else None)
+                        overlay_language_code=user.overlay_language_code if with_overlay else None,
+                        delogo=bool(user.delogo and with_overlay))
     for videopath in paths_to_concatenate + [finalpath]:
         videopath.unlink()
 

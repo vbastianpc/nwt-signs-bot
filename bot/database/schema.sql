@@ -4,16 +4,15 @@ CREATE TABLE "Bible" (
 	"BookNumber" INTEGER, 
 	"ChapterNumber" INTEGER, 
 	"VerseNumber" INTEGER, 
-	"IsApocryphal" BOOLEAN, 
+	"IsOmitted" BOOLEAN, 
 	PRIMARY KEY ("VerseId"), 
 	UNIQUE ("BookNumber", "ChapterNumber", "VerseNumber")
 )
 
 ;
 CREATE TABLE "Language" (
-	"LanguageId" INTEGER NOT NULL, 
-	"LanguageMepsSymbol" VARCHAR NOT NULL, 
 	"LanguageCode" VARCHAR NOT NULL, 
+	"LanguageMepsSymbol" VARCHAR NOT NULL, 
 	"LanguageName" VARCHAR, 
 	"LanguageVernacular" VARCHAR, 
 	"RsConfigSymbol" VARCHAR, 
@@ -21,21 +20,22 @@ CREATE TABLE "Language" (
 	"IsSignLanguage" BOOLEAN, 
 	"LanguageScript" VARCHAR, 
 	"IsRTL" BOOLEAN, 
-	PRIMARY KEY ("LanguageId"), 
-	UNIQUE ("LanguageMepsSymbol"), 
-	UNIQUE ("LanguageCode")
+	"HasWebContent" BOOLEAN, 
+	"IsCounted" BOOLEAN, 
+	PRIMARY KEY ("LanguageCode"), 
+	UNIQUE ("LanguageMepsSymbol")
 )
 
 ;
 CREATE TABLE "Edition" (
 	"EditionId" INTEGER NOT NULL, 
-	"LanguageId" INTEGER NOT NULL, 
+	"LanguageCode" INTEGER NOT NULL, 
 	"Name" VARCHAR, 
 	"SymbolEdition" VARCHAR, 
 	"URL" VARCHAR, 
 	PRIMARY KEY ("EditionId"), 
-	FOREIGN KEY("LanguageId") REFERENCES "Language" ("LanguageId"), 
-	UNIQUE ("LanguageId", "SymbolEdition")
+	FOREIGN KEY("LanguageCode") REFERENCES "Language" ("LanguageCode"), 
+	UNIQUE ("LanguageCode", "SymbolEdition")
 )
 
 ;
@@ -46,16 +46,22 @@ CREATE TABLE "User" (
 	"LastName" VARCHAR, 
 	"UserName" VARCHAR, 
 	"IsPremium" BOOLEAN, 
-	"SignLanguageId" INTEGER, 
-	"BotLanguageId" INTEGER, 
-	"OverlayLanguageId" INTEGER, 
+	"SignLanguageCode" INTEGER, 
+	"SignLanguageCode2" INTEGER, 
+	"SignLanguageCode3" INTEGER, 
+	"BotLanguageCode" INTEGER, 
+	"OverlayLanguageCode" INTEGER, 
+	"SignLanguageName" VARCHAR, 
 	"Status" INTEGER, 
 	"AddedDatetime" DATETIME, 
 	"LastActiveDatetime" DATETIME, 
+	"Delogo" BOOLEAN, 
 	PRIMARY KEY ("UserId"), 
-	FOREIGN KEY("SignLanguageId") REFERENCES "Language" ("LanguageId"), 
-	FOREIGN KEY("BotLanguageId") REFERENCES "Language" ("LanguageId"), 
-	FOREIGN KEY("OverlayLanguageId") REFERENCES "Language" ("LanguageId"), 
+	FOREIGN KEY("SignLanguageCode") REFERENCES "Language" ("LanguageCode"), 
+	FOREIGN KEY("SignLanguageCode2") REFERENCES "Language" ("LanguageCode"), 
+	FOREIGN KEY("SignLanguageCode3") REFERENCES "Language" ("LanguageCode"), 
+	FOREIGN KEY("BotLanguageCode") REFERENCES "Language" ("LanguageCode"), 
+	FOREIGN KEY("OverlayLanguageCode") REFERENCES "Language" ("LanguageCode"), 
 	UNIQUE ("TelegramUserId")
 )
 
@@ -64,7 +70,6 @@ CREATE TABLE "Book" (
 	"BookId" INTEGER NOT NULL, 
 	"EditionId" INTEGER NOT NULL, 
 	"BookNumber" INTEGER, 
-	"ChapterCount" INTEGER, 
 	"StandardName" VARCHAR, 
 	"StandardAbbreviation" VARCHAR, 
 	"OfficialAbbreviation" VARCHAR, 
@@ -101,16 +106,18 @@ CREATE TABLE "File" (
 	"ChapterId" INTEGER NOT NULL, 
 	"TelegramFileId" VARCHAR, 
 	"TelegramFileUniqueId" VARCHAR, 
-	"Duration" INTEGER, 
-	"FileName" VARCHAR, 
-	"RawVerseNumbers" VARCHAR, 
-	"IsSingleVerse" BOOLEAN, 
 	"FileSize" INTEGER, 
+	"Duration" INTEGER, 
+	"Citation" VARCHAR, 
+	"RawVerseNumbers" VARCHAR, 
+	"CountVerses" INTEGER, 
 	"AddedDatetime" DATETIME, 
-	"OverlayLanguageId" INTEGER, 
+	"OverlayLanguageCode" INTEGER, 
+	"IsDeprecated" BOOLEAN, 
+	"Delogo" BOOLEAN, 
 	PRIMARY KEY ("FileId"), 
 	FOREIGN KEY("ChapterId") REFERENCES "Chapter" ("ChapterId"), 
-	FOREIGN KEY("OverlayLanguageId") REFERENCES "Language" ("LanguageId"), 
+	FOREIGN KEY("OverlayLanguageCode") REFERENCES "Language" ("LanguageCode"), 
 	UNIQUE ("TelegramFileId"), 
 	UNIQUE ("TelegramFileUniqueId")
 )

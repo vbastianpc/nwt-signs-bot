@@ -91,6 +91,8 @@ class TextTranslator:
     overlay_info = Self()
     overlay_activated = Self()
     overlay_deactivated = Self()
+    delogo_activated = Self()
+    delogo_deactivated = Self()
     fallback = Self()
     current_settings = Self()
     menu_signlanguage = Self()

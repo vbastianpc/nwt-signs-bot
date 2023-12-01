@@ -17,6 +17,7 @@ from bot.handlers.start import start_handler
 from bot.handlers.start import all_fallback_handler
 from bot.handlers.booknames import bookname_handler
 from bot.handlers.overlay import overlay_handler
+from bot.handlers.overlay import delogo_handler
 from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
@@ -39,6 +40,7 @@ handlers = [
     bookname_handler,
     help_handler,
     overlay_handler,
+    delogo_handler,
     show_settings_handler,
     show_botlang_handler,
     show_signlangs_handler,

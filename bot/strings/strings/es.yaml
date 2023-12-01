@@ -19,6 +19,7 @@ commands:
   signlanguage: Elige una lengua de señas
   botlanguage: Elige un idioma para el bot
   overlay: Superposición de texto
+  delogo: Reemplaza el texto citado
   settings: Muestra tu configuración
   help: ¿Necesitas ayuda?
   stats: Mira tus estadísticas
@@ -45,12 +46,12 @@ barrier_to_entry: >
   Soy un bot que te ayudará a obtener pasajes bíblicos.
   
 
-  Por favor, espera a que el desarrollador acepte tu ingreso. Mientras puedes contarme por qué quieres usar este bot y
+  Mientras esperas a que el desarrollador te acepte, cuéntame por qué quieres usar este bot y
   de dónde eres.
   
 
-  Si quieres aprender más de Dios y su Palabra, o si solo quieres aprender lengua de señas, visita el sitio
-  oficial de los testigos de Jehová JW.ORG o la <a href="https://wol.jw.org">BIBLIOTECA EN LÍNEA Watchtower</a>
+  Si quieres aprender más acerca de Dios, o si quieres aprender lengua de señas, visita el sitio
+  oficial de los testigos de Jehová JW.ORG y la <a href="https://wol.jw.org">BIBLIOTECA EN LÍNEA Watchtower</a>
 
 
 wait: ¡Gracias! Te avisaré cuando seas aceptado.
@@ -289,21 +290,24 @@ help: >
 
 
 
-# {} -> overlay command
+# {0} -> overlay command
+# {1} -> delogo command
 overlay_info: >
   <b>Superposición de texto</b>
 
-  Cuando actives /{}, verás la cita bíblica en tu idioma. Técnicamente puedes usar cualquier combinación de 
+  Cuando actives /{0}, verás la cita bíblica en tu idioma. Técnicamente puedes usar cualquier combinación de 
   idiomas disponibles en el sitio <a href="https://www.jw.org">JW</a>
 
+  Si /{1} está activado, la nueva cita bíblica será reemplazada por la cita bíblica original.
 
-  Si el libro se escribe igual tanto en tu <i>idioma escrito</i> como en tu <i>lengua de señas</i>,
-  no verás la superposición de texto.
+  Si /{1} está desactivado, la nueva cita bíblica se añadirá bajo la cita bíblica original.
 
 
 overlay_activated: Has <b>activado</b> la superposición de texto.
 overlay_deactivated: Has <b>desactivado</b> la superposición de texto.
 
+delogo_activated: Has <b>activado</b> delogo.
+delogo_deactivated: Has <b>desactivado</b> delogo.
 
 # {0} -> help command
 # {1} -> total sign languages

@@ -3,13 +3,12 @@ Table "Bible" {
   "BookNumber" INTEGER [unique]
   "ChapterNumber" INTEGER [unique]
   "VerseNumber" INTEGER [unique]
-  "IsApocryphal" BOOLEAN
+  "IsOmitted" BOOLEAN
 }
 
 Table "Language" {
-  "LanguageId" INTEGER [pk, not null]
+  "LanguageCode" VARCHAR [pk, not null]
   "LanguageMepsSymbol" VARCHAR [unique, not null]
-  "LanguageCode" VARCHAR [unique, not null]
   "LanguageName" VARCHAR
   "LanguageVernacular" VARCHAR
   "RsConfigSymbol" VARCHAR
@@ -17,11 +16,13 @@ Table "Language" {
   "IsSignLanguage" BOOLEAN
   "LanguageScript" VARCHAR
   "IsRTL" BOOLEAN
+  "HasWebContent" BOOLEAN
+  "IsCounted" BOOLEAN
 }
 
 Table "Edition" {
   "EditionId" INTEGER [pk, not null]
-  "LanguageId" INTEGER [unique, not null]
+  "LanguageCode" INTEGER [unique, not null]
   "Name" VARCHAR
   "SymbolEdition" VARCHAR [unique]
   "URL" VARCHAR
@@ -34,19 +35,22 @@ Table "User" {
   "LastName" VARCHAR
   "UserName" VARCHAR
   "IsPremium" BOOLEAN
-  "SignLanguageId" INTEGER
-  "BotLanguageId" INTEGER
-  "OverlayLanguageId" INTEGER
+  "SignLanguageCode" INTEGER
+  "SignLanguageCode2" INTEGER
+  "SignLanguageCode3" INTEGER
+  "BotLanguageCode" INTEGER
+  "OverlayLanguageCode" INTEGER
+  "SignLanguageName" VARCHAR
   "Status" INTEGER
   "AddedDatetime" DATETIME
   "LastActiveDatetime" DATETIME
+  "Delogo" BOOLEAN
 }
 
 Table "Book" {
   "BookId" INTEGER [pk, not null]
   "EditionId" INTEGER [unique, not null]
   "BookNumber" INTEGER [unique]
-  "ChapterCount" INTEGER
   "StandardName" VARCHAR
   "StandardAbbreviation" VARCHAR
   "OfficialAbbreviation" VARCHAR
@@ -75,13 +79,15 @@ Table "File" {
   "ChapterId" INTEGER [not null]
   "TelegramFileId" VARCHAR [unique]
   "TelegramFileUniqueId" VARCHAR [unique]
-  "Duration" INTEGER
-  "FileName" VARCHAR
-  "RawVerseNumbers" VARCHAR
-  "IsSingleVerse" BOOLEAN
   "FileSize" INTEGER
+  "Duration" INTEGER
+  "Citation" VARCHAR
+  "RawVerseNumbers" VARCHAR
+  "CountVerses" INTEGER
   "AddedDatetime" DATETIME
-  "OverlayLanguageId" INTEGER
+  "OverlayLanguageCode" INTEGER
+  "IsDeprecated" BOOLEAN
+  "Delogo" BOOLEAN
 }
 
 Table "VideoMarker" {
@@ -102,13 +108,17 @@ Table "File2User" {
   "Datetime" DATETIME
 }
 
-Ref:"Language"."LanguageId" < "Edition"."LanguageId"
+Ref:"Language"."LanguageCode" < "Edition"."LanguageCode"
 
-Ref:"Language"."LanguageId" < "User"."SignLanguageId"
+Ref:"Language"."LanguageCode" < "User"."SignLanguageCode"
 
-Ref:"Language"."LanguageId" < "User"."BotLanguageId"
+Ref:"Language"."LanguageCode" < "User"."SignLanguageCode2"
 
-Ref:"Language"."LanguageId" < "User"."OverlayLanguageId"
+Ref:"Language"."LanguageCode" < "User"."SignLanguageCode3"
+
+Ref:"Language"."LanguageCode" < "User"."BotLanguageCode"
+
+Ref:"Language"."LanguageCode" < "User"."OverlayLanguageCode"
 
 Ref:"Edition"."EditionId" < "Book"."EditionId"
 
@@ -116,7 +126,7 @@ Ref:"Book"."BookId" < "Chapter"."BookId"
 
 Ref:"Chapter"."ChapterId" < "File"."ChapterId"
 
-Ref:"Language"."LanguageId" < "File"."OverlayLanguageId"
+Ref:"Language"."LanguageCode" < "File"."OverlayLanguageCode"
 
 Ref:"Chapter"."ChapterId" < "VideoMarker"."ChapterId"
 

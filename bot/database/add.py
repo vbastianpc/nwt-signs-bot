@@ -26,7 +26,8 @@ def or_update_user(
         sign_language_name: str = None,
         status: int | None = None,
         with_overlay: bool | None = None,
-        last_active_datetime: datetime | None = None
+        last_active_datetime: datetime | None = None,
+        delogo: bool | None = None
     ) -> User:
     user = session.query(User).filter(User.telegram_user_id == telegram_user_id).one_or_none()
     if not user:
@@ -60,6 +61,8 @@ def or_update_user(
         user.last_active_datetime = last_active_datetime
     if status is not None:
         user.status = status
+    if delogo is not None:
+        user.delogo = delogo
     session.commit()
     return user
 
@@ -72,6 +75,7 @@ def file(
         citation: str,
         file_size: int,
         overlay_language_code: str | None,
+        delogo: bool,
     ) -> File:
     f = File(
         chapter_id=chapter_id,
@@ -84,6 +88,7 @@ def file(
         count_verses=len(verses),
         added_datetime=dt_now(),
         overlay_language_code=overlay_language_code,
+        delogo=delogo,
     )
     session.add(f)
     session.commit()

@@ -15,19 +15,44 @@ from bot.database.schema import VideoMarker
 
 logger = get_logger(__name__)
 
-def split(marker: VideoMarker, overlay_text: str = None, script: str = None) -> Path:
+def split(marker: VideoMarker, overlay_text: str = None, script: str = None, with_delogo: bool = False) -> Path:
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
     output = Path(safechars(marker.label) + ".mp4")
-    if overlay_text:
-        logger.info('Add overlay to ffmpeg')
+
+    frame = Path(__file__).parent / 'frame.png'
+    run(
+        shlex.split(f'ffmpeg -y -ss {marker.start_time} -i "{marker.chapter.url}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
+        capture_output=True, check=True
+    )
+    image = Image.open(frame)
+    if overlay_text and not with_delogo:
+        x, y = coord_empty_space(image)
+        vf = '-vf ' +  drawtext(overlay_text, x, y, 30 * image.height / 720, select_font(script))
+    elif overlay_text and with_delogo:
+        box = find_box(image)
+        x, y = box[0] + 2, box[1] + 2
+        dt = drawtext(overlay_text, x, y, 30 * image.height / 720, select_font(script))
+        vf = '-vf ' + f"delogo=x={box[0]}:y={box[1]}:w={box[2] - box[0]}:h={box[3] - box[1]}:show=0,{dt}"
+    else:
+        vf = ''
+
+    metapath = Path('metadata.txt')
+    metapath.write_text(
+        ';FFMETADATA1\n'
+        f'title={marker.label}\n'
+        f'comment=t.me/nwtsigns_bot\n'
+        '[CHAPTER]\n'
+        'TIMEBASE=1/1000\n'
+        'START=0\n'
+        f'END={parse_time(marker.duration) * 1000}\n'
+        f'title="{marker.label}"\n',
+        encoding='utf-8'
+    )
+    print(f'function: label={marker.label}')
+
     cmd = (
-        'ffmpeg -hide_banner -v warning -y '
-        f'-ss {marker.start_time} '
-        f'-i "{marker.chapter.url}" '
-        f'-t {end} '
-        f' -map_chapters -1 -metadata title="{marker.label}" -metadata comment=t.me/nwtsigns_bot '
-        '-preset veryfast ' + drawtext(marker.chapter.url, overlay_text, script, marker.start_time) +
-        f' "{output}"'
+        f'ffmpeg -hide_banner -v warning -y -ss {marker.start_time} -i "{marker.chapter.url}" -i "{metapath}" '
+        f'-map_metadata 1 -map_chapters 1 -t {end} -preset veryfast {vf} "{output}"'
     )
     logger.info(cmd)
     run(shlex.split(cmd), capture_output=True, check=True)
@@ -45,13 +70,17 @@ def show_streams(video) -> dict[str, str | int]:
 
 
 def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list[str]=None, title:str=None) -> Path:
-    intermediates = []
-    metadata = ';FFMETADATA1\n'
-    offset = 0
-    metapath = Path('metadata.txt')
-    output = Path((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
-
     assert len(inputvideos) == len(title_chapters)
+    output = Path((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
+    metadata = (
+        ';FFMETADATA1\n'
+        f'title={title if title else output.stem}\n'
+        'comment=t.me/nwtsigns_bot\n'
+    )
+
+    metapath = Path('metadata.txt')
+    intermediates = []
+    offset = 0
     for i, video in enumerate(inputvideos):
         out = f'{time.time()}.ts'
         intermediates.append(out)
@@ -73,8 +102,6 @@ def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list
         'ffmpeg -v warning -hide_banner -y '
         f'-i "concat:{concat}"  '
         f'-i "{metapath}" -map_metadata 1 '
-        f'-metadata title="{title if title else output.stem}" '
-        '-metadata comment=t.me/nwtsigns_bot '
         f'-c copy "{output}"' 
     )
     run(shlex.split(cmd), capture_output=True, check=True)
@@ -102,35 +129,25 @@ def make_thumbnail(inputvideo: Path, name=None) -> Path:
 
 
 def drawtext(
-        inputvideo: str,
-        overlay_text: str | None = None,
-        script: str = None,
-        start_time: int = 0
+        overlay_text: str,
+        x: int,
+        y: int,
+        fontsize: float,
+        fontfile: str,
     ) -> str:
-    if not overlay_text:
-        return ''
     overlay_text = overlay_text.replace(':', r'\:')
-    x, y, height = coord(inputvideo, start_time)
     params = {
-        'fontfile': f"'{select_font(script)}'",
-        'text': f"'{overlay_text}'",
+        'fontfile': fontfile,
+        'text': overlay_text,
         'fontcolor': '0xD7D7D7', # '0xA2A2A2'
-        'fontsize': 30 * height / 720, # if r720P else 22,
+        'fontsize': fontsize,
         'x': x,
         'y': y
     }
+    return '"drawtext=' + ":".join([f"{k}='{v}'" for k, v in params.items()]) + '"'
 
-    return '-vf drawtext="' + ':'.join([f"{k}={v}" for k, v in params.items()]) + '"'
 
-
-def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int, int]:
-    frame = Path(__file__).parent / 'frame.png'
-    run(
-        shlex.split(f'ffmpeg -y -ss {start_time} -i "{inputvideo}" -vf edgedetect -frames:v 1 -update 1 "{frame}"'),
-        capture_output=True, check=True
-    )
-    image = Image.open(frame) # already mode L, grayscale because -vf edgedetect
-    # frame.unlink()
+def coord_empty_space(image: Image.Image) -> tuple[int, int]:
     box = [10, 30, 160, 80] # horizontal box width=150, height=50
     for _ in range(300):
         if not np.array(image.crop(box)).any():
@@ -150,17 +167,37 @@ def coord(inputvideo: str, start_time: float = 0.0) -> tuple[int, int, int]:
         box2[2] += 1
     else:
         raise StopIteration
-    return x, y, image.height
+    return x, y
 
 
-# 720p
-# image.crop((0, 67, 150, 68)).convert('L').filter(ImageFilter.FIND_EDGES)
-# fontsize=32
-# fontcolor=0xD7D7D7
-#     Normal: x=93 y=107
-#     Con letras hebreas: x=93 y=160
-# 480p
-# image.crop((0, 62, 150, 63)).convert('L').filter(ImageFilter.FIND_EDGES)
-# fontsize=22
-# fontcolor=0xA2A2A2
-# x=65 y=90
+def find_box(image: Image.Image) -> list[int, int, int, int]:
+    box = [0, 20, 1, 150] # vertical line width=1, height=150
+    for _ in range(200):
+        if np.array(image.crop(box)).any():
+            x = box[0] # save x
+            break
+        box[0] += 1 # move ➡️ x left
+        box[2] += 1 # move ➡ x right
+    box = [0, 40, 300, 41] # horizontal rectangle width=300, height=1
+    for _ in range(100):
+        if np.array(image.crop(box)).any():
+            y = box[1] # save y
+            break
+        box[1] += 1 # move ⬇ y top 
+        box[3] += 1 # move ⬇ y bottom
+    box = [x, y + 5, x + 50, y + 6]
+    for _ in range(100):
+        if not np.array(image.crop(box)).any():
+            y1 = box[1]
+            break
+        box[1] += 1
+        box[3] += 1
+    box = [x, y + 5, x + 50, y1 - 5]
+    for _ in range(600):
+        if not np.array(image.crop(box)).any():
+            x1 = box[0]
+            break
+        box[0] += 1
+        box[2] += 1
+    return [x - 2, y - 2, x1 + 2, y1 + 2] # a little bigger box
+
