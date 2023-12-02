@@ -18,6 +18,7 @@ commands:
   signlanguage: Chọn ngôn ngữ ký hiệu
   botlanguage: Chọn ngôn ngữ bot
   overlay: Chèn chữ
+  delogo: Thay thế chữ
   settings: Xem các cài đặt
   help: Cần trợ giúp?
   stats: Xem các thống kê
@@ -242,11 +243,20 @@ help: >
 
   Chọn ngôn ngữ ký hiệu bằng cách nhập vào mã ngôn ngữ như một lệnh. Ví dụ như, để chọn Hoa Kỳ (ngôn ngữ ký hiệu), nhập /ase hoặc /ASL.
 
+  Gõ /{0}, di chuyển trong bảng chọn, rồi chọn một ngôn ngữ ký hiệu.
 
-  Nếu bạn không biết mã, hãy bấm /{0}, di chuyển tới lui trong bảng chọn, rồi chọn một ngôn ngũ ký hiệu mà bạn muốn.
+
+  Chọn một ngôn ngữ ký hiệu bằng cách gõ mã như một lệnh. Ví dụ, để chọn ngôn ngữ ký hiệu Hoa Kỳ, gõ /ase hoặc /ASL.
+
+  Bạn cũng có thể thiết lập lên đến 3 ngôn ngữ ký hiệu. Nếu một câu không có sẵn trong ngôn ngữ ký hiệu chính, tôi sẽ
+  tìm nó trong ngôn ngữ ký hiệu tiếp theo. 
 
 
-  <b>Các đoạn Kinh Thánh</b>
+  code>/{0} slv bvl asl</code>
+
+
+
+  <b>Đoạn Kinh Thánh</b>
 
   Bạn có thể yêu cầu đến 5 đoạn Kinh Thánh một lúc chỉ với một tin nhắn. Có thể dùng tên đầy đủ của sách hoặc lá thư hoặc hoặc chỉ nhập vào tên viết tắt cũng được.
 
@@ -275,21 +285,25 @@ help: >
   Nhập <code>{4}</code> trong bất kỳ nhóm chat hoặc kênh Telegram nào để gửi các đoạn Kinh Thánh.
 
 
-# {} -> overlay command
+# {0} -> overlay command
+# {1} -> delogo command
 overlay_info: >
   <b>Chèn chữ</b>
 
-  Khi bật /{}, bạn sẽ thấy tên sách hoặc lá thư trong ngôn ngữ của bạn trong video ngôn ngữ ký hiệu nước ngoài. Chính xác là bạn có thể kết hợp
+  Khi bật /{0} lên, bạn sẽ thấy tên sách hoặc lá thư bằng ngôn ngữ của bạn trong video ngôn ngữ ký hiệu nước ngoài. Chính xác là bạn có thể kết hợp
   các ngôn ngữ có trên trang web <a href="https://www.jw.org">JW.ORG</a> lại với nhau.
 
+  Nếu bạn <b>bật</b> /{1} lên, phần chữ địa chỉ đoạn Kinh Thánh trong ngôn ngữ của bạn sẽ thay thế cho phần chữ địa chỉ Kinh Thánh gốc.
 
-  Nếu bạn chọn <i>ngôn ngữ chữ viết</i> của Kinh Thánh tương ứng với <i>ngôn ngữ ký hiệu</i>
-  thì chữ sẽ không được chèn vào.
+  Nếu bạn <b>tắt</b> /{1} đi, phần chữ địa chỉ đoạn Kinh Thánh trong ngôn ngữ của bạn sẽ nằm dưới phần chữ địa chỉ Kinh Thánh gốc.
 
 
-overlay_activated: Bạn vừa <b>bật</b> tính năng chèn chữ.
-overlay_deactivated: Bạn vừa <b>tắt</b> tính năng chèn chữ.
+overlay_activated: Tính năng chèn chữ đã được <b>bật</b> lên.
+overlay_deactivated: Tính năng chèn chữ đã được <b>tắt</b> đi.
 
+
+delogo_activated: Tính năng thay thế chữ đã được <b>bật</b> lên.
+delogo_deactivated: Tính năng thay thế chữ đã được <b>tắt</b> đi.
 
 # {0} -> help command
 # {1} -> total sign languages
@@ -326,6 +340,13 @@ ok_signlanguage_code:
   - Đồng ý! Mình sẽ bắt đầu gửi các câu Kinh Thánh bằng <b>{}</b> cho bạn.
 
 
+multiple_signlanguage: |
+  <b>Các ngôn ngữ ký hiệu đã chọn</b>
+  1. {0} - {1}
+  2. {2} - {3}
+  3. {4} - {5}
+
+  
 choose_botlang: Xin bạn <b>chọn một ngôn ngữ</b> để chúng ta hiểu nhau hơn.
 
 # {} -> English
@@ -378,9 +399,9 @@ stats: >
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} @{} <code>{}</code> is in the waiting list."
+waiting_list: "{} {} <code>{}</code> is in the waiting list."
 from_github: "{} has joined from the GitHub link."
-introduced_himself: "{} {} @{} <code>{}</code> has introduced themselves."
+introduced_himself: "{} {} {} <code>{}</code> has introduced themselves."
 get_feedback: "{} @{} has send you a feedback."
 db_summary: |
   <pre>
