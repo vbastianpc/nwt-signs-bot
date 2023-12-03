@@ -149,6 +149,6 @@ if __name__ == '__main__':
     )
     logger.info(f'User {member.user.first_name} added to database')
 
-    # fetch_fonts()
-    # download_fonts()
+    fetch_fonts()
+    download_fonts()
     logger.info('Configuration succesful!')

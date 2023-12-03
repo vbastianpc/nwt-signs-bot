@@ -45,7 +45,14 @@ def start(update: Update, context: CallbackContext) -> None:
     if user and user.is_authorized() and not user.sign_language:
         update.message.reply_text(tt.step_2(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
         return 3
-    if user and not user.is_authorized():
+    if (user and not user.is_authorized()) or not user:
+        add.or_update_user(tuser.id,
+                           first_name=tuser.first_name,
+                           last_name=tuser.last_name or '',
+                           user_name=tuser.username,
+                           is_premium=tuser.is_premium,
+                           bot_language_code=bot_language_code,
+                           status=User.WAITING)
         context.bot.send_message(
             chat_id=LOG_GROUP_ID,
             message_thread_id=TOPIC_WAITING,
@@ -59,14 +66,6 @@ def start(update: Update, context: CallbackContext) -> None:
                                 parse_mode=ParseMode.HTML,
                                 disable_web_page_preview=True)
         return 1
-    if not user:
-        add.or_update_user(tuser.id,
-                           first_name=tuser.first_name,
-                           last_name=tuser.last_name or '',
-                           user_name=tuser.username,
-                           is_premium=tuser.is_premium,
-                           bot_language_code=bot_language_code,
-                           status=User.WAITING)
 
 
 def whois(update: Update, context: CallbackContext):
