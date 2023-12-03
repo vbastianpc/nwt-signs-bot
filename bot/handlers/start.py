@@ -67,6 +67,9 @@ def start(update: Update, context: CallbackContext) -> None:
                            is_premium=tuser.is_premium,
                            bot_language_code=bot_language_code,
                            status=User.WAITING)
+        update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
+                                parse_mode=ParseMode.HTML,
+                                disable_web_page_preview=True)
 
 
 def whois(update: Update, context: CallbackContext):
