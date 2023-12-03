@@ -18,6 +18,7 @@ commands:
   signlanguage: Chọn ngôn ngữ ký hiệu
   botlanguage: Chọn ngôn ngữ bot
   overlay: Chèn chữ
+  delogo: Thay thế trích dẫn
   settings: Xem các cài đặt
   help: Cần trợ giúp?
   stats: Xem các thống kê
