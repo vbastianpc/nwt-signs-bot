@@ -56,6 +56,7 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
     )
     logger.info(cmd)
     run(shlex.split(cmd), capture_output=True, check=True)
+    metapath.unlink()
     return output
 
 
