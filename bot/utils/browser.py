@@ -15,15 +15,11 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
     def __init__(self):
         self.tabs = {}
         super().__init__(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36')
-        self.translate_url = None
 
     def open(self, url, *args, timeout=60, **kwargs) -> Response:
         """translate=True necessary when url hostname is www.jw.org and ip request from AWS servers"""
-        if self.translate_url is None:
-            prefix = URL_FUNCTION if 'www.jw.org' in url else ''
-        else:
-            prefix = URL_FUNCTION if self.translate_url else ''
-        url = prefix + url
+        url = URL_FUNCTION + url if 'www.jw.org' in url else url
+        logger.info(f'Loading {url}')
         if url in self.tabs:
             try:
                 header_expires = self.tabs[url].headers.get('Expires')
@@ -34,16 +30,14 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
             if header_expires and dt_expires > datetime.now():
                 logger.info(f'Not expired yet {dt_expires.isoformat()}')
                 return self.tabs[url]
-            else:
-                logger.info('Expired')
+            logger.info('Expired')
 
         if len(self.tabs) >= 10:
             old_tab = list(self.tabs)[0]
             logger.info(f'Closing tab {old_tab}')
             self.tabs.pop(old_tab)
         t0 = time.time()
-        kwargs = dict(timeout=timeout) | kwargs
-        logger.info(f'Loading {url}')
+        kwargs = {'timeout': timeout} | kwargs
         res = super().open(url, *args, **kwargs)
         logger.info(f'{time.time() - t0:.3f}s')
         self.tabs |= {url: res}
