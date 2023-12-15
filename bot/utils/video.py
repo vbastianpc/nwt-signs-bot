@@ -16,6 +16,8 @@ from bot.database.schema import VideoMarker
 logger = get_logger(__name__)
 
 def split(marker: VideoMarker, overlay_text: str = None, script: str = None, with_delogo: bool = False) -> Path:
+    if not script:
+        script = 'ROMAN'
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
     output = Path(safechars(marker.label) + ".mp4")
 
@@ -57,6 +59,7 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
     logger.info(cmd)
     run(shlex.split(cmd), capture_output=True, check=True)
     metapath.unlink()
+    frame.unlink()
     return output
 
 
@@ -186,7 +189,7 @@ def find_box(image: Image.Image) -> list[int, int, int, int]:
             break
         box[1] += 1 # move ⬇ y top 
         box[3] += 1 # move ⬇ y bottom
-    box = [x, y + 5, x + 50, y + 6]
+    box = [x, y + 5, x + 200, y + 6]
     for _ in range(100):
         if not np.array(image.crop(box)).any():
             y1 = box[1]
@@ -202,3 +205,15 @@ def find_box(image: Image.Image) -> list[int, int, int, int]:
         box[2] += 1
     return [x - 2, y - 2, x1 + 2, y1 + 2] # a little bigger box
 
+
+if __name__ == '__main__':
+    from bot.jw import BiblePassage
+    from bot.database import fetch
+
+    p = BiblePassage.from_human('Cant 1:1', 'es')
+    p.set_language('ase')
+    # fetch.chapters_and_videomarkers(p.book)
+    # p.refresh()
+    # split(p.chapter.get_videomarker(1))
+    # split(p.chapter.get_videomarker(1), 'El Cantar de los Cantares 1:1')
+    split(p.chapter.get_videomarker(1), 'El Cantar de los Cantares 1:1', with_delogo=True)
