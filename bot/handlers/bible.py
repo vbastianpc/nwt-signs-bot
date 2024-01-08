@@ -23,11 +23,12 @@ from bot.jw import BiblePassage
 from bot.jw import BibleEpub
 from bot.utils import video
 from bot.utils import dt_now
+from bot.utils import how_to_say
 from bot.database import get
 from bot.database import fetch
 from bot.database import add
 from bot import exc
-from bot.database.schema import File
+from bot.database.schema import File, Language
 from bot.handlers.settings import set_sign_language
 from bot.handlers.settings import set_bot_language
 from bot.utils import list_of_lists
@@ -66,7 +67,7 @@ def parse_query(update: Update, context: CallbackContext) -> None:
             if query(text):
                 if language.is_sign_language is True:
                     add.or_update_user(update.effective_user.id, sign_language_code=language.code)
-                    parse_query_bible(update, context, query(text), language.code)
+                    parse_query_bible(update, context, query(text), language)
             elif len(lines) == 1 and language and not query(text):
                 # change language permanent
                 if language.is_sign_language is True:
@@ -124,37 +125,38 @@ def prepare_passage(passage: BiblePassage, sl_code: str, update: Update, tt: Tex
             m.delete()
 
 
-def parse_query_bible(update: Update, context: CallbackContext, query: str, sign_language_code: str = None) -> None:
+def parse_query_bible(update: Update, context: CallbackContext, query: str, sign_language: Language = None) -> None:
     logger.info("query: %s", query)
     user = get.user(update.effective_user.id)
     tt = TextTranslator(user.bot_language.code)
     if isinstance(passage := check_passage(query, user.bot_language_code), str):
         update.effective_message.reply_text(passage, parse_mode=HTML)
         return
-    if not sign_language_code and passage.verses:
+    if passage.verses:
         context.user_data['msg'] = None
-        for sl_code in filter(None, [user.sign_language_code, user.sign_language_code2, user.sign_language_code3]):
+        for sl in ([sign_language] if sign_language else user.sign_languages):
             try:
-                prepare_passage(passage, sl_code, update, tt)
+                prepare_passage(passage, sl.code, update, tt)
             except exc.PubmediaNotExists:
                 continue
             if passage.chapter and not get.unavailable_verses(passage.chapter, passage.verses):
                 manage_verses(update, context, passage)
                 return
-    sl_code = sign_language_code or user.sign_language_code
+    sl = sign_language or user.sign_language
     try:
-        prepare_passage(passage, sl_code, update, tt)
+        prepare_passage(passage, sl.code, update, tt)
     except exc.PubmediaNotExists:
         passage.set_language(user.bot_language.code)
         update.effective_message.reply_text(
-            text=tt.that_book_no(passage.book.name, user.sign_language_name), parse_mode=HTML)
-        show_books(update, context, passage.set_language(sl_code))
+            text=tt.that_book_no(passage.book.name, how_to_say(sl.code, user.bot_language_code)), parse_mode=HTML)
+        show_books(update, context, passage.set_language(sl.code))
         return
     if passage.chapternumber and not passage.chapter:
         p = BiblePassage.from_num(user.bot_language_code, passage.book.number)
-        update.effective_message.reply_text(tt.that_chapter_no(p.book.name, user.sign_language_name) + " " +
-                                            tt.but_these_chapters, parse_mode=HTML)
-        show_chapters(update, context, passage.set_language(sl_code))
+        update.effective_message.reply_text(
+            tt.that_chapter_no(p.book.name, how_to_say(sl.code, user.bot_language_code)) + " " + tt.but_these_chapters,
+            parse_mode=HTML)
+        show_chapters(update, context, passage.set_language(sl.code))
         return
     if passage.chapter and passage.verses:
         unavailable_verses = get.unavailable_verses(passage.chapter, passage.verses)
@@ -162,14 +164,14 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str, sign
             passage.set_language(user.bot_language.code)
             update.effective_message.reply_text(
                 tt.that_verse_no(BiblePassage(passage.book, passage.chapternumber, unavailable_verses).citation,
-                                user.sign_language.vernacular) + " " +
+                                how_to_say(sl.code, user.bot_language_code)) + " " +
                 tt.but_these_verses, parse_mode=HTML)
-            show_verses(update, context, passage.set_language(sl_code))
+            show_verses(update, context, passage.set_language(sl.code))
             return
     if passage.chapternumber:
-        show_verses(update, context, passage.set_language(sl_code))
+        show_verses(update, context, passage.set_language(sl.code))
     else:
-        show_chapters(update, context, passage.set_language(sl_code))
+        show_chapters(update, context, passage.set_language(sl.code))
 
 
 def show_books(update: Update, context: CallbackContext, p: BiblePassage) -> None:
