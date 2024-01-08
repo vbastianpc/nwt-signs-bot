@@ -10,6 +10,7 @@ from telegram.ext import Filters
 from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
+import telegram.error
 from sqlalchemy.exc import OperationalError
 
 from bot.database import get
@@ -109,7 +110,7 @@ def logfile(update: Update, context: CallbackContext):
             chat_id=update.effective_chat.id,
             document=open('./log.log', 'rb'),
         )
-    except FileNotFoundError:
+    except (FileNotFoundError, telegram.error.BadRequest):
         t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
 
