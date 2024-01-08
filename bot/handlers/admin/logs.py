@@ -1,6 +1,8 @@
 import json
 import traceback
 import html
+import sys
+import os
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -27,6 +29,9 @@ logger = get_logger(__name__)
 @vip
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
+    update.message.reply_html(
+        f'<pre>{sys.executable=}\n{sys.argv=}</pre>'
+    )
     if not context.args:
         data = sorted(context.user_data.keys())
     else:
