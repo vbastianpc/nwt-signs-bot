@@ -21,7 +21,8 @@ class Formatter(logging.Formatter):
 
 def get_logger(name, level=logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
-    console_handler = logging.StreamHandler()
+    # console_handler = logging.StreamHandler()
+    console_handler = logging.FileHandler('./log.log')
     console_handler.setFormatter(
         Formatter('%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s')
     )
