@@ -1,6 +1,3 @@
-# from pathlib import Path
-# Path('database.db').unlink()
-
 import sqlite3
 import xml.etree.ElementTree as ET
 from pathlib import Path
