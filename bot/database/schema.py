@@ -269,6 +269,10 @@ class User(Base):
     def  full_name(self) -> str:
         return self.first_name + (f' {self.last_name}' if self.last_name else '')
 
+    @property
+    def sign_languages(self) -> list[Language]:
+        return list(filter(None, [self.sign_language, self.sign_language2, self.sign_language3]))
+
 
 class File2User(Base):
     __tablename__ = 'File2User'
