@@ -1,12 +1,23 @@
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram import ParseMode
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram import Document
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from bot import AdminCommand
+from telegram.ext import ConversationHandler
+from telegram.ext import MessageHandler
+from telegram.ext import CallbackQueryHandler
+from telegram.ext import Filters
 
+from bot import AdminCommand
+from bot import MyCommand
 from bot.secret import ADMIN
-from bot.utils.decorators import vip
+from bot.utils.decorators import vip, admin
+from bot.utils import now
 from bot.database import report as rdb
 from bot.database import get
+from bot.database import PATH_DB
 from bot.strings import TextTranslator
 from bot.utils import how_to_say
 
@@ -45,4 +56,38 @@ def stats(update: Update, _: CallbackContext) -> None:
         )
 
 
+def document(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        '⚠️ Critical! Do you want to replace the database?',
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton('✅ Yes', callback_data='✅'), InlineKeyboardButton('❌ No', callback_data='❌')]
+        ]))
+    context.user_data['db'] = update.message.document
+    return 1
+
+
+def overwrite_db(update: Update, context: CallbackContext):
+    update.effective_message.edit_reply_markup()
+    try:
+        update.effective_message.reply_document(document=open(PATH_DB, 'rb'), filename= f'{now()} {PATH_DB}')
+    except:
+        pass
+    db_doc: Document = context.user_data['db']
+    db_doc.get_file().download(PATH_DB)
+    update.effective_message.reply_text('Database has been replaced')
+    return -1
+
+
+def cancel(update: Update, context: CallbackContext):
+    update.effective_message.edit_reply_markup()
+    update.effective_message.reply_text('Canceled')
+    return -1
+
+
 database_status_handler = CommandHandler(AdminCommand.STATS, stats)
+replace_db_handler = ConversationHandler(
+    entry_points=[MessageHandler(Filters.document.file_extension('db') & Filters.user(ADMIN), document)],
+    states={1: [CallbackQueryHandler(overwrite_db, pattern='✅')]},
+    fallbacks=[CommandHandler(MyCommand.CANCEL, cancel),
+               CallbackQueryHandler(cancel, pattern='❌')]
+    )

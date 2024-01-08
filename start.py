@@ -22,7 +22,7 @@ main_func(1, 2)
 """
 
 from telegram.ext import Updater
-from bot.secret import TOKEN
+from bot.secret import TOKEN, ADMIN
 from bot.logs import get_logger
 from bot.handlers import handlers, error_handler
 
@@ -36,4 +36,7 @@ if __name__ == '__main__':
         updater.dispatcher.add_handler(handler)
     updater.dispatcher.add_error_handler(error_handler)
     updater.start_polling()
+    updater.bot.send_message(
+        chat_id=ADMIN, text='Bot is running 🤖'
+    )
     updater.idle()

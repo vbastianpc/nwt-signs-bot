@@ -23,6 +23,8 @@ from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
 from bot.handlers.admin import getting_user_handler
 from bot.handlers.admin import database_status_handler
+from bot.handlers.admin import env_handler
+from bot.handlers.admin import replace_db_handler
 # from bot.handlers.admin import reset_chapter_handler 
 from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
@@ -45,6 +47,8 @@ handlers = [
     show_botlang_handler,
     show_signlangs_handler,
 
+    env_handler,
+
     # Callback Query Handlers
     page_signlang_handler,
     page_botlang_handler,
@@ -64,6 +68,7 @@ handlers = [
     getting_user_handler,
     database_status_handler,
     notice_handler,
+    replace_db_handler,
 
     # reset_chapter_handler,
 

@@ -36,6 +36,7 @@ admin_commands:
   logs: Muestra las entradas del registro más recientes
   logfile: Envía una copia del archivo de registro
   test: Muestra las variables en memoria
+  env: Sobreescribe variables de entorno en archivo .env
 
 
 # {} -> First name
@@ -436,3 +437,11 @@ user_added: "{} {} ha sido agregado."
 warn_user: No he podido hacer la operación porque el usuario no estaba registrado en la base de datos.
 user_banned: El usuario ha sido bloqueado.
 user_stopped_bot: No lo he podido agregar porque el usuario ha detenido al bot.
+asking_env: |
+  Advertencia: las variables de entorno se sobreescribirán.
+
+  Puedes cancelar cuando quieras /{}
+
+  Este es el contenido actual del archivo .env
+success_env: El archivo .env ha sido actualizado. Pulsa /{} para reiniciar el bot.
+restart: Reiniciando el bot...

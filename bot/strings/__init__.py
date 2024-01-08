@@ -122,6 +122,9 @@ class TextTranslator:
     warn_user = Self()
     user_banned = Self()
     user_stopped_bot = Self()
+    asking_env = Self()
+    success_env = Self()
+    restart = Self()
 
     def __init__(self, language_code) -> None:
         self.language_code = language_code

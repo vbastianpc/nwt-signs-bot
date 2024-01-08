@@ -34,6 +34,7 @@ admin_commands:
   logs: Show the most recent log entries
   logfile: Send a copy of the log file
   test: Show the variables in memory
+  env: Overwrite environment variables .env file
 
 
 # {} -> First name
@@ -431,3 +432,11 @@ user_added: "{} {} has been added."
 warn_user: I couldn't perform the operation because the user was not registered in the database.
 user_banned: The user has been banned.
 user_stopped_bot: I couldn't add them because the user has stopped the bot.
+asking_env: |
+  Warning: environment variables will be overwritten. The bot will be restarted.
+
+  You can cancel at any time /{}
+
+  This is the current content of the .env file
+success_env: The .env file has been updated. Type /{}
+restart: Restarting bot...

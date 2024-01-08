@@ -26,3 +26,5 @@ class AdminCommand:
     STATS = 'stats'
     TEST = 'test'
     RESET_CHAPTER = 'reset_chapter'
+    ENV = 'env'
+    RESTART = 'restart'
