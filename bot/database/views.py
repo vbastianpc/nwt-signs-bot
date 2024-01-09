@@ -141,6 +141,7 @@ SELECT
     File.FileId,
     Language.LanguageCode,
 	OverlayLanguage.LanguageCode AS OverlayLanguageCode,
+    File.Delogo,
 	Book.BookNumber,
 	File.Citation,
 	File.AddedDatetime,
