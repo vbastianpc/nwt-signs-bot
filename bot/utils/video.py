@@ -50,7 +50,6 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
         f'title="{marker.label}"\n',
         encoding='utf-8'
     )
-    print(f'function: label={marker.label}')
 
     cmd = (
         f'ffmpeg -hide_banner -v warning -y -ss {marker.start_time} -i "{marker.chapter.url}" -i "{metapath}" '

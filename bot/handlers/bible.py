@@ -22,15 +22,13 @@ from bot.logs import get_logger
 from bot.jw import BiblePassage
 from bot.jw import BibleEpub
 from bot.utils import video
-from bot.utils import dt_now
 from bot.utils import how_to_say
 from bot.database import get
 from bot.database import fetch
 from bot.database import add
 from bot import exc
 from bot.database.schema import File, Language
-from bot.handlers.settings import set_sign_language
-from bot.handlers.settings import set_bot_language
+from bot.handlers.settings import set_language
 from bot.utils import list_of_lists
 from bot.utils import safechars
 from bot.utils.decorators import vip
@@ -43,10 +41,11 @@ logger = get_logger(__name__)
 SELECT_BOOK, SELECT_CHAPTER, SELECT_VERSE = 'B', 'C', 'V'
 HTML = ParseMode.HTML
 
+
 @vip
 def parse_query(update: Update, context: CallbackContext) -> None:
     logger.info(f'{context.args=}, {update.effective_message.text}')
-    orig_sl_code = get.user(update.effective_user.id).sign_language.code
+    orig_sl = get.user(update.effective_user.id).sign_language
 
     def command(string: str) -> str:
         return re.match(r'/([\w-]+)', string).group(1) if string.startswith('/') else ''
@@ -62,7 +61,7 @@ def parse_query(update: Update, context: CallbackContext) -> None:
             if not language:
                 user = get.user(update.effective_user.id)
                 tt = TextTranslator(user.bot_language_code)
-                update.effective_message.reply_text(tt.not_language(command(text)), parse_mode=HTML)
+                update.effective_message.reply_html(tt.not_language(command(text)))
                 continue
             if query(text):
                 if language.is_sign_language is True:
@@ -70,19 +69,13 @@ def parse_query(update: Update, context: CallbackContext) -> None:
                     parse_query_bible(update, context, query(text), language)
             elif len(lines) == 1 and language and not query(text):
                 # change language permanent
-                if language.is_sign_language is True:
-                    set_sign_language(update, context, sign_language_code=language.code)
-                elif language.is_sign_language is False:
-                    set_bot_language(update, context, bot_language_code=language.code)
+                set_language(update, context, code_or_meps=language.code)
                 return
             elif language and not query(text):
                 add.or_update_user(update.effective_user.id, sign_language_code=language.code)
 
-    add.or_update_user(
-        update.effective_user.id,
-        sign_language_code=orig_sl_code,
-        last_active_datetime=dt_now()
-    )
+    add.or_update_user(update.effective_user.id, sign_language_code=orig_sl.code)
+
 
 def check_passage(query: str, bot_language_code: str) -> BiblePassage | str:
     tt = TextTranslator(bot_language_code)

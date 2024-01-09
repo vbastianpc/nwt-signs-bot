@@ -59,8 +59,7 @@ class TextTranslator:
     hi = Self()
     barrier_to_entry = Self()
     wait = Self()
-    step_1 = Self()
-    step_2 = Self()
+    select_sl = Self()
     start = Self()
     yes = Self()
     no = Self()
@@ -119,6 +118,7 @@ class TextTranslator:
     logfile_notfound = Self()
     setcommands = Self()
     user_added = Self()
+    user_already = Self()
     warn_user = Self()
     user_banned = Self()
     user_stopped_bot = Self()
@@ -126,7 +126,7 @@ class TextTranslator:
     success_env = Self()
     restart = Self()
 
-    def __init__(self, language_code) -> None:
+    def __init__(self, language_code: str) -> None:
         self.language_code = language_code
 
 

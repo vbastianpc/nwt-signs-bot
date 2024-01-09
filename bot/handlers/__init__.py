@@ -4,10 +4,9 @@ from bot.handlers.bible import verse_handler
 from bot.handlers.bible import parse_bible_handler
 from bot.handlers.settings import show_settings_handler
 from bot.handlers.settings import show_signlangs_handler
-from bot.handlers.settings import set_signlang_handler
+from bot.handlers.settings import set_lang_handler
 from bot.handlers.settings import page_signlang_handler
 from bot.handlers.settings import show_botlang_handler
-from bot.handlers.settings import set_botlang_handler
 from bot.handlers.settings import page_botlang_handler
 from bot.handlers.help import help_handler
 from bot.handlers.inline_bible import inline_handler
@@ -18,7 +17,6 @@ from bot.handlers.start import all_fallback_handler
 from bot.handlers.booknames import bookname_handler
 from bot.handlers.overlay import overlay_handler
 from bot.handlers.overlay import delogo_handler
-from bot.handlers.admin import auth_handler
 from bot.handlers.admin import backup_handler
 from bot.handlers.admin import delete_user_handler
 from bot.handlers.admin import getting_user_handler
@@ -38,8 +36,6 @@ handlers = [
 
     # Command Handlers
     feedback_handler,
-    start_handler,
-    auth_handler,
     bookname_handler,
     help_handler,
     overlay_handler,
@@ -54,8 +50,7 @@ handlers = [
     # Callback Query Handlers
     page_signlang_handler,
     page_botlang_handler,
-    set_signlang_handler,
-    set_botlang_handler,
+    set_lang_handler,
 
     # inline
     inline_handler,
@@ -74,6 +69,8 @@ handlers = [
 
     # reset_chapter_handler,
 
+    start_handler,
+    
     # parse bible citation
     parse_bible_handler,
     book_handler,

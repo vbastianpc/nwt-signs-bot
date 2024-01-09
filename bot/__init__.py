@@ -1,4 +1,5 @@
-class MyCommand:
+from enum import StrEnum
+class MyCommand(StrEnum):
     START = 'start'
     SIGNLANGUAGE = 'signlanguage'
     BOTLANGUAGE = 'botlanguage'
@@ -14,7 +15,7 @@ class MyCommand:
     PROTIPS = 'protips'
     
 
-class AdminCommand:
+class AdminCommand(StrEnum):
     ADD = 'add'
     BAN = 'ban'
     USERS = 'users'

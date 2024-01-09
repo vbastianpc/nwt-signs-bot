@@ -29,7 +29,7 @@ def help(update: Update, context: CallbackContext) -> None:
     )
     msg = update.message.reply_photo(
         photo=context.bot_data.get('overlay_info') or Path('./assets/overlay.jpg').read_bytes(),
-        caption=tt.overlay_info(MyCommand.OVERLAY),
+        caption=tt.overlay_info(MyCommand.OVERLAY, MyCommand.DELOGO),
         parse_mode=ParseMode.HTML
     )
     context.bot_data['overlay_info'] = max(msg.photo, key=lambda p: p.height).file_id

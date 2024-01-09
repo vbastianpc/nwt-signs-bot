@@ -44,7 +44,7 @@ hi: ¡Hola {}!
 
 
 barrier_to_entry: >
-  Soy un bot que te ayudará a obtener pasajes bíblicos.
+  Soy un bot que te ayudará a obtener pasajes bíblicos en muchas lenguas de señas.
   
 
   Mientras esperas a que el desarrollador te acepte, cuéntame por qué quieres usar este bot y
@@ -55,17 +55,11 @@ barrier_to_entry: >
   oficial de los testigos de Jehová JW.ORG y la <a href="https://wol.jw.org">BIBLIOTECA EN LÍNEA Watchtower</a>
 
 
-wait: ¡Gracias! Te avisaré cuando seas aceptado.
-
-
-# {0} -> First name
-# {1} -> start command
-step_1: >
-  ¡Felicidades {0}! Ya puedes usar este bot. Pulsa /{1} para comenzar
+wait: Te avisaré cuando seas aceptado. ¡Ten un poco de paciencia!
 
 
 # {} -> signlanguage command
-step_2: >
+select_sl: >
   <b>Elige una lengua de señas.</b>
   
   Pulsa /{}, navega por el menú y selecciona una.
@@ -245,6 +239,7 @@ sending: Enviando
 help: >
   <b>Lengua de Señas</b>
 
+
   Usa /{0}, navega por el menú y elige tu lengua de señas.
 
 
@@ -252,7 +247,7 @@ help: >
   americana, escribe /ase o /ASL.
 
 
-  También puedes configurar hasta 3 lenguas de señas. Si un versículo no está en la lengua de señas primaria, lo buscaré
+  También puedes configurar hasta 3 lenguas de señas. Si un versículo no está en tu primera lengua de señas, lo buscaré
   en la siguiente. Usa
 
   <code>/{0} csg lsc asl</code>
@@ -260,7 +255,8 @@ help: >
 
 
   <b>Pasajes bíblicos.</b>
-  
+
+
   Puedes pedirme hasta 5 citas bíblicas en un solo mensaje. Usa el nombre del libro bíblico completo o su abreviación.
 
 
@@ -274,17 +270,21 @@ help: >
 
 
   <b>Idioma del bot</b>
-  Puedo hablar contigo en algunos idiomas. Haz click en /{1} y elige uno. Si conoces el código, úsalo directamente.
-  Por ejemplo, para el inglés puedes escribir /en o /E
 
 
-  Aunque elijas un idioma que aún no sé hablar, podré entenderte cuando me pidas citas bíblicas en tu idioma.
-  También intentaré enviarte el texto escrito de los pasajes bíblicos en tu idioma. Si quieres ayudar a traducir el bot
-  a más idiomas, déjame un comentario /{2} y <a href="{3}">comienza a traducir</a>. 
+  Puedo enviarte pasajes bíblicos escritos en cualquier idioma. Y también puedo hablar contigo en algunos idiomas.
+
+
+  Haz click en /{1} o escribe directamente el código del idioma. Por ejemplo, para el inglés puedes escribir /en o /E.
+  Entenderé los libros de la Biblia que me pidas en el idioma que hayas escogido.
+
+
+  Si quieres ayudar a traducir el bot a más idiomas, déjame un comentario /{2} y <a href="{3}">comienza a traducir</a>. 
 
 
 
   <b>Modo Inline</b>
+
 
   Escribe <code>{4}</code> en cualquier chat de Telegram para enviar pasajes de la Biblia.
 
@@ -296,10 +296,13 @@ help: >
 overlay_info: >
   <b>Superposición de texto</b>
 
-  Cuando actives /{0}, verás la cita bíblica en tu idioma. Técnicamente puedes usar cualquier combinación de 
+
+  Cuando actives /{0}, verás la cita bíblica en el idioma del bot. Técnicamente puedes usar cualquier combinación de 
   idiomas disponibles en el sitio <a href="https://www.jw.org">JW</a>
 
+
   Si /{1} está activado, la nueva cita bíblica será reemplazada por la cita bíblica original.
+
 
   Si /{1} está desactivado, la nueva cita bíblica se añadirá bajo la cita bíblica original.
 
@@ -409,9 +412,9 @@ stats: >
 
 
 # ADMIN. There's no need translate it
-waiting_list: "{} {} <code>{}</code> está en la sala de espera."
+waiting_list: "Hay un usuario en la sala de espera."
 from_github: "{} ha entrado desde el enlace de github."
-introduced_himself: "{} {} {} <code>{}</code> se ha presentado."
+introduced_himself: "ha dejado un mensaje"
 get_feedback: "{} @{} te ha dejado un feedback."
 db_summary: |
   <pre>
@@ -433,10 +436,11 @@ notify_success: Mensajes enviados.
 notify_cancel: Cancelado.
 logfile_notfound: No hay archivo de registro.
 setcommands: Comandos con alcance de lenguaje y específico de usuario establecidos.
-user_added: "{} {} ha sido agregado."
+user_added: ha sido agregado.
 warn_user: No he podido hacer la operación porque el usuario no estaba registrado en la base de datos.
 user_banned: El usuario ha sido bloqueado.
 user_stopped_bot: No lo he podido agregar porque el usuario ha detenido al bot.
+user_already: El usuario ya estaba autorizado.
 asking_env: |
   Advertencia: las variables de entorno se sobreescribirán.
 

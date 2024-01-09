@@ -1,29 +1,24 @@
 from html import escape
-from collections.abc import Callable
 
-from telegram import Update, ParseMode
+from telegram import Update, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.ext import CallbackQueryHandler
 from telegram.ext import ConversationHandler
 from telegram.ext import MessageHandler
 from telegram.ext import Filters
+import telegram.error
 from telegram.utils.helpers import mention_html
 
 from bot import MyCommand
-from bot.handlers.settings import show_sign_languages
-from bot.handlers.settings import set_sign_language
-from bot.handlers.settings import prev_next_signlanguage
-from bot.handlers.settings import SELECT_SIGNLANGUAGE
-from bot.handlers.settings import PAGE_SIGNLANGUAGE
 from bot.secret import ADMIN
 from bot.secret import LOG_GROUP_ID
 from bot.secret import TOPIC_WAITING
 from bot.logs import get_logger
-from bot.utils.decorators import forw
+from bot.utils.decorators import forw, vip
 from bot.utils import how_to_say
 from bot.database import get
 from bot.database import add
+from bot.database import fetch
 from bot.strings import TextTranslator
 from bot.database.schema import User
 
@@ -33,39 +28,49 @@ logger = get_logger(__name__)
 TAG_START = '#start'
 
 
-def start(update: Update, context: CallbackContext) -> None:
+@vip
+def start(update: Update, context: CallbackContext) -> int:
     tuser = update.effective_user
-    user = get.user(update.effective_user.id)
-    bot_language = get.language(code=tuser.language_code)
-    bot_language_code = bot_language.code if bot_language else 'en'
-    tt = TextTranslator(user.bot_language.code if user else bot_language_code)
-    if user and user.is_authorized() and user.sign_language:
-        update.message.reply_text(tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
-        return -1
-    if user and user.is_authorized() and not user.sign_language:
-        update.message.reply_text(tt.step_2(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
-        return 3
-    if (user and not user.is_authorized()) or not user:
-        add.or_update_user(tuser.id,
-                           first_name=tuser.first_name,
-                           last_name=tuser.last_name or '',
-                           user_name=tuser.username,
-                           is_premium=tuser.is_premium,
-                           bot_language_code=bot_language_code,
-                           status=User.WAITING)
-        context.bot.send_message(
-            chat_id=LOG_GROUP_ID,
-            message_thread_id=TOPIC_WAITING,
-            text=TextTranslator(get.user(ADMIN).bot_language_code).waiting_list(
-                mention_html(tuser.id, tuser.full_name),
-                f'@{tuser.username}' if tuser.username else '',
-                tuser.id),
-            parse_mode=ParseMode.HTML
-        )
-        update.message.reply_text(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
-                                parse_mode=ParseMode.HTML,
-                                disable_web_page_preview=True)
-        return 1
+    if tuser.id == ADMIN and context.args:
+        try:
+            int(context.args[0])
+        except ValueError:
+            pass
+        else:
+            add_user(update, context)
+        return
+    user = get.user(tuser.id)
+    tt = TextTranslator(user.bot_language_code)
+    update.message.reply_text(tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
+
+
+def add_user(update: Update, context: CallbackContext):
+    new_telegram_id = int(context.args[0])
+    user_admin = get.user(ADMIN)
+    tt = TextTranslator(user_admin.bot_language.code)
+    if not (new_user := get.user(new_telegram_id)):
+        update.message.reply_text(tt.warn_user)
+        return
+    if new_user.is_authorized():
+        update.message.reply_text(tt.user_already)
+        return
+    new_user = add.or_update_user(new_telegram_id, status=User.AUTHORIZED)
+    try:
+        context.bot.send_message(chat_id=new_telegram_id, text='🔐')
+    except telegram.error.Unauthorized:
+        update.message.reply_text(tt.user_stopped_bot)
+        return
+    update.message.reply_html(f'{mention_html(new_telegram_id, new_user.full_name)} {tt.user_added}')
+    if not get.edition(new_user.bot_language.code):
+        fetch.editions()
+    if not get.books(new_user.bot_language.code):
+        fetch.books(new_user.bot_language.code)
+    tt2 = TextTranslator(new_user.bot_language_code)
+    context.bot.send_message(chat_id=new_telegram_id,
+                             text=tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
+    if not new_user.sign_language:
+        context.bot.send_message(chat_id=new_telegram_id,
+                                 text=tt2.select_sl(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
 
 
 def whois(update: Update, context: CallbackContext):
@@ -73,13 +78,19 @@ def whois(update: Update, context: CallbackContext):
     user = get.user(tuser.id)
     t = TextTranslator(user.bot_language_code)
     update.message.reply_text(t.wait)
-    context.bot.send_message(chat_id=LOG_GROUP_ID,
-                             message_thread_id=TOPIC_WAITING,
-                             text=t.introduced_himself(TAG_START,
-                                                       mention_html(tuser.id, tuser.full_name),
-                                                       f'@{escape(tuser.username)}' if tuser.username else '',
-                                                       tuser.id),
-                             parse_mode=ParseMode.HTML)
+    context.bot.send_message(
+        chat_id=LOG_GROUP_ID,
+        message_thread_id=TOPIC_WAITING,
+        text=f'{TAG_START}'
+             f'<pre><code class="language-python">'
+             f'full_name: {tuser.full_name}\nlanguage_code: {tuser.language_code}username: {tuser.username}'
+             f'</code></pre>\n\n{t.introduced_himself}',
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(f'Add {tuser.full_name}', url=f'{context.bot.link}?start={tuser.id}')],
+            [InlineKeyboardButton(f'View {tuser.full_name}', url=f'tg://user?id={tuser.id}')],
+        ]),
+        parse_mode=ParseMode.HTML
+    )
     context.bot.forward_message(chat_id=LOG_GROUP_ID,
                                 message_thread_id=TOPIC_WAITING,
                                 from_chat_id=tuser.id,
@@ -87,51 +98,18 @@ def whois(update: Update, context: CallbackContext):
     return 2
 
 
-def start_set_sign_language(update: Update, context: CallbackContext) -> None:
-    user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language_code)
-    if update.callback_query:
-        set_sign_language(update, context)
-    else:
-        like_code_or_meps = update.message.text.strip('/')
-        language = get.parse_language(like_code_or_meps)
-        if language and language.is_sign_language:
-            set_sign_language(update, context, language.code)
-        elif language:
-            update.message.reply_text(tt.not_signlanguage(how_to_say(language.code, user.bot_language_code)),
-                                      parse_mode=ParseMode.HTML)
-            return
-        else:
-            update.message.reply_text(tt.not_language(like_code_or_meps), parse_mode=ParseMode.HTML)
-            return
-    update.message.reply_text(tt.start(MyCommand.HELP))
-    return -1
 
 
-def echo(value: int) -> Callable[[Update, CallbackContext], int]:
-    def fun(update: Update, context: CallbackContext) -> int:
-        context.bot.forward_message(chat_id=LOG_GROUP_ID,
-                                    message_thread_id=TOPIC_WAITING,
-                                    from_chat_id=update.message.chat_id,
-                                    message_id=update.message.message_id)
-        return value
-    return fun
-
-start_handler = ConversationHandler(
-    entry_points=[CommandHandler(MyCommand.START, start)],
-    states={1: [MessageHandler(Filters.text & (~ Filters.command), whois)],
-            2: [MessageHandler(Filters.all, echo(2))],  # loop logging
-            3: [CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE),
-                CallbackQueryHandler(start_set_sign_language, pattern=SELECT_SIGNLANGUAGE),
-                CommandHandler(MyCommand.SIGNLANGUAGE, show_sign_languages),
-                MessageHandler(Filters.text, start_set_sign_language)
-                ]},
-    fallbacks=[MessageHandler(Filters.all, echo(1))],
-    allow_reentry=True
-)
+def forward(update: Update, context: CallbackContext) -> int:
+    context.bot.forward_message(chat_id=LOG_GROUP_ID,
+                                message_thread_id=TOPIC_WAITING,
+                                from_chat_id=update.message.chat_id,
+                                message_id=update.message.message_id)
 
 @forw
 def all_fallback(u: Update, c: CallbackContext) -> None:
     return
 
+
+start_handler = CommandHandler(MyCommand.START, start)
 all_fallback_handler = MessageHandler(Filters.all, all_fallback)

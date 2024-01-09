@@ -23,40 +23,6 @@ logger = get_logger(__name__)
 
 @vip
 @admin
-def autorizacion(update: Update, context: CallbackContext):
-    try:
-        new_telegram_id = int(context.args[0])
-    except (IndexError, ValueError):
-        return
-    admin_user = get.user(update.effective_user.id)
-    tt = TextTranslator(admin_user.bot_language.code)
-
-    if not get.user(new_telegram_id):
-        update.message.reply_text(tt.warn_user)
-        return
-
-    try:
-        context.bot.send_message(chat_id=new_telegram_id, text='🔐')
-    except Unauthorized:
-        update.message.reply_text(tt.user_stopped_bot)
-        return
-    
-    new_user = add.or_update_user(new_telegram_id, status=User.AUTHORIZED)
-    update.message.reply_text(
-        text=tt.user_added(mention_html(new_telegram_id, f'{new_user.first_name} {new_user.last_name}'),
-                           new_telegram_id),
-        parse_mode=ParseMode.HTML)
-
-    if not get.edition(new_user.bot_language.code):
-        fetch.editions()
-    if not get.books(new_user.bot_language.code):
-        fetch.books(new_user.bot_language.code)
-    tt2 = TextTranslator(new_user.bot_language_code)
-    context.bot.send_message(chat_id=new_telegram_id, text=tt2.step_1(new_user.first_name, MyCommand.START))
-
-
-@vip
-@admin
 def delete_user(update: Update, context: CallbackContext):
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
     try:
@@ -98,7 +64,6 @@ def backup(update: Update, context: CallbackContext):
                               filename= f'{now()} {PATH_DB}')
 
 
-auth_handler = CommandHandler(AdminCommand.ADD, autorizacion)
 delete_user_handler = CommandHandler(AdminCommand.BAN, delete_user)
 getting_user_handler = CommandHandler(AdminCommand.USERS, sending_users)
 backup_handler = CommandHandler(AdminCommand.BACKUP, backup)

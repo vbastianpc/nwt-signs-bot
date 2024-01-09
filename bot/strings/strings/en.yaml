@@ -57,13 +57,8 @@ barrier_to_entry: >
 wait: Thank you! I will notify you when you are accepted.
 
 
-# {0} -> First name
-# {1} -> start command
-step_1: Congratulations {0}! Now you can use this bot. Press /{1}.
-
-
 # {} -> signlanguage command
-step_2: >
+select_sl: >
   <b>Choose a sign language.</b>
 
   Press /{}, navigate through the menu, and select one.

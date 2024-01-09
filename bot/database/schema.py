@@ -225,20 +225,19 @@ class User(Base):
 
     id = Column('UserId', Integer, primary_key=True)
     telegram_user_id = Column('TelegramUserId', Integer, unique=True, nullable=False)
-    first_name = Column('FirstName', String)
-    last_name = Column('LastName', String)
-    user_name = Column('UserName', String)
+    first_name = Column('FirstName', String, default='')
+    last_name = Column('LastName', String, default='')
+    user_name = Column('UserName', String, default='')
     is_premium = Column('IsPremium', Boolean)
     sign_language_code = Column('SignLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     sign_language_code2 = Column('SignLanguageCode2', Integer, ForeignKey('Language.LanguageCode'))
     sign_language_code3 = Column('SignLanguageCode3', Integer, ForeignKey('Language.LanguageCode'))
     bot_language_code = Column('BotLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
     overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
-    sign_language_name = Column('SignLanguageName', String) # sign language name in bot language
-    status = Column('Status', Integer)
+    status = Column('Status', Integer, default=WAITING)
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
-    delogo = Column('Delogo', Boolean)
+    delogo = Column('Delogo', Boolean, default=False)
 
     bot_language: Language = relationship('Language', back_populates='bot_language_users',
                                           foreign_keys=[bot_language_code])
@@ -264,10 +263,10 @@ class User(Base):
     def is_active(self) -> bool:
         _30_days_ago = datetime.now() - timedelta(days=30)
         return self.last_active_datetime > _30_days_ago
-    
+
     @property
-    def  full_name(self) -> str:
-        return self.first_name + (f' {self.last_name}' if self.last_name else '')
+    def full_name(self) -> str:
+        return f'{self.first_name} {self.last_name}' if self.last_name else self.first_name
 
     @property
     def sign_languages(self) -> list[Language]:

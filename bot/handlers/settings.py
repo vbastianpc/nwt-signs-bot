@@ -11,7 +11,6 @@ from telegram import BotCommandScopeChat
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
 from telegram.ext import CallbackQueryHandler
-from telegram.ext import ConversationHandler
 import telegram.error
 
 from bot.database import session
@@ -21,7 +20,7 @@ from bot.database import fetch
 from bot.database import report as rdb
 from bot.database.schema import Language
 from bot.utils import list_of_lists
-from bot.utils.decorators import vip, forw, log
+from bot.utils.decorators import vip, forw
 from bot.utils.browser import browser
 from bot.secret import ADMIN
 from bot import strings
@@ -29,14 +28,12 @@ from bot.utils import how_to_say
 from bot.logs import get_logger
 from bot import MyCommand
 from bot.strings import TextTranslator
-from bot import exc
 
 
 logger = get_logger(__name__)
 
-SELECT_SIGNLANGUAGE = 'SELECT_SIGNLANGUAGE'
+SELECT_LANGUAGE = 'SELECT_LANGUAGE'
 PAGE_SIGNLANGUAGE = 'PAGE_SIGNLANGUAGE'
-SELECT_BOTLANGUAGE = 'SELECT_BOTLANGUAGE'
 PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 
 
@@ -64,7 +61,7 @@ def build_signlangs(update: Update, _: CallbackContext):
     return list_of_lists(
         [{
             'text': f'{sign_language["symbol"]} - {sign_language["name"]}',
-            'callback_data': f'{SELECT_SIGNLANGUAGE}|{sign_language["symbol"]}' # symbol == language_code
+            'callback_data': f'{SELECT_LANGUAGE}|{sign_language["symbol"]}' # symbol == language_code
         } for sign_language in sorted(
             filter(lambda l: l['isSignLanguage'], res.json()['languages']),
             key=lambda x: x['symbol'])
@@ -73,7 +70,7 @@ def build_signlangs(update: Update, _: CallbackContext):
     )
 
 
-@vip
+@forw
 def manage_sign_languages(update: Update, context: CallbackContext):
     if not context.args:
         show_sign_languages(update, context)
@@ -87,7 +84,6 @@ def manage_sign_languages(update: Update, context: CallbackContext):
     user.sign_language_code3 = sl[2].code if sl[2] else None
     session.commit()
 
-    user.sign_language_name = how_to_say(user.sign_language_code, user.bot_language_code)
     tt = TextTranslator(user.bot_language_code)
     update.message.reply_text(
         text=tt.multiple_signlanguage(
@@ -166,30 +162,10 @@ def prev_next_signlanguage(update: Update, context: CallbackContext):
     )
 
 
-@forw
-def set_sign_language(update: Update, context: CallbackContext, sign_language_code=None) -> int:
-    user = get.user(update.effective_user.id)
-    t = TextTranslator(user.bot_language.code)
-    if update.callback_query:
-        sign_language_code = update.callback_query.data.split('|')[1]
-
-    user = add.or_update_user(update.effective_user.id,
-                              sign_language_code=sign_language_code,
-                              sign_language_name=how_to_say(sign_language_code, user.bot_language.code))
-    text = t.ok_signlanguage_code(user.sign_language_name)
-    if update.callback_query:
-        update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)
-    else:
-        update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
-
-    fetch.editions(sign_language_code)
-    fetch.books(language_code=sign_language_code)
-
-
 def build_botlangs():
     return list_of_lists(
         items=[{'text': f'{botlang} - {vernacular}',
-                'callback_data': f'{SELECT_BOTLANGUAGE}|{botlang}'}
+                'callback_data': f'{SELECT_LANGUAGE}|{botlang}'}
                for botlang, vernacular in strings.botlangs_vernacular()],
         columns=1,
     )
@@ -198,47 +174,49 @@ def build_botlangs():
 @vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
     t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    msg = send_buttons(
+    send_buttons(
         message=update.message,
         info_for_buttons=build_botlangs(),
         suffix=PAGE_BOTLANGUAGE,
         text=t.choose_botlang,
         edit_message=False,
     )
-    context.user_data['msgbotlang'] = msg
 
 
-
-@log
-def set_bot_language(update: Update, context: CallbackContext, bot_language_code=None) -> None:
-    if update.callback_query:
-        context.user_data['msgbotlang'].edit_reply_markup()
-        del context.user_data['msgbotlang']
-        bot_language_code = update.callback_query.data.split('|')[1]
-    else:
-        bot_language_code = bot_language_code or context.args[0].lower()
-    tt = TextTranslator(bot_language_code)
-    update.effective_message.reply_chat_action(ChatAction.TYPING)
+@forw
+def set_language(update: Update, context: CallbackContext, code_or_meps: str = None) -> int:
     user = get.user(update.effective_user.id)
-    fetch.editions(bot_language_code)
-    fetch.books(bot_language_code)
-
-    user = add.or_update_user(update.effective_user.id,
-                              bot_language_code=bot_language_code,
-                              sign_language_name=how_to_say(user.sign_language.code, bot_language_code),
-                              with_overlay=True if user.overlay_language else False)
-    set_my_commands(update.effective_user, user.bot_language)
-
-    if tt.language['code'] != bot_language_code:
-        text = tt.no_botlang_but(user.bot_language.vernacular.capitalize(), MyCommand.FEEDBACK)
-    else:
-        text = tt.ok_botlang(user.bot_language.vernacular.capitalize())
-
+    update.effective_message.reply_chat_action(ChatAction.TYPING)
     if update.callback_query:
-        update.effective_message.edit_text(text, parse_mode=ParseMode.HTML)
+        code_or_meps = update.callback_query.data.split('|')[1]
     else:
-        update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
-    return ConversationHandler.END
+        code_or_meps = code_or_meps or update.message.text[1:] # /SCH
+
+    language = get.parse_language(code_or_meps)
+    tt = TextTranslator(user.bot_language.code)
+    if not language:
+        update.effective_message.reply_html(tt.not_language(code_or_meps))
+        return
+    language_name = how_to_say(language.code, user.bot_language.code)
+    if language.is_sign_language:
+        user = add.or_update_user(update.effective_user.id, sign_language_code=language.code)
+        text = tt.ok_signlanguage_code(language_name)
+        update.effective_message.reply_html(text)
+    else:
+        tt = TextTranslator(language.code)
+        user = add.or_update_user(update.effective_user.id,
+                                  bot_language_code=language.code,
+                                  with_overlay=True if user.overlay_language else False)
+        set_my_commands(update.effective_user, user.bot_language)
+
+        if tt.language['code'] == language.code:
+            text = tt.ok_botlang(language_name)
+        else:
+            text = tt.no_botlang_but(language_name, MyCommand.FEEDBACK)
+        update.effective_message.reply_html(text)
+    fetch.editions(language.code)
+    fetch.books(language.code)
+    return
 
 
 def set_my_commands(user: TUser, bot_language: Language) -> None:
@@ -255,7 +233,7 @@ def set_my_commands(user: TUser, bot_language: Language) -> None:
     )
     logger.info(f'Comandos BotCommandScopeChat para {user.id} {bot_language.code}')
 
-
+@forw
 def prev_next_botlang(update: Update, _: CallbackQueryHandler) -> None:
     _, page, action = update.callback_query.data.split('|')
     send_buttons(
@@ -265,15 +243,14 @@ def prev_next_botlang(update: Update, _: CallbackQueryHandler) -> None:
         page=int(page),
         action=action,
     )
-    return 1
+    return
 
 
 show_settings_handler = CommandHandler(MyCommand.SETTINGS, show_current_settings)
+set_lang_handler = CallbackQueryHandler(set_language, pattern=SELECT_LANGUAGE)
 
 show_signlangs_handler = CommandHandler(MyCommand.SIGNLANGUAGE, manage_sign_languages)
-set_signlang_handler = CallbackQueryHandler(set_sign_language, pattern=SELECT_SIGNLANGUAGE)
 page_signlang_handler = CallbackQueryHandler(prev_next_signlanguage, pattern=PAGE_SIGNLANGUAGE)
 
 show_botlang_handler = CommandHandler(MyCommand.BOTLANGUAGE, show_botlangs)
-set_botlang_handler = CallbackQueryHandler(set_bot_language, pattern=SELECT_BOTLANGUAGE)
 page_botlang_handler = CallbackQueryHandler(prev_next_botlang, pattern=PAGE_BOTLANGUAGE)
