@@ -101,8 +101,8 @@ def flushlogs(update: Update, _: CallbackContext):
         t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
     else:
-        PATH_LOG.unlink()
-        PATH_LOG.touch()
+        with open(PATH_LOG, 'w', encoding='utf-8') as f:
+            pass
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
