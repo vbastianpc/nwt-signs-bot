@@ -17,6 +17,7 @@ commands:
   start: Start
   signlanguage: Set sign language
   botlanguage: Set bot language
+  booknames: List of Bible Booknames
   overlay: Add text overlay
   delogo: Replace citation
   settings: Show your settings
@@ -31,8 +32,7 @@ admin_commands:
   setcommands: Set commands by language scope
   notify: Notify messages to a user
   backup: Send a database backup
-  logs: Show the most recent log entries
-  logfile: Send a copy of the log file
+  flushlogs: Flush log file
   test: Show the variables in memory
   env: Overwrite environment variables .env file
 
@@ -42,7 +42,7 @@ hi: Hello {}!
 
 
 barrier_to_entry: >
-  I'm a bot that will help you get Bible passages.
+  I am a bot that will help you get Bible passages in many sign languages.
 
 
   Please wait for the developer to accept your entry. In the meantime, you can tell me why you want to use this bot and
@@ -54,14 +54,14 @@ barrier_to_entry: >
 
 
 
-wait: Thank you! I will notify you when you are accepted.
+wait: I'll let you know when you are accepted, so be patient!
 
 
 # {} -> signlanguage command
 select_sl: >
   <b>Choose a sign language.</b>
 
-  Press /{}, navigate through the menu, and select one.
+  Type /{}, navigate through the menu, and select one.
 
 
   Alternatively, you can enter its code. For example, /ASL or /ase for American Sign Language.
@@ -88,7 +88,8 @@ start: >
   Mt
 
 
-  If you need more help, click on /{}
+  Type /{} for more detailed information
+  
 
 
 yes: Yes
@@ -222,9 +223,9 @@ not_signlanguage:
   - Choose a sign language. <b>{}</b> is a spoken language.
 
 
-choose_book: "Choose a book"
-choose_chapter: "Choose a chapter"
-choose_verse: "Choose a verse"
+choose_book: <b>Choose a book</b>
+choose_chapter: <b>Choose a chapter</b>
+choose_verse: <b>Choose a verse</b>
 fetching_videomarkers: Fetching available verses
 downloading: Downloading
 trimming: Trimming
@@ -235,51 +236,57 @@ sending: Sending
 # {1} -> botlanguage command
 # {2} -> feedback command
 # {3} -> url
-# {4} -> bot username @nwtsigns_bot
 help: >
   <b>Sign Language</b>
 
-  Type /{0}, navigate the menu, and choose your sign language.
+
+  Use /{0}, navigate the menu, and choose your sign language.
 
 
-  Set sign language by typing it's code as a command. For example, for American Sign Language, type /ase or /ASL.
+  You can also change your sign language by typing its code as a command. For example, for American Sign Language, type
+  /ase or /ASL.
 
 
-  You can also configure up to 3 sign languages. If a verse is not available in the primary sign language, I will
-  look for it in the next one. Type
+  You can configure up to 3 sign languages. If a verse is not available in your first sign language, I will look for it
+  in the next. Use
 
 
   <code>/{0} csg lsc asl</code>
 
 
 
-  <b>Bible Passages</b>
-
-  You can request up to 5 Bible passages in a single message. Use the full name of the book or its abbreviation.
+  <b>Biblical Passages.</b>
 
 
-  You can also temporarily change your sign language. Write it's code followed by the Bible passage. For example:
+  You can request up to 5 Bible verses in a single message. Use the full name of the biblical book or its abbreviation.
 
 
-  <code>/ase 1 Tim 2:6</code>
+  You can also check Bible passages in other sign languages. For example:
 
-  <code>/hab 1 Tim 2:6</code>
+
+  <code>/ase 1 Tim 2:6
+
+  /hab 1 Tim 2:6</code>
+
 
 
   <b>Bot Language</b>
 
-  I can speak to you in several languages. Click on /{1} and select one. If you know the code, use it directly.
-  For example, for English, you can write /en or /E.
+
+  I can send you Bible passages written in any language. And I can also converse with you in some languages.
 
 
-  Even if you choose a language that I don't know yet, I will be able to understand you when you request Bible passages
-  in your language. I will also try to send you the written text of the Bible passages in your language.
-  If you want to help translate the bot into more languages, leave me a /{2} and <a href="{3}">start translating</a>.
+  Click on /{1} or directly write the language code. For example, for English, you can write /en or /E. I will
+  understand the books of the Bible you ask for in the language you have chosen.
+
+  If you want to help translate the bot, leave me a comment /{2} and <a href="{3}">start translating</a>.
 
 
+# {} -> bot username @nwtsigns_bot
+inline_info: >
   <b>Inline Mode</b>
 
-  Write <code>{4}</code> in any Telegram chat to send Bible passages.
+  Type <code>{}</code> in any Telegram chat to send Bible passages.
 
 
 # {0} -> overlay command
@@ -290,7 +297,9 @@ overlay_info: >
   When /{0} is <b>turned on</b>, you will see Bible citation in your language. Technically, you can use any combination
   of languages available on the <a href="https://www.jw.org">JW</a> website.
 
+
   If /{1} is <b>turned on</b>, Bible citation will be replaced by the original.
+
 
   If /{1} is <b>turned off</b>, Bible citation will be added below the original bible citation.
 
@@ -312,17 +321,19 @@ fallback:
   - I can't assist with that, but I can send you Bible passages in {1} sign languages.
 
 
-# {0} -> ase
-# {1} -> American Sign Language
-# {2} -> en
-# {3} -> English
-# {4} -> Enabled or Disabled
+# {0} -> en
+# {1} -> English
+# {2} -> enabled/disabled
+# {3} -> enabled/disabled
 current_settings: |
   <b>Bot Language</b>
   {0} - {1}
 
   <b>Text Overlay</b>
   {2}
+
+  <b>Delogo</b>
+  {3}
 
 
 menu_signlanguage: |
@@ -344,7 +355,7 @@ multiple_signlanguage: |
   3. {4} - {5}
 
 
-choose_botlang: <b>Choose a language</b> so we can understand each other
+choose_botlang: <b>Select your language</b> so we can understand each other
 
 # {} -> English
 ok_botlang:
@@ -374,7 +385,7 @@ no_botlang_but:
 feedback_1: >
   Do you have any suggestion? Did you find any bugs? Send me all the messages you want (text, images, videos, stickers,
   etc.) Press /{} when you are ready.
-feedback_2: Thank you for leaving your feedback.
+feedback_2: Thank you for your feedback.
 feedback_3: Oops! Don't worry.
 
 
@@ -399,9 +410,9 @@ stats: >
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} {} <code>{}</code> is in the waiting list."
-from_github: "{} has joined from the GitHub link."
-introduced_himself: "{} {} {} <code>{}</code> has introduced themselves."
+waiting_list: is in the waiting list.
+from_github: has joined from the GitHub link.
+introduced_himself: has introduced themselves.
 db_summary: |
   <pre>
   {:>5} Saved markers
@@ -422,7 +433,7 @@ notify_success: Messages sent.
 notify_cancel: Canceled.
 logfile_notfound: Log file not found.
 setcommands: Language-scoped and user-specific commands set.
-user_added: "{} {} has been added."
+user_added: has been added.
 warn_user: I couldn't perform the operation because the user was not registered in the database.
 user_banned: The user has been banned.
 user_stopped_bot: I couldn't add them because the user has stopped the bot.

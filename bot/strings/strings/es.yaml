@@ -13,7 +13,6 @@ language:
   name: Spanish
   vernacular: Español
 
-
 commands:
   start: Inicio
   signlanguage: Elige una lengua de señas
@@ -89,7 +88,7 @@ start: >
   Mt
 
 
-  Si necesitas más ayuda, haz click en /{}
+  Presiona /{} para información más detallada
 
 
 yes: Sí
@@ -222,9 +221,9 @@ not_signlanguage:
   - Elige una lengua de señas. El <b>{}</b> es una lengua hablada.
 
 
-choose_book: "<b>Elige un libro</b>"
-choose_chapter: "<b>Elige un capítulo</b>"
-choose_verse: "<b>Elige un versículo</b>"
+choose_book: <b>Elige un libro</b>
+choose_chapter: <b>Elige un capítulo</b>
+choose_verse: <b>Elige un versículo</b>
 fetching_videomarkers: Obteniendo versículos disponibles
 downloading: Descargando
 trimming: Recortando
@@ -282,7 +281,7 @@ help: >
   Si quieres ayudar a traducir el bot a más idiomas, déjame un comentario /{2} y <a href="{3}">comienza a traducir</a>. 
 
 
-# {4} -> bot username @nwtsigns_bot
+# {} -> bot username @nwtsigns_bot
 inline_info: >
   <b>Modo Inline</b>
 
@@ -392,7 +391,7 @@ no_botlang_but:
 feedback_1: >
   ¿Tienes alguna sugerencia? ¿Encontraste un bug? Envíame todos los mensajes que quieras (texto, imágenes, videos,
   sticker, etc). Presiona /{0} cuando estés listo o /{1} para cancelar.
-feedback_2: Gracias por dejarme tu comentario.
+feedback_2: Gracias por tu comentario.
 feedback_3: ¡Ups! No te preocupes.
 
 
