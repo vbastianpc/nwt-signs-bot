@@ -60,6 +60,9 @@ def or_update_user(
         user.status = status
     if delogo is not None:
         user.delogo = delogo
+
+    if user.overlay_language_code == user.bot_language_code:
+        user.overlay_language_code = None
     session.commit()
     return user
 
