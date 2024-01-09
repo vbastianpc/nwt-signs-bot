@@ -13,7 +13,6 @@ DEFAULT_LANGUAGE = 'en'
 DEFAULT_PATH = STRINGS_PATH / f'{DEFAULT_LANGUAGE}.yaml'
 yaml = YAML(typ='safe')
 
-
 class MyCallable(Protocol):
     def __call__(self, *args: str | int) -> str: ...
 
@@ -32,16 +31,16 @@ class Self:
         if isinstance(value, str):
             if re.search(pt, value):
                 def f(*args: str | int):
-                    return value.format(*args)
+                    return self.custom_format(obj, value.format(*args))
             else:
-                return value
+                return self.custom_format(obj, value)
 
         elif isinstance(value, list):
             if any([re.search(pt, v) for v in value]):
                 def f(*args: str | int):
-                    return choice(value).format(*args)
+                    return self.custom_format(obj, choice(value).format(*args))
             else:
-                return choice(value)
+                return self.custom_format(obj, choice(value))
 
         elif isinstance(value, dict):
             return value
@@ -50,7 +49,14 @@ class Self:
 
     def __set__(self, obj, value) -> None:
         raise AttributeError("Cannot change the value")
-
+    
+    def custom_format(self, obj, value):
+        pt = r'\${ *([\w.]+) *}'
+        while (m := re.search(pt, value)):
+            varname, *keys = m.group(1).split('.')
+            new = eval(f'obj.{varname}' + ''.join([f'.get("{key}")' for key in keys]))
+            value = re.sub(pt, new, value, 1)
+        return value
 
 class TextTranslator:
     language = Self()
