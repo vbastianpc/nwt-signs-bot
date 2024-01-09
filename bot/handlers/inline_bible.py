@@ -2,13 +2,13 @@ from uuid import uuid4
 
 from telegram import InlineQueryResultCachedVideo
 from telegram import Update
+from telegram import ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import InlineQueryHandler
 from telegram.error import BadRequest
 
 from bot.logs import get_logger
-from bot.utils.decorators import vip
-from bot.jw import BibleObject
+from bot.jw import BibleObject, BiblePassage
 from bot import exc
 from bot.database import get
 
@@ -19,25 +19,33 @@ logger = get_logger(__name__)
 def inline_bible(update: Update, _: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
     user = get.user(update.effective_user.id)
-    if update.inline_query.query:
+    if (query := update.inline_query.query):
+        language = get.parse_language(query.split()[0][1:]) if query.startswith('/') else None
         try:
-            p = BibleObject.from_human(update.inline_query.query, user.bot_language_code)
+            p = BibleObject.from_human(query, user.bot_language_code)
         except exc.BaseBibleException:
             return
-        files = get.files(user.sign_language_code, p.book.number, p.chapternumber, p.raw_verses, is_deprecated=False)
+        files = get.files(language.code if language else None,
+                          p.book.number,
+                          p.chapternumber,
+                          p.raw_verses)
     else:
-        files = get.files(user.sign_language_code, is_deprecated=False)
+        files = get.files()
     results = []
     for file in files:
-        title = f'{file.citation} - {user.sign_language.meps_symbol}'
-        title += f' ({file.overlay_language_code})' if file.overlay_language_code else ''
-        title += ' delogo' if file.delogo else ''
+        p = BiblePassage.from_num(file.language.code, file.book.number, file.chapter.number, file.raw_verses)
+        description = '[OLD] ' if file.is_deprecated else ''
+        description += f'({file.overlay_language.name}) overlay ' if file.overlay_language_code else ''
+        description += 'delogo' if file.delogo else ''
         results.append(
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
                 video_file_id=file.telegram_file_id,
-                title=title,
-                caption=title,
+                title=f'{file.citation} - {file.language.meps_symbol}',
+                caption=f'<a href="{p.url_share_jw()}">{p.citation}</a> - '
+                        f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>',
+                description=description,
+                parse_mode=ParseMode.HTML
             )
         )
     try:
