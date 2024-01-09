@@ -2,7 +2,8 @@ import json
 import traceback
 import html
 import sys
-import os
+import io
+from pathlib import Path
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -13,14 +14,13 @@ from telegram.ext import ConversationHandler
 from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 import telegram.error
-from sqlalchemy.exc import OperationalError
 
 from bot.database import get
 from bot.utils.decorators import vip, admin
 from bot import AdminCommand, MyCommand
 from bot.secret import LOG_GROUP_ID
 from bot.secret import TOPIC_ERROR
-from bot.logs import get_logger
+from bot.logs import get_logger, PATH_LOG
 from bot.strings import TextTranslator
 
 
@@ -93,64 +93,41 @@ def cancel(update: Update, context: CallbackContext):
     return -1
 
 
-@vip
 @admin
-def logs(update: Update, context: CallbackContext):
+def flushlogs(update: Update, _: CallbackContext):
     try:
-        with open('./log.log', 'r', encoding='utf-8') as f:
-            data = f.read()
-    except FileNotFoundError:
-        t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-        update.message.reply_text(t.logfile_notfound)
-    else:
-        update.message.reply_markdown_v2(f'```{data[-MAX_MESSAGE_LENGTH::]}```')
-    return
-
-
-@vip
-@admin
-def logfile(update: Update, context: CallbackContext):
-    try:
-        context.bot.send_document(
-            chat_id=update.effective_chat.id,
-            document=open('./log.log', 'rb'),
-        )
+        update.message.reply_document(PATH_LOG.open('rb'))
     except (FileNotFoundError, telegram.error.BadRequest):
         t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
         update.message.reply_text(t.logfile_notfound)
+    else:
+        PATH_LOG.unlink()
+        PATH_LOG.touch()
 
 
 def error_handler(update: Update, context: CallbackContext) -> None:
-    logger.error(f'Type Error: {type(context.error)}')
-    if isinstance(context.error, OperationalError) and context.error.orig.args[0] == 'database is locked':
-        logger.error('database is locked')
-        context.bot.send_message(chat_id=LOG_GROUP_ID, text='<pre>database is locked</pre>',
-                                 message_thread_id=TOPIC_ERROR, parse_mode=ParseMode.HTML)
-        log_error(update, context)
-    else:
-        log_error(update, context)
+    """Log the error and send a telegram message to notify the developer."""
+    # Log the error before we do anything else, so we can see it even if something breaks.
+    logger.error("Exception while handling an update:", exc_info=context.error)
 
-
-def log_error(update: Update, context: CallbackContext) -> None:
-    logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    # traceback.format_exception returns the usual python message about an exception, but as a
+    # list of strings rather than a single string, so we have to join them together.
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
 
+    # Build the message with some markup and additional information about what happened.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    message = (
-        f'An exception was raised while handling an update\n'
-        f'<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}'
-        '</pre>\n\n'
-        f'<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n'
-        f'<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n'
+    text = (
+        f"An exception was raised while handling an update\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>\n\n" +
+        f"<pre>context.bot_data = {html.escape(str(context.bot_data))}</pre>\n\n"
+        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
+        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n" +
+        f"<pre>{html.escape(tb_string)}</pre>"
     )
+    context.bot.send_document(chat_id=LOG_GROUP_ID, message_thread_id=TOPIC_ERROR, document=io.StringIO(text),
+                                    filename=f'{tb_list[-1].split(":")[0]}.html')
 
-    # context.bot.send_message(chat_id=LOG_GROUP_ID, text=message, parse_mode=ParseMode.HTML)
-    # for tb_string in tb_list:
-    #     tb_string = f'<pre>{html.escape(tb_string)}</pre>'
-    #     context.bot.send_message(chat_id=LOG_GROUP_ID,
-    #                              text=tb_string,
-    #                              parse_mode=ParseMode.HTML,
-    #                              disable_notification=True)
 
 test_handler = CommandHandler(AdminCommand.TEST, test_data)
 
@@ -164,5 +141,4 @@ notice_handler = ConversationHandler(
     fallbacks=[CommandHandler(MyCommand.CANCEL, cancel)],
 )
 
-logs_handler = CommandHandler(AdminCommand.LOGS, logs)
-logfile_handler = CommandHandler(AdminCommand.LOGFILE, logfile)
+flushlogs_handler = CommandHandler(AdminCommand.FLUSHLOGS, flushlogs)

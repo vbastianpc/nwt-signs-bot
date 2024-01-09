@@ -12,7 +12,6 @@ class MyCommand(StrEnum):
     OVERLAY = 'overlay'
     OVERLAYINFO = 'overlayinfo'
     DELOGO = 'delogo'
-    PROTIPS = 'protips'
     
 
 class AdminCommand(StrEnum):
@@ -22,8 +21,7 @@ class AdminCommand(StrEnum):
     SETCOMMANDS = 'setcommands'
     NOTIFY = 'notify'
     BACKUP = 'backup'
-    LOGS = 'logs'
-    LOGFILE = 'logfile'
+    FLUSHLOGS = 'flushlogs'
     STATS = 'stats'
     TEST = 'test'
     RESET_CHAPTER = 'reset_chapter'

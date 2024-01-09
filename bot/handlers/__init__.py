@@ -27,8 +27,7 @@ from bot.handlers.admin import restart_handler
 # from bot.handlers.admin import reset_chapter_handler 
 from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
-from bot.handlers.admin.logs import logs_handler
-from bot.handlers.admin.logs import logfile_handler
+from bot.handlers.admin.logs import flushlogs_handler
 from bot.handlers.admin.logs import error_handler
 
 # Order matters
@@ -59,8 +58,7 @@ handlers = [
     test_handler,
     delete_user_handler,
     backup_handler,
-    logs_handler,
-    logfile_handler,
+    flushlogs_handler,
     set_commands_handler,
     getting_user_handler,
     database_status_handler,

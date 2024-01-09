@@ -41,17 +41,17 @@ PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 def show_current_settings(update: Update, _: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
     tt = TextTranslator(user.bot_language.code)
-    update.message.reply_text(
+    update.message.reply_html(
         text=tt.multiple_signlanguage(
             *(user.sign_language.meps_symbol, user.sign_language.vernacular),
             *(user.sign_language2.meps_symbol, user.sign_language2.vernacular) if user.sign_language2 else ('', ''),
             *(user.sign_language3.meps_symbol, user.sign_language3.vernacular) if user.sign_language3 else ('', '')
-        ) + '\n\n' +
+        ) + '\n' +
              tt.current_settings(user.bot_language.code,
                                  user.bot_language.vernacular,
                                  tt.enabled if user.overlay_language else tt.disabled,
+                                 tt.enabled if user.delogo else tt.disabled
         ),
-        parse_mode=ParseMode.HTML
     )
 
 
@@ -85,13 +85,13 @@ def manage_sign_languages(update: Update, context: CallbackContext):
     session.commit()
 
     tt = TextTranslator(user.bot_language_code)
-    update.message.reply_text(
+    update.message.reply_html(
         text=tt.multiple_signlanguage(
             *(user.sign_language.meps_symbol, user.sign_language.vernacular),
             *(user.sign_language2.meps_symbol, user.sign_language2.vernacular) if user.sign_language2 else ('', ''),
             *(user.sign_language3.meps_symbol, user.sign_language3.vernacular) if user.sign_language3 else ('', '')
         ),
-        parse_mode=ParseMode.HTML)
+    )
 
 
 def show_sign_languages(update: Update, context: CallbackContext):
@@ -189,6 +189,7 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     if update.callback_query:
         code_or_meps = update.callback_query.data.split('|')[1]
+        update.callback_query.answer('👋')
     else:
         code_or_meps = code_or_meps or update.message.text[1:] # /SCH
 
@@ -243,7 +244,6 @@ def prev_next_botlang(update: Update, _: CallbackQueryHandler) -> None:
         page=int(page),
         action=action,
     )
-    return
 
 
 show_settings_handler = CommandHandler(MyCommand.SETTINGS, show_current_settings)

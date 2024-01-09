@@ -32,10 +32,10 @@ P = ParamSpec('P')
 
 def vip(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
-    def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> T:
+    def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> T | None:
         tuser = update.effective_user
         if not isinstance(tuser, telegram.User):
-            return
+            return None
         logger.info(f'{update.effective_user.mention_html()}: {update.effective_message.text}')
         user = get.user(tuser.id)
         bot_language_code = user.bot_language_code if user else tuser.language_code if get.language(code=tuser.language_code) else 'en'
@@ -76,7 +76,7 @@ def vip(func: Callable[P, T]) -> Callable[P, T]:
         )
         if not user.is_authorized():
             update.effective_message.reply_text(tt.wait)
-            return
+            return None
 
         if user.is_authorized() and not user.sign_language:
             from bot.handlers.settings import set_language, manage_sign_languages
@@ -90,7 +90,7 @@ def vip(func: Callable[P, T]) -> Callable[P, T]:
                     set_language(update, context)
             else:
                 update.message.reply_html(tt.select_sl(MyCommand.SIGNLANGUAGE))
-            return
+            return None
 
         if user.is_authorized() and update.message.chat.id > 0:
             return func(update, context, *args, **kwargs)

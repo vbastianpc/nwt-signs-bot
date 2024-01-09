@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime
 import pytz
+from pathlib import Path
 
 
+PATH_LOG = Path('./log.log')
 
 class Formatter(logging.Formatter):
     def converter(self, timestamp):
@@ -22,7 +24,8 @@ class Formatter(logging.Formatter):
 def get_logger(name, level=logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
     # console_handler = logging.StreamHandler()
-    console_handler = logging.FileHandler('./log.log')
+    PATH_LOG.touch()
+    console_handler = logging.FileHandler(PATH_LOG)
     console_handler.setFormatter(
         Formatter('%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s')
     )

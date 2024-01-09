@@ -16,7 +16,6 @@ from bot.database import get
 logger = get_logger(__name__)
 
 
-@vip
 def inline_bible(update: Update, _: CallbackContext) -> None:
     logger.info("%s", update.inline_query.query)
     user = get.user(update.effective_user.id)
@@ -25,14 +24,14 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
             p = BibleObject.from_human(update.inline_query.query, user.bot_language_code)
         except exc.BaseBibleException:
             return
-        else:
-            files = get.files(user.sign_language_code, p.book.number, p.chapternumber, p.raw_verses, is_deprecated=False)
+        files = get.files(user.sign_language_code, p.book.number, p.chapternumber, p.raw_verses, is_deprecated=False)
     else:
         files = get.files(user.sign_language_code, is_deprecated=False)
     results = []
     for file in files:
         title = f'{file.citation} - {user.sign_language.meps_symbol}'
         title += f' ({file.overlay_language_code})' if file.overlay_language_code else ''
+        title += ' delogo' if file.delogo else ''
         results.append(
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),

@@ -402,7 +402,6 @@ stats: >
 waiting_list: "{} {} <code>{}</code> is in the waiting list."
 from_github: "{} has joined from the GitHub link."
 introduced_himself: "{} {} {} <code>{}</code> has introduced themselves."
-get_feedback: "{} @{} has send you a feedback."
 db_summary: |
   <pre>
   {:>5} Saved markers

@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from telegram import Update
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from telegram import ParseMode
 from telegram.ext import CommandHandler
@@ -17,15 +19,21 @@ logger = get_logger(__name__)
 @vip
 def help(update: Update, context: CallbackContext) -> None:
     tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(
+    update.message.reply_html(
         text=tt.help(
             MyCommand.SIGNLANGUAGE,
             MyCommand.BOTLANGUAGE,
             MyCommand.FEEDBACK,
             'https://github.com/vbastianpc/nwt-signs-bot/tree/master/bot/strings/strings',
-            context.bot.name),
-        parse_mode=ParseMode.HTML,
-        disable_web_page_preview=True
+            ),
+        disable_web_page_preview=True,
+    )
+    update.message.reply_html(
+        text=tt.inline_info(context.bot.name),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(tt.inline_here, switch_inline_query_current_chat='')],
+            [InlineKeyboardButton(tt.inline_chat, switch_inline_query='')]
+        ])
     )
     msg = update.message.reply_photo(
         photo=context.bot_data.get('overlay_info') or Path('./assets/overlay.jpg').read_bytes(),
