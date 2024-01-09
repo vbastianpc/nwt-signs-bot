@@ -370,7 +370,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
                     overlay_language_code=user.overlay_language_code if with_overlay else None,
-                    delogo=bool(user.delogo and user.overlay_language))
+                    delogo=bool(user.delogo and with_overlay))
     add.file2user(file.id, user.id)
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     update.effective_message.reply_text(
