@@ -205,9 +205,7 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
         update.effective_message.reply_html(text)
     else:
         tt = TextTranslator(language.code)
-        user = add.or_update_user(update.effective_user.id,
-                                  bot_language_code=language.code,
-                                  with_overlay=True if user.overlay_language else False)
+        user = add.or_update_user(update.effective_user.id, bot_language_code=language.code)
         set_my_commands(update.effective_user, user.bot_language)
 
         if tt.language['code'] == language.code:
@@ -215,8 +213,13 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
         else:
             text = tt.no_botlang_but(language_name, MyCommand.FEEDBACK)
         update.effective_message.reply_html(text)
+
     fetch.editions(language.code)
-    fetch.books(language.code)
+    try:
+        fetch.books(language.code)
+    except:
+        update.effective_message.reply_html(tt.no_bible(language.name, 'english'))
+        add.or_update_user(update.effective_user.id, bot_language_code='en')
     return
 
 
