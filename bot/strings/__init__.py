@@ -118,7 +118,6 @@ class TextTranslator:
     waiting_list = Self()
     from_github = Self()
     introduced_himself = Self()
-    db_summary = Self()
     wrong_notify = Self()
     notify = Self()
     notify_success = Self()

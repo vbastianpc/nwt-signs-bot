@@ -413,18 +413,6 @@ stats: >
 waiting_list: is in the waiting list.
 from_github: has joined from the GitHub link.
 introduced_himself: has introduced themselves.
-db_summary: |
-  <pre>
-  {:>5} Saved markers
-  {:>5} Sent verses
-  {:>5} Searched chapters
-  {:>5} Searched books
-  {:>5} Sign Language
-  {:>5} Allowed users
-  {:>5} Blocked users
-  {:>5} Users in the waiting list
-  {:>5} Total users
-  </pre>
 wrong_notify: Correct syntax is <code>/{} user_id1...</code>
 notify: >
   Send me the messages you want me to forward. They can be stickers, gifs, videos, images, anything. When you're ready,

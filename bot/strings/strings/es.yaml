@@ -420,18 +420,6 @@ stats: >
 waiting_list: "Hay un usuario en la sala de espera."
 from_github: "{} ha entrado desde el enlace de github."
 introduced_himself: "ha dejado un mensaje"
-db_summary: |
-  <pre>
-  {:>5} Marcadores guardados
-  {:>5} Versículos enviados
-  {:>5} Capítulos buscados
-  {:>5} Libros buscados
-  {:>5} Lengua de Señas
-  {:>5} Usuarios permitidos
-  {:>5} Usuarios bloqueados
-  {:>5} Usuarios en lista de espera
-  {:>5} Usuarios en total
-  </pre>
 wrong_notify: La sintaxis correcta es <code>/{} <user_id1>...</code>
 notify: >
   Envíame los mensajes que quieres que reenvíe. Pueden ser stickers, gifs, vídeos, imágenes, lo que sea. Cuando estés
