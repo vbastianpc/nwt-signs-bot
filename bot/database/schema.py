@@ -11,6 +11,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.sqltypes import Boolean
 from sqlalchemy.sql.sqltypes import Integer
+from sqlalchemy.sql.sqltypes import Float
 from sqlalchemy.sql.sqltypes import String
 from sqlalchemy.dialects.sqlite import DATETIME
 
@@ -190,7 +191,7 @@ class File(Base):
     telegram_file_id = Column('TelegramFileId', String, unique=True)
     telegram_file_unique_id = Column('TelegramFileUniqueId', String, unique=True)
     size = Column('FileSize', Integer)
-    duration = Column('Duration', Integer)
+    duration = Column('Duration', Float)
     citation = Column('Citation', String)
     raw_verses = Column('RawVerseNumbers', String)
     count_verses = Column('CountVerses', Integer)

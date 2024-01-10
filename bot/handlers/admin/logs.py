@@ -4,6 +4,7 @@ import html
 import sys
 import io
 from pathlib import Path
+import os
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -30,7 +31,7 @@ logger = get_logger(__name__)
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
     update.message.reply_html(
-        f'<pre>{sys.executable=}\n{sys.argv=}</pre>'
+        f'<pre>{sys.executable=}\n{sys.argv=}\n{os.getcwd()}</pre>'
     )
     if not context.args:
         data = sorted(context.user_data.keys())
