@@ -28,10 +28,12 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
         files = get.files(language.code if language else None,
                           p.book.number,
                           p.chapternumber,
-                          p.raw_verses)
+                          p.raw_verses,
+                          limit=200)
     else:
         files = get.files()
     results = []
+
     for file in files:
         p = BiblePassage.from_num(file.language.code, file.book.number, file.chapter.number, file.raw_verses)
         description = '[OLD] ' if file.is_deprecated else ''

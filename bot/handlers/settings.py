@@ -211,7 +211,7 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
         if tt.language['code'] == language.code:
             text = tt.ok_botlang(language_name)
         else:
-            text = tt.no_botlang_but(language_name, MyCommand.FEEDBACK)
+            text = tt.no_botlang_but(how_to_say(language_name, 'en'), MyCommand.FEEDBACK)
         update.effective_message.reply_html(text)
 
     fetch.editions(language.code)
