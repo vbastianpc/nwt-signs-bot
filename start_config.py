@@ -10,7 +10,6 @@ from bot.secret import ADMIN
 from bot.secret import TOKEN
 from bot.utils import how_to_say
 from bot.database import PATH_DB
-from bot.database import report
 from bot.database import get
 from bot.database import add
 from bot.database import fetch
@@ -117,7 +116,6 @@ if __name__ == '__main__':
     get_nwt_db(overwrite=False)
     fetch_nwtdb()
     t0 = time.time()
-    print(f'{time.time() - t0:.2f}')
     fetch.editions()
     for lang in set([
         bot_language,
@@ -141,8 +139,7 @@ if __name__ == '__main__':
         sign_language_code=sign_language.code,
         sign_language_code2=sign_language2.code if sign_language2 else None,
         sign_language_code3=sign_language3.code if sign_language3 else None,
-        sign_language_name=how_to_say(sign_language.code, bot_language.code),
-        status=User.AUTHORIZED,
+        status=User.AUTHORIZED
     )
     logger.info(f'User {member.user.first_name} added to database')
 
