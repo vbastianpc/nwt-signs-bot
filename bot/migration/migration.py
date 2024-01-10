@@ -46,6 +46,7 @@ def migrate_users():
     ousers: list[oUser] = old_session.query(oUser).all()
     users = []
     for ouser in ousers:
+        print(ouser.full_name)
         bot_language = get.language(code=ouser.bot_lang)
         if ouser.sign_language_id is not None:
             sl_code = old_session.query(oLanguage).where(oLanguage.id == ouser.sign_language_id).one().locale
@@ -54,21 +55,23 @@ def migrate_users():
         try:
             member = bot.get_chat_member(chat_id=ouser.telegram_user_id, user_id=ouser.telegram_user_id)
         except BadRequest:
+            print(f'BadRequest to get member {ouser.full_name}')
             member = None
+
         users.append(User(
             id=ouser.id,
             telegram_user_id=ouser.telegram_user_id,
             first_name=member.user.first_name if member else ouser.full_name,
             last_name=member.user.last_name if member else None,
             user_name=member.user.username if member else None,
-            is_premium=member.user.is_premium if member else False,
-            sign_language_code=sl_code.replace('_', '-'),
+            is_premium=member.user.is_premium if member else None,
+            sign_language_code=sl_code.replace('_', '-') if sl_code else None,
             bot_language_code=bot_language.code,
             overlay_language_code=None,
-            sign_language_name=how_to_say(sl_code, bot_language.code) if sl_code else bot_language.vernacular,
             status=ouser.status,
-            added_datetime=datetime.fromisoformat(ouser.added_datetime) if ouser.added_datetime else dt_now(),
-            last_active_datetime=None
+            added_datetime=datetime.fromisoformat(ouser.added_datetime) if ouser.added_datetime else None,
+            last_active_datetime=None,
+            delogo=None
         ))
     session.add_all(users)
     session.commit()
@@ -185,7 +188,7 @@ def migrate_files2users():
 if __name__ == '__main__':
     # fetch.languages()
     # fetch.editions()
-    # migrate_users()
+    migrate_users()
     # migrate_books()
     # migrate_chapters_and_videomarkers()
     # migrate_files()
