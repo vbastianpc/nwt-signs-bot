@@ -11,7 +11,7 @@ from bot.database.schema import Base
 from bot.database.views import views
 
 
-PATH_DB = Path(__file__).parent / 'database.db'
+PATH_DB = Path(__file__).parent.parent.parent / 'database.db'
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
