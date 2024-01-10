@@ -1,3 +1,4 @@
+import io
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -37,23 +38,66 @@ def delete_user(update: Update, context: CallbackContext):
 @vip
 @admin
 def sending_users(update: Update, _: CallbackContext):
-    def print_users(users: list[User], title: str = ''):
-        text = ''
-        for i, user in enumerate(users, 1):
-            text += (
-                f'\n{mention_html(user.telegram_user_id, user.first_name.split()[0])} '
-                f'{user.sign_language.meps_symbol if user.sign_language else None} '
-                f'{user.bot_language.code} '
-                f'<code>{user.telegram_user_id}</code>'
-                )
-            if i % 20 == 0:
-                update.message.reply_text(text, parse_mode=ParseMode.HTML)
-                text = ''
-        if text:
-            update.message.reply_text(f'<b>{title}</b>' + text, parse_mode=ParseMode.HTML)
-    print_users(get.accepted_users(), 'AUTHORIZED')
-    print_users(get.banned_users(), 'DENIED')
-    print_users(get.waiting_users(), 'WAITING')
+    table = ('<tr>'
+        '<th>id</th>'
+        '<th>FullName</th>'
+        '<th>UserName</th>'
+        '<th>IsPremium</th>'
+        '<th>SL1</th>'
+        '<th>SL2</th>'
+        '<th>SL3</th>'
+        '<th>BL</th>'
+        '<th>Overlay</th>'
+        '<th>Status</th>'
+        '<th>AddedDatetime</th>'
+        '<th>LastActive</th>'
+        '<th>Delogo</th>'
+        '</tr>'
+    )
+    users = get.users()
+    for u in users:
+        row = ''.join([f'<td>{c}</td>' for c in [
+            u.id,
+            mention_html(u.telegram_user_id, u.full_name),
+            u.user_name,
+            u.is_premium or '',
+            u.sign_language_code or '',
+            u.sign_language_code2 or '',
+            u.sign_language_code3 or '',
+            u.bot_language_code,
+            u.overlay_language_code or '',
+            u.status,
+            u.added_datetime or '',
+            u.last_active_datetime or '',
+            int(u.delogo),
+        ]])
+        table += f'<tr>{row}</tr>'
+    html = ('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+            table,
+            td,
+            th {
+                border: 1px solid;
+                width: 100%;
+                border-collapse: collapse;
+                font-family: helvetica;
+            }
+
+            th {
+                background: white;
+                position: sticky;
+                top: 0;
+                box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+            }
+            </style>
+        </head>'''
+        f'<body><table>{table}</table></body></html>'
+    )
+    update.message.reply_document(io.StringIO(html), filename='users.html')
 
 
 @vip

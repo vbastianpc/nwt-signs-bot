@@ -237,7 +237,7 @@ class User(Base):
     status = Column('Status', Integer, default=WAITING)
     added_datetime = Column('AddedDatetime', DateTime)
     last_active_datetime = Column('LastActiveDatetime', DateTime)
-    delogo = Column('Delogo', Boolean, default=False)
+    delogo = Column('Delogo', Boolean, default=False, nullable=False)
 
     bot_language: Language = relationship('Language', back_populates='bot_language_users',
                                           foreign_keys=[bot_language_code])
