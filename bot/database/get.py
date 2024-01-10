@@ -160,7 +160,8 @@ def files(
         raw_verses: str = None,
         checksum: str = None,
         overlay_language_code: str | None = False,
-        is_deprecated: bool = None
+        is_deprecated: bool = None,
+        limit: int = 0,
     ) -> list[File | None]:
     q = (
         session.query(File)
@@ -183,6 +184,9 @@ def files(
         q = q.filter(File.overlay_language_code == overlay_language_code)
     if is_deprecated is not None:
         q = q.filter(File.is_deprecated == is_deprecated)
+    q = q.order_by(Book.number.asc(), Chapter.number.asc(), File.raw_verses.asc())
+    if limit > 0:
+        q = q.limit(limit)
     return q.all()
 
 

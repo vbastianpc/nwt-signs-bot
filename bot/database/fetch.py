@@ -61,7 +61,7 @@ def languages():
     session.bulk_insert_mappings(Language, map_language(insert=True))
     session.bulk_update_mappings(Language, map_language(update=True))
     session.commit()
-    logger.info(f'There are {report.count_languages()} languages stored in the database')
+    logger.info(f'There are {report.count(Language)} languages stored in the database')
 
 
 
@@ -88,7 +88,7 @@ def editions(language_code: str = None):
                 ))
     session.add_all(edts)
     session.commit()
-    logger.info(f'There are {report.count_bible_editions()} bible editions stored in the database')
+    logger.info(f'There are {report.count(Edition)} bible editions stored in the database')
 
 
 def books(language_code: str, lazy=True):

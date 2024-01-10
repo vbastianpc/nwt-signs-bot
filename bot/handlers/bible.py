@@ -388,6 +388,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
 def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
     user = get.user(update.effective_user.id)
     with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
+    with_delogo = bool(user.delogo and with_overlay)
     msg = context.user_data.get('msg')
     tt = TextTranslator(user.bot_language.code)
 
@@ -397,7 +398,11 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
         epub.verses = verse
         p.verses = verse
         title_markers.append(p.citation)
-        file = p.chapter.get_file(p.verses,user.overlay_language_code if p.book.name != epub.book.name else None)
+        file = p.chapter.get_file(
+            verses=p.verses,
+            overlay_language_code=user.overlay_language_code if p.book.name != epub.book.name else None,
+            delogo=with_delogo
+            )
         if file:
             logger.info('Downloading verse %s from telegram servers', epub.citation)
             text = f'⬇️ {tt.downloading} <b>{epub.citation}</b>'
