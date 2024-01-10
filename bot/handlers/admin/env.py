@@ -1,5 +1,7 @@
 import os
 import sys
+from subprocess import run
+from pathlib import Path
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -54,4 +56,12 @@ env_handler = ConversationHandler(
     fallbacks=[CommandHandler(MyCommand.CANCEL, cancel)]
 )
 
+
+@vip
+def git(update: Update, context: CallbackContext):
+    console = run(['git', '-C', str(Path(__file__).parent.parent.parent), 'pull'], capture_output=True)
+    update.message.reply_text(console.stdout.decode())
+
+
 restart_handler = CommandHandler(AdminCommand.RESTART, restart)
+git_handler = CommandHandler(AdminCommand.GIT, git)

@@ -24,6 +24,7 @@ from bot.handlers.admin import database_status_handler
 from bot.handlers.admin import env_handler
 from bot.handlers.admin import replace_db_handler
 from bot.handlers.admin import restart_handler
+from bot.handlers.admin import git_handler
 # from bot.handlers.admin import reset_chapter_handler 
 from bot.handlers.admin.set_commands import set_commands_handler
 from bot.handlers.admin.logs import notice_handler
@@ -64,6 +65,7 @@ handlers = [
     database_status_handler,
     notice_handler,
     replace_db_handler,
+    git_handler,
 
     # reset_chapter_handler,
 

@@ -27,3 +27,4 @@ class AdminCommand(StrEnum):
     RESET_CHAPTER = 'reset_chapter'
     ENV = 'env'
     RESTART = 'restart'
+    GIT = 'git'
