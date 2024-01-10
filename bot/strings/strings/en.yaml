@@ -289,6 +289,9 @@ inline_info: >
   Type <code>{}</code> in any Telegram chat to send Bible passages.
 
 
+inline_here: Try inline mode here
+inline_chat: Try on another chat
+
 # {0} -> overlay command
 # {1} -> delogo command
 overlay_info: >
@@ -425,6 +428,7 @@ user_added: has been added.
 warn_user: I couldn't perform the operation because the user was not registered in the database.
 user_banned: The user has been banned.
 user_stopped_bot: I couldn't add them because the user has stopped the bot.
+user_already: User already authorized.
 asking_env: |
   Warning: environment variables will be overwritten. The bot will be restarted.
 
