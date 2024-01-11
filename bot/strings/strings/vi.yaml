@@ -17,6 +17,7 @@ commands:
   start: Bắt đầu
   signlanguage: Chọn ngôn ngữ ký hiệu
   botlanguage: Chọn ngôn ngữ bot
+  booknames: Liệt kê các sách và lá thư trong Kinh Thánh
   overlay: Chèn chữ
   delogo: Thay thế chữ
   settings: Xem các cài đặt
@@ -31,9 +32,9 @@ admin_commands:
   setcommands: Set commands by language scope
   notify: Notify messages to a user
   backup: Send a database backup
-  logs: Show the most recent log entries
-  logfile: Send a copy of the log file
+  flushlogs: Flush log file
   test: Show the variables in memory
+  env: Overwrite environment variables .env file
 
 
 # {} -> First name
@@ -48,7 +49,7 @@ barrier_to_entry: >
   và bạn đến từ đâu không.
 
 
-  Nếu bạn muốn tìm hiểu thêm về Đức Chúa Trời và Lời của ngài, hoặc nếu bạn muốn học một ngôn ngữ ký hiệu, xin vui lòng
+  Nếu bạn muốn tìm hiểu thêm về Đức Chúa Trời và Lời của ngài, hoặc nếu bạn muốn học một ngôn ngữ ký hiệu, xin mời bạn
   truy cập vào trang web chính thức của Nhân chứng Giê-hô-va là JW.ORG hoặc truy cập vào <a href="https://wol.jw.org">THƯ VIỆN TRỰC TUYẾN Tháp Canh</a>
 
 
@@ -56,13 +57,8 @@ barrier_to_entry: >
 wait: Cám ơn bạn nhé! Khi nào bạn được phép sử dụng, mình sẽ báo cho bạn biết.
 
 
-# {0} -> First name
-# {1} -> start command
-step_1: Xin chúc mừng {0}! Giờ đây, bạn đã có thể sử dụng bot. Xin bấm /{1} để bắt đầu sử dụng.
-
-
 # {} -> signlanguage command
-step_2: >
+select_sl: >
   <b>Hãy chọn một ngôn ngữ ký hiệu.</b>
 
   Bấm vào /{}, rồi bạn có thể di chuyển tới lui trong bảng chọn, sau đó chọn một ngôn ngũ ký hiệu mà bạn muốn.
@@ -93,6 +89,7 @@ start: >
 
 
   Nếu bạn muốn được hướng dẫn thêm, xin mời bấm vào /{}
+
 
 
 yes: ✅
@@ -239,25 +236,27 @@ sending: Đang gửi
 # {1} -> botlanguage command
 # {2} -> feedback command
 # {3} -> url
-# {4} -> bot username @nwtsigns_bot
 help: >
   <b>Ngôn ngữ ký hiệu</b>
+
 
   Gõ /{0}, di chuyển trong bảng chọn, rồi chọn một ngôn ngữ ký hiệu.
 
 
-  Chọn một ngôn ngữ ký hiệu bằng cách gõ mã như một lệnh. Ví dụ, để chọn ngôn ngữ ký hiệu Hoa Kỳ, gõ /ase hoặc /ASL.
+  Chọn một ngôn ngữ ký hiệu bằng cách gõ mã như một lệnh. Ví dụ, để chọn ngôn ngữ ký hiệu Hoa Kỳ, gõ
+  /ase hoặc /ASL.
 
 
   Bạn cũng có thể thiết lập lên đến 3 ngôn ngữ ký hiệu. Nếu một câu không có sẵn trong ngôn ngữ ký hiệu chính, tôi sẽ
-  tìm nó trong ngôn ngữ ký hiệu tiếp theo. 
+  tìm nó trong ngôn ngữ ký hiệu tiếp theo. Hãy sử dụng
 
 
-  code>/{0} slv bvl asl</code>
+  <code>/{0} slv bvl asl</code>
 
 
 
   <b>Đoạn Kinh Thánh</b>
+
 
   Bạn có thể yêu cầu đến 5 đoạn Kinh Thánh một lúc chỉ với một tin nhắn. Có thể dùng tên đầy đủ của sách hoặc lá thư hoặc hoặc chỉ nhập vào tên viết tắt cũng được.
 
@@ -265,26 +264,33 @@ help: >
   Bạn cũng có thể tạm đổi ngôn ngữ ký hiệu bằng cách viết mã ngôn ngữ ký hiệu cùng với đoạn Kinh Thánh. Chẳng hạn như:
 
 
-  <code>/ase 1 Ti 2:6</code>
+  <code>/ase 1 Ti 2:6
 
-  <code>/hab 1 Ti 2:6</code>
+  /hab 1 Ti 2:6</code>
+
 
 
   <b>Ngôn ngữ bot</b>
 
-  Mình có thể trò chuyện bằng một vài ngôn ngữ. Hãy bấm vào /{1} và chọn một ngôn ngữ. Nếu bạn biết mã ngôn ngữ, bạn có thể chọn nhanh.
-  Chẳng hạn như, để chọn tiếng Anh, bạn có thể chọn nhanh bằng cách nhập /en hoặc /E.
+
+  Mình có thể gửi các đoạn Kinh Thánh chữ viết trong mọi ngôn ngữ đã có bản dịch. Và mình cũng có thể trò chuyện cùng bạn bằng vài ngôn ngữ.
+
+  
+  Hãy bấm vào /{1} hoặc bạn có thể chọn nhanh một ngôn ngữ. Chẳng hạn như, để chọn tiếng Anh, bạn có thể chọn nhanh bằng cách nhập /en hoặc /E. Tôi sẽ
+  hiểu tên sách hoặc lá thư mà bạn yêu cầu trong ngôn ngữ mà bạn đã chọn.
+
+  Nếu bạn muốn dịch bot sang ngôn ngữ khác, xin nhắn cho tôi biết qua /{2} và <a href="{3}">bắt đầu dịch</a>.
 
 
-  Ngay cả khi bạn chọn một ngôn ngữ mà mình chưa biết, mình cũng có thể hiểu được khi bạn yêu cầu các địa chỉ Kinh Thánh bằng ngôn ngữ của bạn.
-  Mình sẽ cố gắng lấy cho bạn đoạn Kinh Thánh trong ngôn ngữ nói của bạn.
-  Nếu bạn muốn dịch bot sang ngôn ngữ khác, xin bấm vào /{2} và <a href="{3}">bắt đầu dịch</a>.
+# {} -> bot username @nwtsigns_bot
+inline_info: >
+  <b>Tính năng nội tuyến của Telegram</b>
+
+  Nhập <code>{4}</code> trong mọi khung chat Telegram để gửi các đoạn Kinh Thánh.
 
 
-  <b>Tính năng Inline Mode của Telegram</b>
-
-  Nhập <code>{4}</code> trong bất kỳ nhóm chat hoặc kênh Telegram nào để gửi các đoạn Kinh Thánh.
-
+inline_here: Thử tính năng nội tuyến ở dây
+inline_chat: Thử ở một khung chat khác
 
 # {0} -> overlay command
 # {1} -> delogo command
@@ -294,7 +300,9 @@ overlay_info: >
   Khi bật /{0} lên, bạn sẽ thấy tên sách hoặc lá thư bằng ngôn ngữ của bạn trong video ngôn ngữ ký hiệu nước ngoài. Chính xác là bạn có thể kết hợp
   các ngôn ngữ có trên trang web <a href="https://www.jw.org">JW.ORG</a> lại với nhau.
 
+
   Nếu bạn <b>bật</b> /{1} lên, phần chữ địa chỉ đoạn Kinh Thánh trong ngôn ngữ của bạn sẽ thay thế cho phần chữ địa chỉ Kinh Thánh gốc.
+
 
   Nếu bạn <b>tắt</b> /{1} đi, phần chữ địa chỉ đoạn Kinh Thánh trong ngôn ngữ của bạn sẽ nằm dưới phần chữ địa chỉ Kinh Thánh gốc.
 
@@ -316,17 +324,19 @@ fallback:
   - Xin lỗi, mình không làm được điều đó. Nhưng mình có thể lấy cho bạn các câu Kinh Thánh trong {1} ngôn ngữ ký hiệu.
 
 
-# {0} -> ase
-# {1} -> American Sign Language
-# {2} -> en
-# {3} -> English
-# {4} -> Enabled or Disabled
+# {0} -> en
+# {1} -> English
+# {2} -> enabled/disabled
+# {3} -> enabled/disabled
 current_settings: |
   <b>Ngôn ngữ bot đã chọn</b>
   {0} - {1}
   
   <b>Tính năng chèn chữ</b>
   {2}
+
+  <b>Tính năng thay thế chữ</b>
+  {3}
 
 
 menu_signlanguage: |
@@ -376,7 +386,7 @@ no_botlang_but:
 # Feedback conversation handler
 # {0} ok command
 feedback_1: >
-  Bạn có gợi ý gì không? Bạn thấy có lỗi gì không? Xin gửi cho tôi mọi tin nhắn mà bạn muốn (chữ, hình ảnh, video, nhãn dán, vân vân.).
+  Bạn có gợi ý gì không? Bạn thấy có lỗi gì không? Xin gửi cho tôi mọi tin nhắn mà bạn muốn (chữ, hình ảnh, video, nhãn dán, vân vân).
   Hãy bấm /{} khi bạn muốn gửi phản hồi.
 feedback_2: Cảm ơn bạn đã phản hồi ý kiến.
 feedback_3: Ồ! Xin bạn đừng lo nhé.
@@ -403,22 +413,9 @@ stats: >
 
 
 # ADMIN. You don't have to translate it
-waiting_list: "{} {} <code>{}</code> is in the waiting list."
-from_github: "{} has joined from the GitHub link."
-introduced_himself: "{} {} {} <code>{}</code> has introduced themselves."
-get_feedback: "{} @{} has send you a feedback."
-db_summary: |
-  <pre>
-  {:>5} Saved markers
-  {:>5} Sent verses
-  {:>5} Searched chapters
-  {:>5} Searched books
-  {:>5} Sign Language
-  {:>5} Allowed users
-  {:>5} Blocked users
-  {:>5} Users in the waiting list
-  {:>5} Total users
-  </pre>
+waiting_list: is in the waiting list.
+from_github: has joined from the GitHub link.
+introduced_himself: has introduced themselves.
 wrong_notify: Correct syntax is <code>/{} user_id1...</code>
 notify: >
   Send me the messages you want me to forward. They can be stickers, gifs, videos, images, anything. When you're ready,
@@ -427,7 +424,16 @@ notify_success: Messages sent.
 notify_cancel: Canceled.
 logfile_notfound: Log file not found.
 setcommands: Language-scoped and user-specific commands set.
-user_added: "{} {} has been added."
+user_added: has been added.
 warn_user: I couldn't perform the operation because the user was not registered in the database.
 user_banned: The user has been banned.
 user_stopped_bot: I couldn't add them because the user has stopped the bot.
+user_already: User already authorized.
+asking_env: |
+  Warning: environment variables will be overwritten. The bot will be restarted.
+
+  You can cancel at any time /{}
+
+  This is the current content of the .env file
+success_env: The .env file has been updated. Type /{}
+restart: Restarting bot...
