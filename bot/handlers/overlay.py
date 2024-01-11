@@ -12,18 +12,18 @@ from bot.strings import TextTranslator
 
 
 @vip
-def toggle_overlay(update: Update, _: CallbackContext) -> None:
+def toggle_overlay(update: Update, context: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
     user = add.or_update_user(update.effective_user.id, with_overlay=not user.overlay_language_code)
-    tt = TextTranslator(user.bot_language_code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.overlay_activated if user.overlay_language_code else tt.overlay_deactivated,
                               parse_mode=ParseMode.HTML)
 
 @vip
-def toggle_delogo(update: Update, _: CallbackContext) -> None:
+def toggle_delogo(update: Update, context: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
     user = add.or_update_user(update.effective_user.id, delogo=not user.delogo)
-    tt = TextTranslator(user.bot_language_code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.delogo_activated if user.delogo else tt.delogo_deactivated, parse_mode=ParseMode.HTML)
 
 

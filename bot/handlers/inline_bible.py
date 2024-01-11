@@ -35,7 +35,7 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
     results = []
 
     for file in files:
-        p = BiblePassage.from_num(file.language.code, file.book.number, file.chapter.number, file.raw_verses)
+        p = BiblePassage.from_num(file.language.code, file.book.number, file.chapter.number, file.raw_verses.split())
         description = '[OLD] ' if file.is_deprecated else ''
         description += f'({file.overlay_language.name}) overlay ' if file.overlay_language_code else ''
         description += 'delogo' if file.delogo else ''

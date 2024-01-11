@@ -25,9 +25,9 @@ from bot.utils import how_to_say
 
 
 @vip
-def stats(update: Update, _: CallbackContext) -> None:
+def stats(update: Update, context: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     total_verses = sum(map(lambda x: x.count_verses, user.files))
     sign_language_codes = list(set(map(lambda x: x.language.code, user.files)))
     total_overlay = sum(map(lambda x: x.count_verses,

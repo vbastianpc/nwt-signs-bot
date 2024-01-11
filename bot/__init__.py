@@ -4,6 +4,7 @@ class MyCommand(StrEnum):
     SIGNLANGUAGE = 'signlanguage'
     BOTLANGUAGE = 'botlanguage'
     FEEDBACK = 'feedback'
+    BIBLE = 'bible'
     HELP = 'help'
     BOOKNAMES = 'booknames'
     CANCEL = 'cancel'

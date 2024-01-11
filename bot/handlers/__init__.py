@@ -2,6 +2,8 @@ from bot.handlers.bible import book_handler
 from bot.handlers.bible import chapter_handler
 from bot.handlers.bible import verse_handler
 from bot.handlers.bible import parse_bible_handler
+from bot.handlers.bible import show_books_handler
+from bot.handlers.bible import fallback_query_handler
 from bot.handlers.settings import show_settings_handler
 from bot.handlers.settings import show_signlangs_handler
 from bot.handlers.settings import set_lang_handler
@@ -43,6 +45,7 @@ handlers = [
     show_settings_handler,
     show_botlang_handler,
     show_signlangs_handler,
+    show_books_handler,
 
     env_handler,
     restart_handler,
@@ -79,4 +82,5 @@ handlers = [
 
     # fallback all
     all_fallback_handler,
+    fallback_query_handler,
 ]

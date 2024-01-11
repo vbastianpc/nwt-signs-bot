@@ -96,6 +96,7 @@ yes: ✅
 no: ❌
 enabled: Đã bật
 disabled: Đã tắt
+not_available: Không có sẵn
 
 
 # Example: abcdef 1:1

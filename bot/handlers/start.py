@@ -39,15 +39,13 @@ def start(update: Update, context: CallbackContext) -> int:
         else:
             add_user(update, context)
         return
-    user = get.user(tuser.id)
-    tt = TextTranslator(user.bot_language_code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
 
 
 def add_user(update: Update, context: CallbackContext):
     new_telegram_id = int(context.args[0])
-    user_admin = get.user(ADMIN)
-    tt = TextTranslator(user_admin.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     if not (new_user := get.user(new_telegram_id)):
         update.message.reply_text(tt.warn_user)
         return
@@ -65,39 +63,12 @@ def add_user(update: Update, context: CallbackContext):
         fetch.editions()
     if not get.books(new_user.bot_language.code):
         fetch.books(new_user.bot_language.code)
-    tt2 = TextTranslator(new_user.bot_language_code)
+    tt_new = TextTranslator(new_user.bot_language_code)
     context.bot.send_message(chat_id=new_telegram_id,
                              text=tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
     if not new_user.sign_language:
         context.bot.send_message(chat_id=new_telegram_id,
-                                 text=tt2.select_sl(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
-
-
-def whois(update: Update, context: CallbackContext):
-    tuser = update.effective_user
-    user = get.user(tuser.id)
-    t = TextTranslator(user.bot_language_code)
-    update.message.reply_text(t.wait)
-    context.bot.send_message(
-        chat_id=LOG_GROUP_ID,
-        message_thread_id=TOPIC_WAITING,
-        text=f'{TAG_START}'
-             f'<pre><code class="language-python">'
-             f'full_name: {tuser.full_name}\nlanguage_code: {tuser.language_code}username: {tuser.username}'
-             f'</code></pre>\n\n{t.introduced_himself}',
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(f'Add {tuser.full_name}', url=f'{context.bot.link}?start={tuser.id}')],
-            [InlineKeyboardButton(f'View {tuser.full_name}', url=f'tg://user?id={tuser.id}')],
-        ]),
-        parse_mode=ParseMode.HTML
-    )
-    context.bot.forward_message(chat_id=LOG_GROUP_ID,
-                                message_thread_id=TOPIC_WAITING,
-                                from_chat_id=tuser.id,
-                                message_id=update.effective_message.message_id)
-    return 2
-
-
+                                 text=tt_new.select_sl(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)
 
 
 def forward(update: Update, context: CallbackContext) -> int:

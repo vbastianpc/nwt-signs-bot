@@ -29,7 +29,7 @@ def count(table, *filters) -> int:
     return q.scalar()
 
 def count_signlanguage() -> int:
-    return session.query(Language.code).filter(Language.is_sign_language == True).scalar()
+    return session.query(func.count(Language.code)).filter(Language.is_sign_language == True).scalar()
 
 def sum_duration() -> str:
     """Duration in 'x days, HH:MM:SS of all File"""    

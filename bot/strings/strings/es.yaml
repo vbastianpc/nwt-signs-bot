@@ -17,6 +17,7 @@ commands:
   start: Inicio
   signlanguage: Elige una lengua de señas
   botlanguage: Elige un idioma para el bot
+  bible: Libros disponibles en tu lengua de señas
   booknames: Listado de los Libros de la Biblia
   overlay: Superposición de texto
   delogo: Reemplaza el texto citado
@@ -95,7 +96,7 @@ yes: Sí
 no: No
 enabled: Activado
 disabled: Desactivado
-
+not_available: No disponible aún
 
 # Example: abcdef 1:1
 # {} -> abcdef

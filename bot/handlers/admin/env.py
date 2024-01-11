@@ -22,7 +22,7 @@ from bot.database import get
 def send_env_file(update: Update, context: CallbackContext):
     with open('./.env', encoding='utf-8') as f:
         env = f.read()
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.asking_env(MyCommand.CANCEL))
     update.message.reply_text(f'<pre>{env}</pre>', parse_mode=ParseMode.HTML)
     return 1
@@ -31,13 +31,13 @@ def send_env_file(update: Update, context: CallbackContext):
 def overwrite_env_file(update: Update, context: CallbackContext):
     with open('./.env', 'w', encoding='utf-8') as f:
         f.write(update.message.text)
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.success_env(AdminCommand.RESTART))
     return -1
 
 
 def cancel(update: Update, context: CallbackContext):
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.notify_cancel)
     return -1
 
@@ -45,7 +45,7 @@ def cancel(update: Update, context: CallbackContext):
 @vip
 @admin
 def restart(update: Update, context: CallbackContext):
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.restart)
     os.execv(sys.executable, [sys.executable] + sys.argv)
 

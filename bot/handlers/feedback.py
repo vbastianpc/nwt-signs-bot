@@ -22,8 +22,8 @@ logger = get_logger(__name__)
 
 @vip
 def asking_feedback(update: Update, context: CallbackContext):
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(t.feedback_1(MyCommand.OK, MyCommand.CANCEL))
+    tt: TextTranslator = context.user_data['tt']
+    update.message.reply_text(tt.feedback_1(MyCommand.OK, MyCommand.CANCEL))
     context.chat_data['feedback'] = []
     return 1
 
@@ -42,7 +42,7 @@ def getting_feedback(update: Update, context: CallbackContext):
 
 
 def ok_feedback(update: Update, context: CallbackContext):
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.feedback_2)
     user = update.effective_user
     msg = context.bot.send_message(
@@ -55,10 +55,8 @@ def ok_feedback(update: Update, context: CallbackContext):
     for msg in context.chat_data['feedback']:
         msg.forward(LOG_GROUP_ID)
 
-
-
-def cancel_feedback(update: Update, _: CallbackContext):
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+def cancel_feedback(update: Update, context: CallbackContext):
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.feedback_3)
     return ConversationHandler.END
 

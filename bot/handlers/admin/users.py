@@ -25,14 +25,14 @@ logger = get_logger(__name__)
 @vip
 @admin
 def delete_user(update: Update, context: CallbackContext):
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     try:
         user = get.user(int(context.args[0]))
     except (IndexError, ValueError):
-        update.message.reply_text(t.warn_user)
+        update.message.reply_text(tt.warn_user)
         return
     add.or_update_user(user.telegram_user_id, status=User.DENIED)
-    update.message.reply_text(t.user_banned)
+    update.message.reply_text(tt.user_banned)
 
 
 @vip

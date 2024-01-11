@@ -9,6 +9,7 @@ from telegram import ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import MessageHandler
+from telegram.ext import CommandHandler
 from telegram.ext import Filters
 from telegram.error import TelegramError
 
@@ -46,6 +47,7 @@ HTML = ParseMode.HTML
 def parse_query(update: Update, context: CallbackContext) -> None:
     logger.info(f'{context.args=}, {update.effective_message.text}')
     orig_sl = get.user(update.effective_user.id).sign_language
+    tt: TextTranslator = context.user_data['tt']
 
     def command(string: str) -> str:
         return re.match(r'/([\w-]+)', string).group(1) if string.startswith('/') else ''
@@ -59,8 +61,6 @@ def parse_query(update: Update, context: CallbackContext) -> None:
         else:
             language = get.parse_language(command(text))
             if not language:
-                user = get.user(update.effective_user.id)
-                tt = TextTranslator(user.bot_language_code)
                 update.effective_message.reply_html(tt.not_language(command(text)))
                 continue
             if query(text):
@@ -121,7 +121,7 @@ def prepare_passage(passage: BiblePassage, sl_code: str, update: Update, tt: Tex
 def parse_query_bible(update: Update, context: CallbackContext, query: str, sign_language: Language = None) -> None:
     logger.info("query: %s", query)
     user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     if isinstance(passage := check_passage(query, user.bot_language_code), str):
         update.effective_message.reply_text(passage, parse_mode=HTML)
         return
@@ -167,24 +167,31 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str, sign
         show_chapters(update, context, passage.set_language(sl.code))
 
 
-def show_books(update: Update, context: CallbackContext, p: BiblePassage) -> None:
+def show_books(update: Update, context: CallbackContext, p: BiblePassage = None) -> None:
     user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
-    buttons = list_of_lists(
-        [InlineKeyboardButton(
-            get.book(user.bot_language.code, booknum).official_abbreviation,
-            callback_data=f'{SELECT_BOOK}|{p.language.code}|{booknum}'
-        ) for booknum in p.available_booknums],
-        columns=5
-    )
+    tt: TextTranslator = context.user_data['tt']
+    if not p:
+        p = BiblePassage(book=get.books(user.sign_language_code)[0])
+
+    buttons = []
+    for num in range(1, 67):
+        if num == 40:
+            buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*6
+        buttons.append(InlineKeyboardButton(
+            text=get.book(user.bot_language.code, num).official_abbreviation if num in p.available_booknums else '-',
+            callback_data=f'{SELECT_BOOK}|{p.language.code}|{num}' if num in p.available_booknums else '-'
+        ))
+    buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
+    buttons = list_of_lists(buttons, columns=5)
 
     sign_language = p.language
     p.set_language(user.bot_language.code)
-    context.user_data['msg'] = context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f'👋🏼 {sign_language.meps_symbol}\n{tt.choose_book}',
+    context.user_data['msg'] = update.message.reply_html(
+        f' <a href="{p.url_wol_binav}"><b>📖 NWT</b></a> '
+        f'<a href="{p.url_wol_libraries}"><b>{sign_language.meps_symbol}</b></a>\n'
+        f'{tt.choose_book}',
         reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode=HTML,
+        disable_web_page_preview=True
     )
 
 
@@ -197,8 +204,7 @@ def get_book(update: Update, context: CallbackContext) -> None:
 
 
 def show_chapters(update: Update, context: CallbackContext, p: BiblePassage) -> None:
-    user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     if fetch.need_chapter_and_videomarks(p.book):
         update.effective_message.reply_chat_action(ChatAction.TYPING)
         fetch.chapters_and_videomarkers(p.book)
@@ -211,7 +217,7 @@ def show_chapters(update: Update, context: CallbackContext, p: BiblePassage) -> 
         columns=8
     )
     sign_language = p.language
-    p.set_language(user.bot_language.code)
+    p.set_language(tt.language_code)
     kwargs = {
         'chat_id': update.effective_chat.id,
         'text': f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name}</b>\n{tt.choose_chapter}',
@@ -234,8 +240,7 @@ def get_chapter(update: Update, context: CallbackContext) -> None:
 
 
 def show_verses(update: Update, context: CallbackContext, p: BiblePassage) -> None:
-    user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     if fetch.need_ffmpeg(p.chapter):
         update.effective_message.reply_chat_action(ChatAction.TYPING)
         m = update.effective_message.reply_text('⚡️ ' + tt.fetching_videomarkers)
@@ -251,7 +256,7 @@ def show_verses(update: Update, context: CallbackContext, p: BiblePassage) -> No
         columns=8
     )
     sign_language = p.language
-    p.set_language(user.bot_language.code)
+    p.set_language(tt.language_code)
     kwargs = {
         'chat_id': update.effective_chat.id,
         'text': f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name} {p.chapternumber}</b>\n{tt.choose_verse}',
@@ -325,7 +330,7 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
 def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
     msg = context.user_data.get('msg')
     user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
 
     with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
     logger.info("Splitting %s", p.citation)
@@ -359,9 +364,10 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
         height=streams['height'],
         duration=round(float(streams['duration'])),
         timeout=120,
-        thumb=thumbnail.read_bytes(),
+        # thumb=thumbnail.read_bytes(),
         parse_mode=HTML
     )
+    msgvideo.video.thumb
     file = add.file(chapter_id=p.chapter.id,
                     verses=p.verses,
                     telegram_file_id=msgvideo.video.file_id,
@@ -390,7 +396,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
     with_delogo = bool(user.delogo and with_overlay)
     msg = context.user_data.get('msg')
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
 
     paths_to_concatenate, new, title_markers = [], [], []
     verses = p.verses
@@ -453,9 +459,10 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
         height=stream['height'],
         duration=round(float(stream['duration'])),
         timeout=120,
-        thumb=thumbnail,
+        # thumb=thumbnail,
         parse_mode=HTML
     )
+
     context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
     update.effective_message.reply_text(
         text=epub.get_text(),
@@ -499,7 +506,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             height=stream['height'],
             duration=round(float(stream['duration'])),
             timeout=120,
-            thumb=thumbnail,
+            # thumb=thumbnail,
             disable_notification=True
         )
         thumbnail.unlink()
@@ -516,7 +523,18 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
         videopath.unlink()
 
 
+def fallback_query(update: Update, context: CallbackContext):
+    tt: TextTranslator = context.user_data['tt']
+    match update.callback_query.data:
+        case ' ':
+            update.callback_query.answer('😀')
+        case '-':
+            update.callback_query.answer(tt.not_available)
+
+
 chapter_handler = CallbackQueryHandler(get_chapter, pattern=SELECT_CHAPTER)
 book_handler = CallbackQueryHandler(get_book, pattern=SELECT_BOOK)
 verse_handler = CallbackQueryHandler(get_verse, pattern=SELECT_VERSE)
+show_books_handler = CommandHandler(MyCommand.BIBLE, vip(show_books))
 parse_bible_handler = MessageHandler(Filters.text, parse_query)
+fallback_query_handler = CallbackQueryHandler(fallback_query)

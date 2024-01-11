@@ -53,15 +53,15 @@ def test_data(update: Update, context: CallbackContext) -> None:
 @vip
 @admin
 def notify(update: Update, context: CallbackContext):
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     if not context.args:
         update.message.reply_text(
-            text=t.wrong_notify(AdminCommand.NOTIFY),
+            text=tt.wrong_notify(AdminCommand.NOTIFY),
             parse_mode=ParseMode.HTML
         )
         return -1
     context.user_data['user_ids'] = context.args
-    update.message.reply_text(t.notify(MyCommand.OK, MyCommand.CANCEL))
+    update.message.reply_text(tt.notify(MyCommand.OK, MyCommand.CANCEL))
     context.user_data['advice_note'] = []
     return 1
 
@@ -80,27 +80,27 @@ def send_notification(update: Update, context: CallbackContext):
                 from_chat_id=update.effective_user.id,
                 message_id=msg.message_id,
             )
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(t.notify_success)
+    tt: TextTranslator = context.user_data['tt']
+    update.message.reply_text(tt.notify_success)
     del context.user_data['advice_note']
     del context.user_data['user_ids']
     return -1
 
 
 def cancel(update: Update, context: CallbackContext):
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-    update.message.reply_text(t.notify_cancel)
+    tt: TextTranslator = context.user_data['tt']
+    update.message.reply_text(tt.notify_cancel)
     del context.user_data['advice_note']
     return -1
 
 
 @admin
-def flushlogs(update: Update, _: CallbackContext):
+def flushlogs(update: Update, context: CallbackContext):
     try:
         update.message.reply_document(PATH_LOG.open('rb'))
     except (FileNotFoundError, telegram.error.BadRequest):
-        t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
-        update.message.reply_text(t.logfile_notfound)
+        tt: TextTranslator = context.user_data['tt']
+        update.message.reply_text(tt.logfile_notfound)
     else:
         with open(PATH_LOG, 'w', encoding='utf-8') as f:
             pass

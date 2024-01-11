@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 @vip
 def help(update: Update, context: CallbackContext) -> None:
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_html(
         text=tt.help(
             MyCommand.SIGNLANGUAGE,

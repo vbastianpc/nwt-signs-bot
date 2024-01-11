@@ -38,9 +38,9 @@ PAGE_BOTLANGUAGE = 'PAGE_BOTLANGUAGE'
 
 
 @vip
-def show_current_settings(update: Update, _: CallbackContext) -> None:
+def show_current_settings(update: Update, context: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
-    tt = TextTranslator(user.bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_html(
         text=tt.multiple_signlanguage(
             *(user.sign_language.meps_symbol, user.sign_language.vernacular),
@@ -60,11 +60,12 @@ def build_signlangs(update: Update, _: CallbackContext):
     res = browser.open(f'https://www.jw.org/{user.bot_language.code}/languages/')
     return list_of_lists(
         [{
-            'text': f'{sign_language["symbol"]} - {sign_language["name"]}',
-            'callback_data': f'{SELECT_LANGUAGE}|{sign_language["symbol"]}' # symbol == language_code
-        } for sign_language in sorted(
+            'text': f'{sl["symbol"]} - {sl["name"]}',
+            'callback_data': f'{SELECT_LANGUAGE}|{sl["symbol"]}' # symbol == language_code
+        } for sl in sorted(
             filter(lambda l: l['isSignLanguage'], res.json()['languages']),
-            key=lambda x: x['symbol'])
+            key=lambda x: x['symbol']
+        )
         ],
         columns=1
     )
@@ -84,7 +85,7 @@ def manage_sign_languages(update: Update, context: CallbackContext):
     user.sign_language_code3 = sl[2].code if sl[2] else None
     session.commit()
 
-    tt = TextTranslator(user.bot_language_code)
+    tt: TextTranslator = context.user_data['tt']
     update.message.reply_html(
         text=tt.multiple_signlanguage(
             *(user.sign_language.meps_symbol, user.sign_language.vernacular),
@@ -97,7 +98,7 @@ def manage_sign_languages(update: Update, context: CallbackContext):
 def show_sign_languages(update: Update, context: CallbackContext):
     update.effective_message.reply_chat_action(ChatAction.TYPING)
     fetch.languages()
-    tt = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     send_buttons(
         message=update.message,
         info_for_buttons=build_signlangs(update, context),
@@ -112,7 +113,7 @@ def send_buttons(message: Message,
                  suffix: str,
                  page: int = 1,
                  text: str = None,
-                 max_buttons: int = 10,
+                 max_buttons: int = 15,
                  edit_message=True,
                  action=None,
                  ) -> Message:
@@ -129,17 +130,17 @@ def send_buttons(message: Message,
     if page == total_pages == 1:
         pass
     elif page == 1:
-        buttons.append([InlineKeyboardButton('-', callback_data='None'),
-                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
+        buttons.append([InlineKeyboardButton('-', callback_data=' '),
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data=' '),
                         InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}|▶️')])
     elif 1 < page < total_pages:
         buttons.append([InlineKeyboardButton('◀️', callback_data=f'{suffix}|{page - 1}|◀️'),
-                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data=' '),
                         InlineKeyboardButton('▶️', callback_data=f'{suffix}|{page + 1}|▶️')])
     elif page == total_pages:
         buttons.append([InlineKeyboardButton('◀️', callback_data=f'{suffix}|{page - 1}|◀️'),
-                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data='None'),
-                        InlineKeyboardButton('-', callback_data='None')])
+                        InlineKeyboardButton(f'{page}/{total_pages}', callback_data=' '),
+                        InlineKeyboardButton('-', callback_data=' ')])
     kwargs = {'text': text, 'reply_markup': InlineKeyboardMarkup(buttons), 'parse_mode': ParseMode.HTML}
     if edit_message:
         try:
@@ -153,6 +154,7 @@ def send_buttons(message: Message,
 @forw
 def prev_next_signlanguage(update: Update, context: CallbackContext):
     _, page, action = update.callback_query.data.split('|')
+    update.callback_query.answer()
     send_buttons(
         message=update.effective_message,
         info_for_buttons=build_signlangs(update, context),
@@ -173,12 +175,12 @@ def build_botlangs():
 
 @vip
 def show_botlangs(update: Update, context: CallbackContext) -> None:
-    t = TextTranslator(get.user(update.effective_user.id).bot_language.code)
+    tt: TextTranslator = context.user_data['tt']
     send_buttons(
         message=update.message,
         info_for_buttons=build_botlangs(),
         suffix=PAGE_BOTLANGUAGE,
-        text=t.choose_botlang,
+        text=tt.choose_botlang,
         edit_message=False,
     )
 
@@ -194,17 +196,18 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
         code_or_meps = code_or_meps or update.message.text[1:] # /SCH
 
     language = get.parse_language(code_or_meps)
-    tt = TextTranslator(user.bot_language.code)
+    context.user_data['tt'] = tt = TextTranslator(user.bot_language.code)
     if not language:
         update.effective_message.reply_html(tt.not_language(code_or_meps))
         return
-    language_name = how_to_say(language.code, user.bot_language.code)
     if language.is_sign_language:
+        language_name = how_to_say(language.code, user.bot_language.code)
         user = add.or_update_user(update.effective_user.id, sign_language_code=language.code)
         text = tt.ok_signlanguage_code(language_name)
         update.effective_message.reply_html(text)
     else:
-        tt = TextTranslator(language.code)
+        context.user_data['tt'] = tt = TextTranslator(language.code)
+        language_name = how_to_say(language.code, language.code)
         user = add.or_update_user(update.effective_user.id, bot_language_code=language.code)
         set_my_commands(update.effective_user, user.bot_language)
 

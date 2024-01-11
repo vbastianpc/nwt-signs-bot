@@ -17,6 +17,7 @@ commands:
   start: Start
   signlanguage: Set sign language
   botlanguage: Set bot language
+  bible: Bible books available in your sign language
   booknames: List of Bible Booknames
   overlay: Add text overlay
   delogo: Replace citation
@@ -59,7 +60,7 @@ wait: I'll let you know when you are accepted, so be patient!
 
 # {} -> signlanguage command
 select_sl: >
-  <b>Choose a sign language.</b>
+  <b>Set sign language.</b>
 
   Type /{}, navigate through the menu, and select one.
 
@@ -96,6 +97,7 @@ yes: Yes
 no: No
 enabled: Enabled
 disabled: Disabled
+not_available: Not available yet
 
 
 # Example: abcdef 1:1
@@ -171,7 +173,7 @@ but_these_verses:
   - You can try changing the sign language or take a look at these verses.
   - But you can see these verses if you'd like.
   - But these verses are available.
-  - But you can choose one of these verses.
+  - But you can select one of these verses.
 
 
 # Example: Psalms 45 not in SLV
@@ -220,12 +222,12 @@ not_language:
 # Example: /en
 not_signlanguage:
   - The language <b>{}</b> is not a sign language. Please try another language.
-  - Choose a sign language. <b>{}</b> is a spoken language.
+  - Select a sign language. <b>{}</b> is a spoken language.
 
 
-choose_book: <b>Choose a book</b>
-choose_chapter: <b>Choose a chapter</b>
-choose_verse: <b>Choose a verse</b>
+choose_book: <b>Select a book</b>
+choose_chapter: <b>Select a chapter</b>
+choose_verse: <b>Select a verse</b>
 fetching_videomarkers: Fetching available verses
 downloading: Downloading
 trimming: Trimming
@@ -240,7 +242,7 @@ help: >
   <b>Sign Language</b>
 
 
-  Use /{0}, navigate the menu, and choose your sign language.
+  Use /{0}, navigate the menu, and select your sign language.
 
 
   You can also change your sign language by typing its code as a command. For example, for American Sign Language, type

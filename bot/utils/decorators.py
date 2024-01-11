@@ -30,18 +30,20 @@ T = TypeVar('T')
 P = ParamSpec('P')
 
 
-def vip(func: Callable[P, T]) -> Callable[P, T]:
+def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> T | None:
+        print('vip')
         tuser = update.effective_user
         if not isinstance(tuser, telegram.User):
             return None
-        logger.info(f'{update.effective_user.mention_html()}: {update.effective_message.text}')
+        if log:
+            logger.info(f'{update.effective_user.mention_html()}: {update.effective_message.text}')
         user = get.user(tuser.id)
         bot_language_code = user.bot_language_code if user else tuser.language_code if get.language(code=tuser.language_code) else 'en'
-        tt = TextTranslator(bot_language_code)
+        context.user_data['tt'] = tt = TextTranslator(bot_language_code)
         if not user:
-            update.message.reply_html(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
+            update.effective_message.reply_html(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
                                       disable_web_page_preview=True)
             tt_admin = TextTranslator(get.user(ADMIN).bot_language_code)
             context.bot.send_message(
@@ -67,13 +69,14 @@ def vip(func: Callable[P, T]) -> Callable[P, T]:
             status=User.WAITING if not user else user.status,
             last_active_datetime=dt_now()
         )
-        context.bot.forward_message(
-            chat_id=LOG_GROUP_ID,
-            message_thread_id=TOPIC_WAITING if not user.is_authorized() else TOPIC_USE,
-            from_chat_id=update.message.chat.id,
-            message_id=update.message.message_id,
-            disable_notification=True
-        )
+        if log:
+            context.bot.forward_message(
+                chat_id=LOG_GROUP_ID,
+                message_thread_id=TOPIC_WAITING if not user.is_authorized() else TOPIC_USE,
+                from_chat_id=update.message.chat.id,
+                message_id=update.message.message_id,
+                disable_notification=True
+            )
         if not user.is_authorized():
             update.effective_message.reply_text(tt.wait)
             return None

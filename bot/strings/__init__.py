@@ -71,6 +71,7 @@ class TextTranslator:
     no = Self()
     enabled = Self()
     disabled = Self()
+    not_available = Self()
     book_not_found = Self()
     missing_chapter = Self()
     chapter_not_exists = Self()
@@ -136,6 +137,9 @@ class TextTranslator:
     def __init__(self, language_code: str) -> None:
         self.language_code = language_code
 
+    def __repr__(self):
+        return f'<TextTranslator(language_code={self.language_code})>'
+
 
 def get_language(botlang: str) -> dict:
     return TextTranslator(botlang).language
@@ -157,5 +161,11 @@ def botlangs() -> list[str]:
     return [yaml.load(p.read_text())['language']['iso_code'] for p in STRINGS_PATH.glob('*.yaml')]
 
 
+
 if __name__ == '__main__':
     print(*map(lambda k: f'    {k} = Self()', yaml.load(DEFAULT_PATH.read_text()).keys()), sep='\n')
+    keys_en = set(yaml.load((STRINGS_PATH / 'en.yaml').read_text()).keys())
+    keys_es = set(yaml.load((STRINGS_PATH / 'es.yaml').read_text()).keys())
+    print('Same keys en.yaml and es.yaml?', keys_en == keys_es)
+    print('en missing', keys_es - keys_en)
+    print('es missing', keys_en - keys_es)
