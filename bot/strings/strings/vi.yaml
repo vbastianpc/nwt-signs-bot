@@ -105,7 +105,8 @@ disabled: Đã tắt
 # {} -> abcdef
 book_not_found:
   - Theo mình biết thì không có sách hay lá thư nào mang tên <b>{}</b>. Bạn có muốn thử lại với ngôn ngữ khác không?
-  - Không có sách hay lá thư nào có tên là <b>{}</b> trong Kinh Thánh đâu. Trừ khi nó nằm trong cuộn sách khác, cuộn sách sự sống. Nhưng mình chưa được đọc cuộn sách đó.
+  - Không có sách hay lá thư nào có tên là <b>{}</b> trong Kinh Thánh đâu. Trừ khi nó nằm trong cuộn sách khác, cuộn sách sự sống. 
+    Nhưng mình chưa được đọc cuộn sách đó.
   - Mình không tìm thấy sách hoặc lá thư nào mang tên <b>{}</b> trong Kinh Thánh. Bạn có thể thử điền từ khác không?
   - Bạn muốn lấy sách hoặc lá thư tên <b>{}</b>, nhưng mình không thể tìm ra. Xin bạn thử nhập lại từ khác nhé.
   - Bạn có chắc tên sách hoặc lá thư là <b>{}</b> không?
@@ -127,7 +128,8 @@ missing_chapter:
 # {1} -> 100
 # {2} -> 28 (max chapter number for Matthew)
 chapter_not_exists:
-  - "<b>{0}</b> không có chương <b>{1}</b>. Có khi nào nó nằm trong cuộn sách khác không ta, cuộn sách sự sống à? Nhưng hiện nay thì <b>{0}</b> chỉ có <b>{2}</b> chương thôi."
+  - "<b>{0}</b> không có chương <b>{1}</b>. Có khi nào nó nằm trong cuộn sách khác không ta, cuộn sách sự sống à? 
+    Nhưng hiện nay thì <b>{0}</b> chỉ có <b>{2}</b> chương thôi."
   - Theo các bản dịch Kinh Thánh mà mình có thì <b>{0}</b> không có chương <b>{1}</b> đâu.
   - Mình tìm rồi, không có chương số <b>{1}</b> của <b>{0}</b> đâu.
   - Ờ thì... <b>{0}</b> không có chương số <b>{1}</b> đâu. Mình tin chắc là vậy.
@@ -241,12 +243,11 @@ sending: Đang gửi
 help: >
   <b>Ngôn ngữ ký hiệu</b>
 
-  Chọn ngôn ngữ ký hiệu bằng cách nhập vào mã ngôn ngữ như một lệnh. Ví dụ như, để chọn Hoa Kỳ (ngôn ngữ ký hiệu), nhập /ase hoặc /ASL.
-
   Gõ /{0}, di chuyển trong bảng chọn, rồi chọn một ngôn ngữ ký hiệu.
 
 
   Chọn một ngôn ngữ ký hiệu bằng cách gõ mã như một lệnh. Ví dụ, để chọn ngôn ngữ ký hiệu Hoa Kỳ, gõ /ase hoặc /ASL.
+
 
   Bạn cũng có thể thiết lập lên đến 3 ngôn ngữ ký hiệu. Nếu một câu không có sẵn trong ngôn ngữ ký hiệu chính, tôi sẽ
   tìm nó trong ngôn ngữ ký hiệu tiếp theo. 
@@ -322,7 +323,7 @@ fallback:
 # {4} -> Enabled or Disabled
 current_settings: |
   <b>Ngôn ngữ bot đã chọn</b>
-  {0} — {1}
+  {0} - {1}
   
   <b>Tính năng chèn chữ</b>
   {2}
@@ -373,7 +374,10 @@ no_botlang_but:
 
 
 # Feedback conversation handler
-feedback_1: Bạn có gợi ý gì không? Nếu không có vấn đề gì thì bạn có thể thoát khỏi cuộc trò chuyện này bằng cách bấm.
+# {0} ok command
+feedback_1: >
+  Bạn có gợi ý gì không? Bạn thấy có lỗi gì không? Xin gửi cho tôi mọi tin nhắn mà bạn muốn (chữ, hình ảnh, video, nhãn dán, vân vân.).
+  Hãy bấm /{} khi bạn muốn gửi phản hồi.
 feedback_2: Cảm ơn bạn đã phản hồi ý kiến.
 feedback_3: Ồ! Xin bạn đừng lo nhé.
 
