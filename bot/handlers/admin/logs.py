@@ -18,9 +18,10 @@ import telegram.error
 
 from bot.database import get
 from bot.utils.decorators import vip, admin
-from bot import AdminCommand, MyCommand
+from bot import AdminCommand, MyCommand, PATH_ROOT
 from bot.secret import LOG_GROUP_ID
 from bot.secret import TOPIC_ERROR
+from bot.secret import TOKEN
 from bot.logs import get_logger, PATH_LOG
 from bot.strings import TextTranslator
 
@@ -31,7 +32,8 @@ logger = get_logger(__name__)
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
     update.message.reply_html(
-        f'<pre>{sys.executable=}\n{sys.argv=}\n{os.getcwd()}</pre>'
+        f'<pre>{sys.executable=}\n\n{sys.argv=}\n\n{os.getcwd()=}\n\n{PATH_ROOT=}\n\n{TOKEN=}\n\n'
+        f'{context.bot.name=}</pre>'
     )
     if not context.args:
         data = sorted(context.user_data.keys())

@@ -10,7 +10,7 @@ from telegram.ext import CommandHandler
 from telegram.ext import MessageHandler
 from telegram.ext.filters import Filters
 
-from bot import AdminCommand, MyCommand
+from bot import AdminCommand, MyCommand, PATH_ROOT
 from bot.utils.decorators import vip, admin
 from bot.strings import TextTranslator
 from bot.database import get
@@ -20,7 +20,7 @@ from bot.database import get
 @vip
 @admin
 def send_env_file(update: Update, context: CallbackContext):
-    with open('./.env', encoding='utf-8') as f:
+    with open(PATH_ROOT / '.env', encoding='utf-8') as f:
         env = f.read()
     tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.asking_env(MyCommand.CANCEL))
@@ -29,7 +29,7 @@ def send_env_file(update: Update, context: CallbackContext):
 
 
 def overwrite_env_file(update: Update, context: CallbackContext):
-    with open('./.env', 'w', encoding='utf-8') as f:
+    with open(PATH_ROOT / '.env', 'w', encoding='utf-8') as f:
         f.write(update.message.text)
     tt: TextTranslator = context.user_data['tt']
     update.message.reply_text(tt.success_env(AdminCommand.RESTART))
