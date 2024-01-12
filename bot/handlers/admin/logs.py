@@ -32,8 +32,8 @@ logger = get_logger(__name__)
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
     update.message.reply_html(
-        f'<pre>{sys.executable=}\n\n{sys.argv=}\n\n{os.getcwd()=}\n\n{PATH_ROOT=}\n\n{TOKEN=}\n\n'
-        f'{context.bot.name=}</pre>'
+        f'<pre>{sys.executable=}\n\n{sys.argv=}\n\n{os.getcwd()=}\n\n{os.environ=}'
+        f'\n\n{PATH_ROOT=}\n\n{TOKEN=}\n\n{context.bot.name=}</pre>'
     )
     if not context.args:
         data = sorted(context.user_data.keys())

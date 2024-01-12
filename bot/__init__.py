@@ -1,4 +1,9 @@
 from enum import StrEnum
+from pathlib import Path
+
+
+PATH_ROOT = Path(__file__).parent.parent
+
 class MyCommand(StrEnum):
     START = 'start'
     SIGNLANGUAGE = 'signlanguage'

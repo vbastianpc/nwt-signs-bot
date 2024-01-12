@@ -13,8 +13,6 @@ from telegram.ext.filters import Filters
 from bot import AdminCommand, MyCommand, PATH_ROOT
 from bot.utils.decorators import vip, admin
 from bot.strings import TextTranslator
-from bot.database import get
-
 
 
 @vip
