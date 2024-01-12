@@ -46,12 +46,11 @@ def sum_duration_sent() -> str:
 
 def sum_size_sent() -> int:
     """Size in MB of all File2User"""  
-    return round(
-        session.query(func.sum(File.size)) \
+    return session.query(func.sum(File.size)) \
             .select_from(File2User) \
             .join(File, File.id == File2User.file_id) \
-            .scalar() / 1024 / 1024
-            )
+            .scalar() / (1024 * 1024)
+
 
 def count_active_users() -> int:
     return session.query(func.count(User.id)) \
@@ -60,7 +59,7 @@ def count_active_users() -> int:
 
 def sum_size() -> int:
     """Size in MB of all File"""
-    return round(session.query(func.sum(File.size)).scalar() / 1024 / 1024)
+    return session.query(func.sum(File.size)).scalar() / (1024 * 1024)
 
 def stats_user(user_id: int) -> list[tuple[str, int]]:
     return session.query(Language.code, func.sum(File.count_verses)) \
