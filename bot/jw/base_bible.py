@@ -133,7 +133,7 @@ class BibleObject:
 
 
     @classmethod
-    def from_human(cls: Type[BO], citation: str, language_code: str) -> BO:
+    def from_human(cls: Type[BO], citation: str, language_code: str, include_omitted: bool = False) -> BO:
         book_like, chapternumber, verses = cls.parse_citation_regex(citation)
         try:
             book = cls.search_book(book_like, language_code=language_code)
@@ -151,7 +151,7 @@ class BibleObject:
         elif chapternumber is None and book.number in cls.ONE_CHHAPTER_BOOKS:
             # "Judas 5, 6" chapternumber = None, verses = [5, 6]
             chapternumber = 1
-        cls.exists(book.number, chapternumber, verses, book.name)
+        cls.exists(book.number, chapternumber, verses, book.name, include_omitted=include_omitted)
         if book.edition.language.code != language_code:
             b = get.book(language_code, book.number)
             if b:
@@ -164,7 +164,7 @@ class BibleObject:
 
     @staticmethod
     def exists(booknum: int, chapternumber: int | str | None, verses: int | str | list[int | str] | None,
-               bookname:str = None, raise_error:bool = True) -> bool:
+               bookname:str = None, raise_error: bool = True, include_omitted: bool = False) -> bool:
         try:
             s = select(Bible).where(Bible.book == booknum)
             if not session.query(s.exists()).scalar():
@@ -204,12 +204,18 @@ class BibleObject:
                         Bible.is_omitted == True
                     ).order_by(Bible.verse.asc())
                 ).all()
-                raise exc.VerseOmitted(f'{bookname} {chapternumber}:{BibleObject.get_verse_citation(omitted)}')
+                raise exc.VerseOmitted(f'{bookname} {chapternumber}:{BibleObject.get_verse_citation(omitted)}', booknum=booknum)
+        except exc.VerseOmitted as e:
+            if include_omitted or not raise_error:
+                return True
+            if raise_error:
+                raise e
+            if not include_omitted:
+                return False
         except exc.BaseBibleException as e:
             if raise_error:
                 raise e
-            else:
-                return False
+            return False
         else:
             return True
 
@@ -301,13 +307,15 @@ class BibleObject:
         return pv
 
     @classmethod
-    def from_num(cls :Type[BO],
+    def from_num(cls: Type[BO],
                  language_code: str,
                  booknumber: str | int,
                  chapternumber: str | int | None = None,
-                 verses: int | str | list[int | str] | None = None
+                 verses: int | str | list[int | str] | None = None,
+                 raise_error: bool = True,
+                 include_omitted: bool = False
                  ) -> BO:
-        cls.exists(int(booknumber), chapternumber, verses)
+        cls.exists(int(booknumber), chapternumber, verses, raise_error=raise_error, include_omitted=include_omitted)
         book = get.book(language_code, booknumber)
         if not book:
             if not get.language(code=language_code):

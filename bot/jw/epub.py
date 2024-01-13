@@ -167,7 +167,7 @@ class BibleEpub(BiblePassage):
                 new = new.rstrip(s)
             return new if new == text else rstrip(new, strings)
 
-        text = rstrip(text, [' ', '>', '&emsp;', '\n'])
+        text = rstrip(text, [' ', '&emsp;', '\n'])
         return text
 
 def bold(text: str, fmt=HTML) -> str:

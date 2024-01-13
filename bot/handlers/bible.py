@@ -77,26 +77,28 @@ def parse_query(update: Update, context: CallbackContext) -> None:
     add.or_update_user(update.effective_user.id, sign_language_code=orig_sl.code)
 
 
-def check_passage(query: str, bot_language_code: str) -> BiblePassage | str:
+def check_passage(update: Update, query: str, bot_language_code: str) -> BiblePassage | None:
     tt = TextTranslator(bot_language_code)
     try:
         passage = BiblePassage.from_human(query, bot_language_code)
     except exc.BibleCitationNotFound:
-        return f'<b>{query}:</b> ' + tt.fallback(MyCommand.HELP, report.count_signlanguage())
+        update.effective_message.reply_html(f'<b>{query}:</b> ' + tt.fallback(MyCommand.HELP, report.count_signlanguage()))
     except exc.BookNameNotFound as e:
-        return tt.book_not_found(e.book_like)
+        update.effective_message.reply_html(tt.book_not_found(e.book_like))
     except exc.MissingChapterNumber as e:
-        return tt.missing_chapter(e.bookname)
+        update.effective_message.reply_html(tt.missing_chapter(e.bookname))
     except exc.ChapterNotExists as e:
-        return tt.chapter_not_exists(e.bookname, e.chapternum, e.last_chapternum)
+        update.effective_message.reply_html(tt.chapter_not_exists(e.bookname, e.chapternum, e.last_chapternum))
     except exc.VerseNotExists as e:
         d = (BiblePassage.from_num(bot_language_code, e.booknum).book.name, e.chapternum, e.wrong_verses,
              e.last_versenum, e.count_wrong)
-        return tt.verse_not_exists(*d) if e.count_wrong == 1 else tt.verses_not_exists(*d)
+        update.effective_message.reply_html(tt.verse_not_exists(*d) if e.count_wrong == 1 else tt.verses_not_exists(*d))
     except exc.VerseOmitted as e:
-        return tt.is_omitted(e.citation)
+        update.effective_message.reply_html(tt.is_omitted(e.citation))
+        return BiblePassage.from_human(query, bot_language_code, include_omitted=True)
     else:
         return passage
+    return None
 
 
 def prepare_passage(passage: BiblePassage, sl_code: str, update: Update, tt: TextTranslator):
@@ -122,8 +124,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str, sign
     logger.info("query: %s", query)
     user = get.user(update.effective_user.id)
     tt: TextTranslator = context.user_data['tt']
-    if isinstance(passage := check_passage(query, user.bot_language_code), str):
-        update.effective_message.reply_text(passage, parse_mode=HTML)
+    if not (passage := check_passage(update, query, user.bot_language_code)):
         return
     if passage.verses:
         context.user_data['msg'] = None
@@ -367,7 +368,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
         # thumb=thumbnail.read_bytes(),
         parse_mode=HTML
     )
-    msgvideo.video.thumb
+
     file = add.file(chapter_id=p.chapter.id,
                     verses=p.verses,
                     telegram_file_id=msgvideo.video.file_id,

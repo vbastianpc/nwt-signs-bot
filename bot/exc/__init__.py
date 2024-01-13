@@ -43,7 +43,8 @@ class VerseNotExists(BaseBibleException):
 
 
 class VerseOmitted(BaseBibleException):
-    def __init__(self, citation: str):
+    def __init__(self, citation: str, booknum: int):
+        self.booknum = booknum
         self.citation = citation
 
 
