@@ -30,7 +30,7 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
                           p.raw_verses,
                           limit=200)
     else:
-        files = get.files()
+        files = get.files(limit=200)
     results = []
     logger.info(f'{query=} {len(files)=} first={files[0] if files else None}')
 
@@ -42,6 +42,7 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
             verses=file.raw_verses.split(),
             include_omitted=True,
         )
+        logger.info(f'{p.citation=} {file.language.code}=')
         description = '[OLD] ' if file.is_deprecated else ''
         description += f'({file.overlay_language.name}) overlay ' if file.overlay_language_code else ''
         description += 'delogo' if file.delogo else ''
