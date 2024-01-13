@@ -17,7 +17,6 @@ logger = get_logger(__name__)
 
 
 def inline_bible(update: Update, _: CallbackContext) -> None:
-    logger.info("%s", update.inline_query.query)
     user = get.user(update.effective_user.id)
     if (query := update.inline_query.query):
         language = get.parse_language(query.split()[0][1:]) if query.startswith('/') else None
@@ -33,6 +32,7 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
     else:
         files = get.files()
     results = []
+    logger.info(f'{query=} {len(files)=} first={files[0] if files else None}')
 
     for file in files:
         p = BiblePassage.from_num(
