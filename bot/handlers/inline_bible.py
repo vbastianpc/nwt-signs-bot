@@ -31,7 +31,7 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
                           is_deprecated=False,
                           limit=200)
     else:
-        files = get.files(limit=200)
+        files = get.files(is_deprecated=False, limit=200)
     results = []
     logger.info(f'{query=} {len(files)=} first={files[0] if files else None}')
 
