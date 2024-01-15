@@ -130,7 +130,7 @@ def error_handler(update: Update, context: CallbackContext) -> None:
         f"context.user_data = {html_json(context.user_data)}\n\n"
         f"context.args = {context.args}\n\n"
     )
-    if 'error' in context.user_data:
+    if isinstance(context.user_data, dict) and 'error' in context.user_data:
         del context.user_data['error']
     text += f"</code>\n\n<pre>{html.escape(tb_string)}</pre>"
     context.bot.send_document(chat_id=LOG_GROUP_ID, message_thread_id=TOPIC_ERROR, document=io.StringIO(text),
