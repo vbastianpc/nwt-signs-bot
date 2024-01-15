@@ -36,7 +36,8 @@ admin_commands:
   backup: Envía un respaldo de la base de datos
   flushlogs: Vacía el archivo de registro
   test: Muestra las variables en memoria
-  env: Sobreescribe variables de entorno en archivo .env
+  git: git pull
+  restart: Reinicia el bot
 
 
 # {} -> First name
@@ -297,21 +298,28 @@ inline_chat: Probar en otro chat
 # {0} -> overlay command
 # {1} -> delogo command
 overlay_info: >
-  <b>Superposición de texto</b>
+  <b>Superposición de cita bíblica</b>
 
 
-  Cuando actives /{0}, verás la cita bíblica en el idioma del bot. Técnicamente puedes usar cualquier combinación de 
-  idiomas disponibles en el sitio <a href="https://www.jw.org">JW</a>
+  Puedes usar cualquier idioma disponible en el sitio
+  <a href="https://www.jw.org/en/choose-language?locale=en&prefer=lang&docid=1011200">JW</a>. Por ejemplo:
 
 
-  Si /{1} está activado, la nueva cita bíblica será reemplazada por la cita bíblica original.
+  <code>/{0} vi</code>
 
 
-  Si /{1} está desactivado, la nueva cita bíblica se añadirá bajo la cita bíblica original.
+  para vietnamita, o simplemente escribe /{0} para elegir el mismo idioma que el bot.
 
 
-overlay_activated: Has <b>activado</b> la superposición de texto.
-overlay_deactivated: Has <b>desactivado</b> la superposición de texto.
+  Si /{1} está desactivado, la cita bíblica se añadirá bajo la cita bíblica original.
+
+
+  Si /{1} está activado, la cita bíblica será reemplazada por la cita bíblica original.
+
+
+overlay_activated: Has <b>activado</b> la superposición de cita bíblica.
+overlay_deactivated: Has <b>desactivado</b> la superposición de cita bíblica.
+overlay_wrong_language: Elige una lengua que no sea de señas.
 
 delogo_activated: Has <b>activado</b> delogo.
 delogo_deactivated: Has <b>desactivado</b> delogo.
