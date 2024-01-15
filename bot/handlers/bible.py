@@ -306,7 +306,7 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
                      f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>'),
             parse_mode=HTML
         )
-        context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
+        context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
         context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=epub.get_text(),
@@ -454,7 +454,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
         thumb=thumbnail,
         parse_mode=HTML
     )
-    context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
+    context.bot.send_chat_action(update.effective_chat.id, ChatAction.TYPING)
     update.effective_message.reply_html(epub.get_text(), disable_web_page_preview=True)
     thumbnail.unlink()
     msg.delete()

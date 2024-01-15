@@ -79,7 +79,7 @@ def send_notification(update: Update, context: CallbackContext):
         for user_id in user_ids:
             context.bot.copy_message(
                 chat_id=user_id,
-                from_chat_id=update.effective_user.id,
+                from_chat_id=update.effective_chat.id,
                 message_id=msg.message_id,
             )
     tt: TextTranslator = context.user_data['tt']

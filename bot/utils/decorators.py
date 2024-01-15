@@ -125,7 +125,7 @@ def forw(func):
                 try:
                     context.bot.forward_message(chat_id=LOG_GROUP_ID,
                                                 message_thread_id=TOPIC_USE,
-                                                from_chat_id=tuser.id,
+                                                from_chat_id=update.effective_chat.id,
                                                 message_id=update.effective_message.message_id,
                                                 disable_notification=True)
                 except telegram.error.BadRequest:
@@ -136,7 +136,7 @@ def forw(func):
                                              disable_notification=True)
                     context.bot.copy_message(chat_id=LOG_GROUP_ID,
                                              message_thread_id=TOPIC_USE,
-                                             from_chat_id=tuser.id,
+                                             from_chat_id=update.effective_chat.id,
                                              message_id=update.effective_message.message_id,
                                              disable_notification=True)
 
