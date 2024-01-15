@@ -326,7 +326,7 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
         send_single_verse(update, context, p, epub)
         raise e
     add.file2user(file.id, get.user(update.effective_user.id).id)
-    context.bot.copy_message(LOG_GROUP_ID, update.effective_user.id, msgvideo.message_id,
+    context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id,
                              message_thread_id=TOPIC_USE, disable_notification=True)
 
 
