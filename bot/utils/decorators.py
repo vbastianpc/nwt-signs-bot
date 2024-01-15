@@ -68,14 +68,24 @@ def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
             status=User.WAITING if not user else user.status,
             last_active_datetime=dt_now()
         )
-        if log:
-            context.bot.forward_message(
-                chat_id=LOG_GROUP_ID,
-                message_thread_id=TOPIC_WAITING if not user.is_authorized() else TOPIC_USE,
-                from_chat_id=update.message.chat.id,
-                message_id=update.message.message_id,
-                disable_notification=True
-            )
+        if log and update.effective_chat.id != ADMIN:
+            try:
+                context.bot.forward_message(
+                    chat_id=LOG_GROUP_ID,
+                    message_thread_id=TOPIC_WAITING if not user.is_authorized() else TOPIC_USE,
+                    from_chat_id=update.message.chat.id,
+                    message_id=update.message.message_id,
+                    disable_notification=True
+                )
+            except telegram.error.TelegramError:
+                text = update.message.text or ''
+                context.bot.send_message(
+                    text=text + f'{user.full_name} @{user.user_name}',
+                    chat_id=LOG_GROUP_ID,
+                    message_thread_id=TOPIC_WAITING if not user.is_authorized() else TOPIC_USE,
+                    disable_notification=True
+                )
+
         if not user.is_authorized():
             update.effective_message.reply_text(tt.wait)
             return None
