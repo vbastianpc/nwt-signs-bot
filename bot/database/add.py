@@ -53,7 +53,7 @@ def or_update_user(
     if with_overlay is False:
         user.overlay_language_code = None
     elif with_overlay is True:
-        user.overlay_language_code = user.bot_language.code
+        user.overlay_language_code = user.bot_language_code
     if last_active_datetime:
         user.last_active_datetime = last_active_datetime
     if status is not None:
