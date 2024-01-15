@@ -20,8 +20,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-def start_database() -> scoped_session:
-    engine = create_engine(rf'sqlite:///{PATH_DB}', echo=False)
+def start_database(db: Path | str = PATH_DB) -> scoped_session:
+    engine = create_engine(rf'sqlite:///{db}', echo=False)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
     with engine.connect() as con:
