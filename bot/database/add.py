@@ -25,6 +25,7 @@ def or_update_user(
         bot_language_code: str | None = None,
         status: int | None = None,
         with_overlay: bool | None = None,
+        overlay_language_code: str | None = None,
         last_active_datetime: datetime | None = None,
         delogo: bool | None = None
     ) -> User:
@@ -54,6 +55,8 @@ def or_update_user(
         user.overlay_language_code = None
     elif with_overlay is True:
         user.overlay_language_code = user.bot_language_code
+    if overlay_language_code:
+        user.overlay_language_code = overlay_language_code
     if last_active_datetime:
         user.last_active_datetime = last_active_datetime
     if status is not None:
