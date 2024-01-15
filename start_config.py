@@ -117,6 +117,7 @@ if __name__ == '__main__':
     fetch_nwtdb()
     t0 = time.time()
     fetch.editions()
+    fetch.books('en')
     for lang in set([
         bot_language,
         sign_language,
