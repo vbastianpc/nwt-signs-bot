@@ -120,14 +120,19 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
     # Build the message with some markup and additional information about what happened.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    def html_json(s: dict | list | str):
+        return html.escape(json.dumps(s, indent=2, ensure_ascii=False))
     text = (
-        f"An exception was raised while handling an update\n"
-        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>\n\n" +
-        f"<pre>context.bot_data = {html.escape(str(context.bot_data))}</pre>\n\n"
-        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
-        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n" +
-        f"<pre>{html.escape(tb_string)}</pre>"
+        f"An exception was raised while handling an update\n\n<pre><code class='language-python'>"
+        f"update = {html_json(update_str)}\n\n"
+        f"context.bot_data = {html_json(context.bot_data)}\n\n"
+        f"context.chat_data = {html_json(context.chat_data)}\n\n"
+        f"context.user_data = {html_json(context.user_data)}\n\n"
+        f"context.args = {context.args}\n\n"
     )
+    if 'error' in context.user_data:
+        del context.user_data['error']
+    text += f"</code>\n\n<pre>{html.escape(tb_string)}</pre>"
     context.bot.send_document(chat_id=LOG_GROUP_ID, message_thread_id=TOPIC_ERROR, document=io.StringIO(text),
                                     filename=f'{tb_list[-1].split(":")[0]}.html')
 

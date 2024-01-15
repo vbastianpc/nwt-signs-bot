@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 
 from bot.logs import get_logger
@@ -162,6 +164,7 @@ def files(
         overlay_language_code: str | None = False,
         is_deprecated: bool = None,
         limit: int = 0,
+        since: datetime = None
     ) -> list[File | None]:
     q = (
         session.query(File)
@@ -184,6 +187,8 @@ def files(
         q = q.filter(File.overlay_language_code == overlay_language_code)
     if is_deprecated is not None:
         q = q.filter(File.is_deprecated == is_deprecated)
+    if since:
+        q = q.filter(since < File.added_datetime)
     q = q.order_by(Book.number.asc(), Chapter.number.asc(), File.raw_verses.asc())
     if limit > 0:
         q = q.limit(limit)
