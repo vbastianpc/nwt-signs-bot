@@ -318,8 +318,10 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
         logger.critical('Al parecer se ha eliminado de los servidores de Telegram file_id=%s', file.telegram_file_id)
         context.bot.send_message(
             LOG_GROUP_ID,
-            text=f'Al parecer se ha eliminado de los servidores de Telegram file_id={file.telegram_file_id}',
+            text=f'Al parecer se ha eliminado de los servidores de Telegram {file.citation}'
+                 f'\n\n<pre>{file.id=}\n\n{file.language.code}\n\n{e.message=}\n\n{e.__class__.__name__}</pre>',
             message_thread_id=TOPIC_ERROR,
+            parse_mode=HTML
         )
         send_single_verse(update, context, p, epub)
         raise e
