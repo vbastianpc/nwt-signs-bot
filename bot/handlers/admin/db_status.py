@@ -10,7 +10,6 @@ from telegram.ext import MessageHandler
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import Filters
 
-from bot import AdminCommand
 from bot import MyCommand
 from bot.secret import ADMIN
 from bot.utils.decorators import vip, admin
@@ -95,7 +94,7 @@ def cancel(update: Update, context: CallbackContext):
     return -1
 
 
-database_status_handler = CommandHandler(AdminCommand.STATS, stats)
+database_status_handler = CommandHandler(MyCommand.STATS, stats)
 replace_db_handler = ConversationHandler(
     entry_points=[MessageHandler(Filters.document.file_extension('db') & Filters.user(ADMIN), document)],
     states={1: [CallbackQueryHandler(overwrite_db, pattern='✅')]},
