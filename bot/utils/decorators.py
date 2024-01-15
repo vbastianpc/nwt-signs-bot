@@ -33,7 +33,6 @@ P = ParamSpec('P')
 def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
     @wraps(func)
     def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> T | None:
-        print('vip')
         tuser = update.effective_user
         if not isinstance(tuser, telegram.User):
             return None

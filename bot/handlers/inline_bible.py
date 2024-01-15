@@ -20,16 +20,22 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
     if (query := update.inline_query.query):
         language = get.parse_language(query.split()[0][1:]) if query.startswith('/') else None
+        citation = ' '.join(query.split()[1:]) if query.startswith('/') else query
         try:
-            p = BibleObject.from_human(query, user.bot_language_code)
-        except exc.BaseBibleException:
-            return
-        files = get.files(language.code if language else None,
-                          p.book.number,
-                          p.chapternumber,
-                          p.raw_verses,
-                          is_deprecated=False,
-                          limit=200)
+            p = BibleObject.from_human(citation, user.bot_language_code)
+        except exc.BaseBibleException as e:
+            if language:
+                files = get.files(language.code, is_deprecated=False, limit=200)
+            else:
+                logger.error(f'{query!r}', exc_info=e)
+                return
+        else:
+            files = get.files(language.code if language else None,
+                              p.book.number,
+                              p.chapternumber,
+                              p.raw_verses,
+                              is_deprecated=False,
+                              limit=200)
     else:
         files = get.files(is_deprecated=False, limit=200)
     results = []
@@ -43,15 +49,15 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
             verses=file.raw_verses.split(),
             include_omitted=True,
         )
-        logger.info(f'{file.language.code} {p.citation=}')
+        logger.info(f'{file.language.code} {p.citation}')
         description = '[OLD] ' if file.is_deprecated else ''
-        description += f'({file.overlay_language.name}) overlay ' if file.overlay_language_code else ''
-        description += 'delogo' if file.delogo else ''
+        description += '+ ' if not file.delogo and file.overlay_language_code else ''
+        description += file.overlay_language.name if file.overlay_language_code else ''
         results.append(
             InlineQueryResultCachedVideo(
                 id=str(uuid4()),
                 video_file_id=file.telegram_file_id,
-                title=f'{file.citation} - {file.language.meps_symbol}',
+                title=f'{file.language.meps_symbol} - {file.citation}',
                 caption=f'<a href="{p.url_share_jw()}">{p.citation}</a> - '
                         f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>',
                 description=description,
@@ -59,8 +65,8 @@ def inline_bible(update: Update, _: CallbackContext) -> None:
             )
         )
     try:
-        update.inline_query.answer(results, auto_pagination=True, cache_time=5)
-    except BadRequest:
-        return
+        update.inline_query.answer(results, auto_pagination=True, cache_time=10)
+    except BadRequest as e:
+        raise e
 
 inline_handler = InlineQueryHandler(inline_bible)

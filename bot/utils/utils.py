@@ -28,7 +28,7 @@ def list_of_lists(items: list[Any], columns: int) -> list[list[Any]]:
 
 
 def safechars(text):
-    return ''.join([x if (x.isalnum() or x in "._-,() ") else '_' for x in text.replace(':', '.')])
+    return ''.join([x if (x.isalnum() or x in "._-+,() ") else '_' for x in text.replace(':', '.')])
 
 
 def dt_now(naive: bool = False) -> datetime:

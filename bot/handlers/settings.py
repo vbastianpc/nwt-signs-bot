@@ -208,7 +208,7 @@ def set_language(update: Update, context: CallbackContext, code_or_meps: str = N
     else:
         context.user_data['tt'] = tt = TextTranslator(language.code)
         language_name = how_to_say(language.code, language.code)
-        user = add.or_update_user(update.effective_user.id, bot_language_code=language.code)
+        user = add.or_update_user(update.effective_user.id, bot_language_code=language.code, with_overlay=bool(user.overlay_language_code))
         set_my_commands(update.effective_user, user.bot_language)
 
         if tt.language['code'] == language.code:

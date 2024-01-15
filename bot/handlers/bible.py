@@ -177,13 +177,13 @@ def show_books(update: Update, context: CallbackContext, p: BiblePassage = None)
     buttons = []
     for num in range(1, 67):
         if num == 40:
-            buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*6
+            buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
         buttons.append(InlineKeyboardButton(
             text=get.book(user.bot_language.code, num).official_abbreviation if num in p.available_booknums else '-',
             callback_data=f'{SELECT_BOOK}|{p.language.code}|{num}' if num in p.available_booknums else '-'
         ))
     buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
-    buttons = list_of_lists(buttons, columns=5)
+    buttons = list_of_lists(buttons, columns=6)
 
     sign_language = p.language
     p.set_language(user.bot_language.code)
@@ -334,31 +334,26 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
     tt: TextTranslator = context.user_data['tt']
 
     with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
-    logger.info("Splitting %s", p.citation)
-    text = f'✂️ {tt.trimming} <b>{epub.citation} - {p.language.meps_symbol}</b>'
+    with_delogo=bool(user.delogo and with_overlay)
+    logger.info(f"Splitting {p.citation} delogo={with_delogo}")
+    text = (f'✂️ {tt.trimming} <b>{epub.citation} - {p.language.meps_symbol}'
+            f'{" - " + epub.language.meps_symbol if with_overlay else ""}'
+            f'{" delogo" if with_delogo else ""}'
+            '</b>')
     if msg:
         msg.edit_text(text, parse_mode=HTML)
     else:
         msg = update.effective_message.reply_text(text, disable_notification=True, parse_mode=HTML)
     context.bot.send_chat_action(update.effective_chat.id, ChatAction.RECORD_VIDEO_NOTE)
-    videopath = video.split(
-        p.chapter.get_videomarker(p.verses[0]),
-        overlay_text=epub.citation if with_overlay else None,
-        script=user.bot_language.script,
-        with_delogo=bool(user.delogo and with_overlay)
-    )
+    videopath = video.split(p, epub if with_overlay else None, with_delogo)
     update.effective_message.reply_chat_action(ChatAction.UPLOAD_VIDEO)
     msg.edit_text(f'✈️ {tt.sending} <b>{epub.citation}</b>', parse_mode=HTML)
 
     thumbnail = video.make_thumbnail(videopath)
-    if with_overlay:
-        filename = f'{safechars(p.citation)} - {p.language.meps_symbol} ({user.bot_language_code}).mp4'
-    else:
-        filename = f'{safechars(p.citation)} - {p.language.meps_symbol}.mp4'
     streams = video.show_streams(videopath)
     msgvideo = update.effective_message.reply_video(
         video=videopath.read_bytes(),
-        filename=filename,
+        filename=videopath.name,
         caption=(f'<a href="{p.url_share_jw()}">{epub.citation}</a> - '
                     f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>'),
         width=streams['width'],
@@ -428,20 +423,16 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             else:
                 msg = update.effective_message.reply_text(text, parse_mode=HTML)
             update.effective_message.reply_chat_action(ChatAction.RECORD_VIDEO_NOTE)
-            videopath = video.split(
-                p.chapter.get_videomarker(verse),
-                overlay_text=epub.citation if with_overlay else None,
-                script=user.bot_language.script,
-                with_delogo=bool(user.delogo and with_overlay)
-            )
+            videopath = video.split(p, epub if with_overlay else None, with_delogo)
             paths_to_concatenate.append(videopath)
             new.append((verse, videopath))
     epub.verses = verses
     p.verses = verses
     logger.info('Concatenating video %s', epub.citation)
+
     finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
-        outname=f'{safechars(p.citation)} - {p.language.meps_symbol}',
+        outname=video.set_filename(p, epub if with_overlay else None, with_delogo),
         title_chapters=title_markers,
         title=p.citation,
     )
@@ -449,27 +440,20 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     update.effective_message.reply_chat_action(ChatAction.UPLOAD_VIDEO)
     stream = video.show_streams(finalpath)
     thumbnail = video.make_thumbnail(finalpath)
-    filename = f'{safechars(p.citation)} - {p.language.meps_symbol}' + \
-        (f' ({user.bot_language_code})' if with_overlay else '') + '.mp4'
     msgvideo = update.effective_message.reply_video(
         video=finalpath.read_bytes(),
-        filename=filename,
+        filename=finalpath.name,
         caption=(f'<a href="{p.url_share_jw()}">{epub.citation}</a> - '
                  f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>'),
         width=stream['width'],
         height=stream['height'],
         duration=round(float(stream['duration'])),
         timeout=120,
-        # thumb=thumbnail,
+        thumb=thumbnail,
         parse_mode=HTML
     )
-
     context.bot.send_chat_action(update.effective_user.id, ChatAction.TYPING)
-    update.effective_message.reply_text(
-        text=epub.get_text(),
-        parse_mode=HTML,
-        disable_web_page_preview=True,
-    )
+    update.effective_message.reply_html(epub.get_text(), disable_web_page_preview=True)
     thumbnail.unlink()
     msg.delete()
     context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id,
@@ -483,7 +467,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
                     overlay_language_code=user.overlay_language_code if with_overlay else None,
-                    delogo=bool(user.delogo and with_overlay))
+                    delogo=with_delogo)
     add.file2user(file.id,user.id)
 
     for verse, videopath in new:
@@ -491,15 +475,11 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
         thumbnail = video.make_thumbnail(videopath)
         p.verses = verse
         epub.verses = verse
-        if with_overlay:
-            filename = f'{safechars(p.citation)} - {p.language.meps_symbol} ({user.bot_language_code}).mp4'
-        else:
-            filename = f'{safechars(p.citation)} - {p.language.meps_symbol}.mp4'
         msgvideo = context.bot.send_video(
             chat_id=LOG_GROUP_ID,
             message_thread_id=TOPIC_BACKUP,
             video=videopath.read_bytes(),
-            filename=filename,
+            filename=video.set_filename(p, epub if with_overlay else None, with_delogo),
             caption=(f'<a href="{p.url_share_jw()}">{epub.citation}</a> - '
                      f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>'),
             parse_mode=HTML,

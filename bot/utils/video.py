@@ -7,19 +7,25 @@ import json
 import numpy as np
 from PIL import Image
 
+from bot.jw import BibleEpub, BiblePassage
 from bot.logs import get_logger
 from bot.utils import safechars
 from bot.utils.fonts import select_font
 from bot.database.schema import VideoMarker
+from bot.database.schema import Bible
+from bot.database.schema import Language
+from bot.database import get
 
 
 logger = get_logger(__name__)
 
-def split(marker: VideoMarker, overlay_text: str = None, script: str = None, with_delogo: bool = False) -> Path:
-    if not script:
-        script = 'ROMAN'
+def split(p: BiblePassage, epub: BibleEpub = None, with_delogo: bool = False) -> Path:
+    if len(p.verses) > 1:
+        logger.warning(f'{p.citation} split only first verse')
+    marker = p.chapter.get_videomarker(p.verses[0])
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
-    output = Path(safechars(marker.label) + ".mp4")
+
+    output = Path(set_filename(p, epub, with_delogo)).absolute()
 
     frame = Path(__file__).parent / 'frame.png'
     run(
@@ -27,13 +33,13 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
         capture_output=True, check=True
     )
     image = Image.open(frame)
-    if overlay_text and not with_delogo:
+    if epub and not with_delogo:
         x, y = coord_empty_space(image)
-        vf = '-vf ' +  drawtext(overlay_text, x, y, 30 * image.height / 720, select_font(script))
-    elif overlay_text and with_delogo:
+        vf = '-vf ' +  drawtext(epub.citation, x, y, 30 * image.height / 720, select_font(epub.language.script))
+    elif epub and with_delogo:
         box = find_box(image)
         x, y = box[0] + 2, box[1] + 2
-        dt = drawtext(overlay_text, x, y, 30 * image.height / 720, select_font(script))
+        dt = drawtext(epub.citation, x, y, 30 * image.height / 720, select_font(epub.language.script))
         vf = '-vf ' + f"delogo=x={box[0]}:y={box[1]}:w={box[2] - box[0]}:h={box[3] - box[1]}:show=0,{dt}"
     else:
         vf = ''
@@ -42,7 +48,7 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
     metapath.write_text(
         ';FFMETADATA1\n'
         f'title={marker.label}\n'
-        f'comment=t.me/nwtsigns_bot\n'
+        f'comment=https://t.me/nwtsigns_bot\n'
         '[CHAPTER]\n'
         'TIMEBASE=1/1000\n'
         'START=0\n'
@@ -62,6 +68,25 @@ def split(marker: VideoMarker, overlay_text: str = None, script: str = None, wit
     return output
 
 
+def set_filename(p: BiblePassage, epub: BibleEpub, with_delogo: bool) -> str:
+    if epub and with_delogo is True:
+        s = epub.language.meps_symbol
+    elif epub and with_delogo is False:
+        s = f'+{epub.language.meps_symbol}'
+    else:
+        s = '-'
+    filename = '_'.join([
+        'nwt',
+        str(p.book.number),
+        get.book("en", p.book.number).official_abbreviation,
+        p.language.meps_symbol,
+        str(p.chapternumber),
+        str(p.verses[0]) if len(p.verses) == 1 else f'{p.verses[0]}+',
+        s,
+        ]) + f' ({p.citation}).mp4'
+    return safechars(filename)
+
+
 def show_streams(video) -> dict[str, str | int]:
     console = run(
         shlex.split(f'ffprobe -v quiet -show_streams -print_format json -i "{video}"'),
@@ -74,11 +99,11 @@ def show_streams(video) -> dict[str, str | int]:
 
 def concatenate(inputvideos: list[Path], outname: str=None, title_chapters: list[str]=None, title:str=None) -> Path:
     assert len(inputvideos) == len(title_chapters)
-    output = Path((outname or ' - '.join([Path(i).stem for i in inputvideos])) + '.mp4')
+    output = Path(outname) if outname else Path(' - '.join([Path(i).stem for i in inputvideos]) + '.mp4')
     metadata = (
         ';FFMETADATA1\n'
         f'title={title if title else output.stem}\n'
-        'comment=t.me/nwtsigns_bot\n'
+        'comment=https://t.me/nwtsigns_bot\n'
     )
 
     metapath = Path('metadata.txt')
