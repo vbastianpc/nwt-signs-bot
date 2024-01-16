@@ -113,7 +113,7 @@ def send_buttons(message: Message,
                  suffix: str,
                  page: int = 1,
                  text: str = None,
-                 max_buttons: int = 15,
+                 max_buttons: int = 12,
                  edit_message=True,
                  action=None,
                  ) -> Message:
