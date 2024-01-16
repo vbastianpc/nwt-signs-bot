@@ -163,7 +163,7 @@ def files(
         checksum: str = None,
         overlay_language_code: str | None = False,
         is_deprecated: bool = None,
-        limit: int = 0,
+        limit: int = 200,
         since: datetime = None
     ) -> list[File | None]:
     q = (

@@ -19,10 +19,10 @@ logger = get_logger(__name__)
 
 def inline_bible(update: Update, context: CallbackContext) -> None:
     user = get.user(update.effective_user.id)
+    since = datetime(2024, 1, 15, 12, 0, 0) # starts from bot deployment in new server and database. ensure file_id
     if (query := update.inline_query.query):
         language = get.parse_language(query.split()[0][1:]) if query.startswith('/') else None
         citation = ' '.join(query.split()[1:]) if query.startswith('/') else query
-        since = datetime(2024, 1, 15, 12, 0, 0) # starts from bot deployment in new server and database. ensure file_id
         try:
             p = BibleObject.from_human(citation, user.bot_language_code)
         except exc.BaseBibleException as e:
@@ -30,7 +30,7 @@ def inline_bible(update: Update, context: CallbackContext) -> None:
                 files = get.files(language.code, limit=200, since=since)
             else:
                 logger.error(f'{query!r}', exc_info=e)
-                return
+                return update.inline_query.answer([])
         else:
             files = get.files(language.code if language else None,
                               p.book.number,
@@ -38,10 +38,10 @@ def inline_bible(update: Update, context: CallbackContext) -> None:
                               p.raw_verses,
                               limit=200,
                               since=since)
-        if not files:
-            return
     else:
-        return
+        files = get.files(limit=200, since=since)
+    if not files:
+        return update.inline_query.answer([])
     results = []
     logger.info(f'{query=} {len(files)=} first={files[0]}')
     for file in files:
