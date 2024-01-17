@@ -7,25 +7,22 @@ import json
 import numpy as np
 from PIL import Image
 
-from bot.jw import BibleEpub, BiblePassage
+from bot.jw import BiblePassage
 from bot.logs import get_logger
 from bot.utils import safechars
 from bot.utils.fonts import select_font
-from bot.database.schema import VideoMarker
-from bot.database.schema import Bible
-from bot.database.schema import Language
 from bot.database import get
 
 
 logger = get_logger(__name__)
 
-def split(p: BiblePassage, epub: BibleEpub = None, with_delogo: bool = False) -> Path:
+def split(p: BiblePassage, overlay: BiblePassage = None, with_delogo: bool = False) -> Path:
     if len(p.verses) > 1:
         logger.warning(f'{p.citation} split only first verse')
     marker = p.chapter.get_videomarker(p.verses[0])
     end = parse_time(marker.duration) - parse_time(marker.end_transition_duration)
 
-    output = Path(set_filename(p, epub, with_delogo)).absolute()
+    output = Path(set_filename(p, overlay, with_delogo)).absolute()
 
     frame = Path(__file__).parent / 'frame.png'
     run(
@@ -33,13 +30,13 @@ def split(p: BiblePassage, epub: BibleEpub = None, with_delogo: bool = False) ->
         capture_output=True, check=True
     )
     image = Image.open(frame)
-    if epub and not with_delogo:
+    if overlay and not with_delogo:
         x, y = coord_empty_space(image)
-        vf = '-vf ' +  drawtext(epub.citation, x, y, 30 * image.height / 720, select_font(epub.language.script))
-    elif epub and with_delogo:
+        vf = '-vf ' +  drawtext(overlay.citation, x, y, 30 * image.height / 720, select_font(overlay.language.script))
+    elif overlay and with_delogo:
         box = find_box(image)
         x, y = box[0] + 2, box[1] + 2
-        dt = drawtext(epub.citation, x, y, 30 * image.height / 720, select_font(epub.language.script))
+        dt = drawtext(overlay.citation, x, y, 30 * image.height / 720, select_font(overlay.language.script))
         vf = '-vf ' + f"delogo=x={box[0]}:y={box[1]}:w={box[2] - box[0]}:h={box[3] - box[1]}:show=0,{dt}"
     else:
         vf = ''
@@ -68,11 +65,11 @@ def split(p: BiblePassage, epub: BibleEpub = None, with_delogo: bool = False) ->
     return output
 
 
-def set_filename(p: BiblePassage, epub: BibleEpub, with_delogo: bool) -> str:
-    if epub and with_delogo is True:
-        s = epub.language.meps_symbol
-    elif epub and with_delogo is False:
-        s = f'+{epub.language.meps_symbol}'
+def set_filename(p: BiblePassage, overlay: BiblePassage | None, with_delogo: bool) -> str:
+    if overlay and with_delogo is True:
+        s = overlay.language.meps_symbol
+    elif overlay and with_delogo is False:
+        s = f'+{overlay.language.meps_symbol}'
     else:
         s = '-'
     filename = '_'.join([

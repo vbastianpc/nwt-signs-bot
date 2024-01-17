@@ -6,6 +6,7 @@ from telegram import InlineKeyboardButton
 from telegram import InlineKeyboardMarkup
 from telegram import Update
 from telegram import ParseMode
+from telegram import Message
 from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import MessageHandler
@@ -285,9 +286,18 @@ def manage_verses(update: Update, context: CallbackContext, p: BiblePassage) -> 
     logger.info('(%s) %s', update.effective_user.name, p.citation)
     user = get.user(update.effective_user.id)
     epub = BibleEpub(get.book(user.bot_language.code, p.book.number), p.chapternumber, p.verses)
-    overlay = user.overlay_language_code if p.book.name != epub.book.name else None
-    delogo = bool(user.delogo and overlay)
-    if (file := p.chapter.get_file(p.verses, overlay, delogo)):
+
+    if user.overlay_language_code and p.book.name != get.book(user.overlay_language_code, p.book.number).name:
+        overlay = context.user_data['overlay'] = BiblePassage.from_num(
+            user.overlay_language_code,
+            p.book.number,
+            p.chapternumber,
+            p.verses)
+    else:
+        overlay = context.user_data['overlay'] = None
+    delogo = context.user_data['delogo'] = bool(user.delogo and overlay)
+
+    if (file := p.chapter.get_file(p.verses, overlay.language.code if overlay else None, delogo)):
         send_by_fileid(update, context, p, epub, file)
     elif len(p.verses) == 1:
         send_single_verse(update, context, p, epub)
@@ -331,23 +341,23 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
 
 
 def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
-    msg = context.user_data.get('msg')
+    msg: Message = context.user_data.get('msg')
     user = get.user(update.effective_user.id)
     tt: TextTranslator = context.user_data['tt']
+    overlay: BiblePassage | None = context.user_data['overlay']
+    delogo: bool = context.user_data['delogo']
 
-    with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
-    with_delogo=bool(user.delogo and with_overlay)
-    logger.info(f"Splitting {p.citation} delogo={with_delogo}")
+    logger.info(f"Splitting {p.citation} delogo={delogo}")
     text = (f'✂️ {tt.trimming} <b>{epub.citation} - {p.language.meps_symbol}'
-            f'{" - " + epub.language.meps_symbol if with_overlay else ""}'
-            f'{" delogo" if with_delogo else ""}'
+            f'{" - " + overlay.language.meps_symbol if overlay else ""}'
+            f'{" delogo" if delogo else ""}'
             '</b>')
     if msg:
         msg.edit_text(text, parse_mode=HTML)
     else:
         msg = update.effective_message.reply_text(text, disable_notification=True, parse_mode=HTML)
     context.bot.send_chat_action(update.effective_chat.id, ChatAction.RECORD_VIDEO_NOTE)
-    videopath = video.split(p, epub if with_overlay else None, with_delogo)
+    videopath = video.split(p, overlay, delogo)
     update.effective_message.reply_chat_action(ChatAction.UPLOAD_VIDEO)
     msg.edit_text(f'✈️ {tt.sending} <b>{epub.citation}</b>', parse_mode=HTML)
 
@@ -373,27 +383,26 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
                     duration=float(streams['duration']),
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
-                    overlay_language_code=user.overlay_language_code if with_overlay else None,
-                    delogo=bool(user.delogo and with_overlay))
+                    overlay_language_code=overlay.language.code if overlay else None,
+                    delogo=delogo)
     add.file2user(file.id, user.id)
     update.effective_message.reply_chat_action(ChatAction.TYPING)
-    update.effective_message.reply_text(
-        text=epub.get_text(),
-        parse_mode=HTML,
-        disable_web_page_preview=True,
-    )
+    update.effective_message.reply_html(text=epub.get_text(), disable_web_page_preview=True)
     thumbnail.unlink()
     context.bot.copy_message(LOG_GROUP_ID, update.effective_chat.id, msgvideo.message_id,
                              message_thread_id=TOPIC_USE, disable_notification=True)
     msg.delete()
     videopath.unlink()
 
+    del context.user_data['delogo']
+    del context.user_data['overlay']
+
 
 def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
     user = get.user(update.effective_user.id)
-    with_overlay = user.overlay_language_code is not None and p.book.name != epub.book.name
-    with_delogo = bool(user.delogo and with_overlay)
-    msg = context.user_data.get('msg')
+    overlay: BiblePassage | None = context.user_data['overlay']
+    delogo: bool = context.user_data['delogo']
+    msg: Message = context.user_data.get('msg')
     tt: TextTranslator = context.user_data['tt']
 
     paths_to_concatenate, new, title_markers = [], [], []
@@ -401,11 +410,13 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     for verse in verses:
         epub.verses = verse
         p.verses = verse
+        if overlay:
+            overlay.verses = verse
         title_markers.append(p.citation)
         file = p.chapter.get_file(
             verses=p.verses,
-            overlay_language_code=user.overlay_language_code if p.book.name != epub.book.name else None,
-            delogo=with_delogo
+            overlay_language_code=overlay.language.code if overlay else None,
+            delogo=delogo
             )
         if file:
             logger.info('Downloading verse %s from telegram servers', epub.citation)
@@ -413,28 +424,30 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             if msg:
                 msg.edit_text(text, parse_mode=HTML)
             else:
-                msg = update.effective_message.reply_text(text, parse_mode=HTML)
+                msg = update.effective_message.reply_html(text)
             videopath = Path(f'{file.id}.mp4')  # cualquier nombre sirve
             update.effective_message.reply_chat_action(ChatAction.RECORD_VIDEO_NOTE)
             context.bot.get_file(file.telegram_file_id, timeout=120).download(custom_path=videopath)
             paths_to_concatenate.append(videopath)
         else:
-            text = f'✂️ {tt.trimming} <b>{epub.citation} - {p.language.meps_symbol}</b>'
+            text = f'✂️ {tt.trimming} <b>{epub.citation} - {p.language.meps_symbol}' \
+                   f'{" - " + overlay.language.meps_symbol if overlay else ""}</b>'
             if msg:
                 msg.edit_text(text, parse_mode=HTML)
             else:
-                msg = update.effective_message.reply_text(text, parse_mode=HTML)
+                msg = update.effective_message.reply_html(text)
             update.effective_message.reply_chat_action(ChatAction.RECORD_VIDEO_NOTE)
-            videopath = video.split(p, epub if with_overlay else None, with_delogo)
+            videopath = video.split(p, overlay, delogo)
             paths_to_concatenate.append(videopath)
             new.append((verse, videopath))
     epub.verses = verses
     p.verses = verses
+    overlay
     logger.info('Concatenating video %s', epub.citation)
 
     finalpath = video.concatenate(
         inputvideos=paths_to_concatenate,
-        outname=video.set_filename(p, epub if with_overlay else None, with_delogo),
+        outname=video.set_filename(p, overlay, delogo),
         title_chapters=title_markers,
         title=p.citation,
     )
@@ -468,8 +481,8 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
                     duration=float(stream['duration']),
                     citation=p.citation,
                     file_size=msgvideo.video.file_size,
-                    overlay_language_code=user.overlay_language_code if with_overlay else None,
-                    delogo=with_delogo)
+                    overlay_language_code=overlay.language.code if overlay else None,
+                    delogo=delogo)
     add.file2user(file.id,user.id)
 
     for verse, videopath in new:
@@ -481,7 +494,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             chat_id=LOG_GROUP_ID,
             message_thread_id=TOPIC_BACKUP,
             video=videopath.read_bytes(),
-            filename=video.set_filename(p, epub if with_overlay else None, with_delogo),
+            filename=video.set_filename(p, overlay, delogo),
             caption=(f'<a href="{p.url_share_jw()}">{epub.citation}</a> - '
                      f'<a href="{p.url_bible_wol_discover}">{p.language.meps_symbol}</a>'),
             parse_mode=HTML,
@@ -500,10 +513,12 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
                         duration=float(stream['duration']),
                         citation=p.citation,
                         file_size=msgvideo.video.file_size,
-                        overlay_language_code=user.overlay_language_code if with_overlay else None,
-                        delogo=bool(user.delogo and with_overlay))
+                        overlay_language_code=overlay.language.code if overlay else None,
+                        delogo=delogo)
     for videopath in paths_to_concatenate + [finalpath]:
         videopath.unlink()
+    del context.user_data['delogo']
+    del context.user_data['overlay']
 
 
 def fallback_query(update: Update, context: CallbackContext):

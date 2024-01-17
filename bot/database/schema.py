@@ -147,8 +147,7 @@ class Chapter(Base):
                   f.is_deprecated is False and
                   f.delogo is delogo):
             return file
-        else:
-            return None
+        return None
 
     def get_videomarker(self, verse: int) -> Type['VideoMarker'] | None:
         videomarkers = [videomarker for videomarker in self.video_markers if videomarker.versenum == verse]
