@@ -31,6 +31,13 @@ def safechars(text):
     return ''.join([x if (x.isalnum() or x in "._-+,() ") else '_' for x in text.replace(':', '.')])
 
 
+def strike(text: str | int) -> str:
+    result = ''
+    for c in str(text):
+        result += c + '\u0336'
+    return result
+
+
 def dt_now(naive: bool = False) -> datetime:
     """Server datetime.now()"""
     tzinfo = pytz.timezone('UTC')
