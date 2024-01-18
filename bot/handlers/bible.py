@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+from random import choice
 
 from telegram import ChatAction
 from telegram import InlineKeyboardButton
@@ -32,7 +33,6 @@ from bot import exc
 from bot.database.schema import File, Language
 from bot.handlers.settings import set_language
 from bot.utils import list_of_lists
-from bot.utils import safechars
 from bot.utils.decorators import vip
 from bot.utils.decorators import forw
 from bot.strings import TextTranslator
@@ -42,7 +42,8 @@ logger = get_logger(__name__)
 
 SELECT_BOOK, SELECT_CHAPTER, SELECT_VERSE = 'B', 'C', 'V'
 HTML = ParseMode.HTML
-
+COLUMNS = 8 # inline keyboard. maximum is 8
+MAX_BUTTONS = 100 - 100 % COLUMNS # 100 is max telegram server. MAX_BUTTONS is beauty formatted buttons
 
 @vip
 def parse_query(update: Update, context: CallbackContext) -> None:
@@ -128,7 +129,7 @@ def parse_query_bible(update: Update, context: CallbackContext, query: str, sign
     if not (passage := check_passage(update, query, user.bot_language_code)):
         return
     if passage.verses:
-        context.user_data['msg'] = None
+        context.chat_data['msgverse'] = None
         for sl in ([sign_language] if sign_language else user.sign_languages):
             try:
                 prepare_passage(passage, sl.code, update, tt)
@@ -188,7 +189,7 @@ def show_books(update: Update, context: CallbackContext, p: BiblePassage = None)
 
     sign_language = p.language
     p.set_language(user.bot_language.code)
-    context.user_data['msg'] = update.message.reply_html(
+    update.message.reply_html(
         f' <a href="{p.url_wol_binav}"><b>📖 NWT</b></a> '
         f'<a href="{p.url_wol_libraries}"><b>{sign_language.meps_symbol}</b></a>\n'
         f'{tt.choose_book}',
@@ -211,27 +212,49 @@ def show_chapters(update: Update, context: CallbackContext, p: BiblePassage) -> 
         update.effective_message.reply_chat_action(ChatAction.TYPING)
         fetch.chapters_and_videomarkers(p.book)
         p.refresh()
-    buttons = list_of_lists(
-        [InlineKeyboardButton(
-            str(chapter.number),
-            callback_data=f'{SELECT_CHAPTER}|{p.language.code}|{p.book.number}|{chapter.number}',
-        ) for chapter in get.chapters(p.book)],
-        columns=8
-    )
+    buttons = []
+    available_chapternumbers = [chapter.number for chapter in get.chapters(p.book)]
+    for chapternumber in range(1, get.last_chapternum(p.book.number) + 1):
+        if chapternumber in available_chapternumbers:
+            buttons.append(InlineKeyboardButton(
+                str(chapternumber),
+                callback_data=f'{SELECT_CHAPTER}|{p.language.code}|{p.book.number}|{chapternumber}',
+            ))
+        else:
+            buttons.append(InlineKeyboardButton('-', callback_data='-'))
+    if len(buttons) % COLUMNS:
+        buttons += [InlineKeyboardButton(' ', callback_data=' ') for _ in range(COLUMNS - len(buttons) % COLUMNS)]
+
     sign_language = p.language
     p.set_language(tt.language_code)
-    kwargs = {
-        'chat_id': update.effective_chat.id,
-        'text': f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name}</b>\n{tt.choose_chapter}',
-        'reply_markup': InlineKeyboardMarkup(buttons),
-        'parse_mode': HTML,
-    }
+    text = f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name}</b>\n{tt.choose_chapter}'
+    lkwargs = []
+    while True:
+        keyboard = list_of_lists(buttons[:MAX_BUTTONS], COLUMNS)
+
+        lkwargs.append({
+            'chat_id': update.effective_chat.id,
+            'text': text,
+            'reply_markup': InlineKeyboardMarkup(keyboard),
+            'parse_mode': HTML,
+        })
+
+        if len(buttons) > MAX_BUTTONS:
+            buttons = buttons[MAX_BUTTONS:]
+            text = chr(12644) # empty space
+        else:
+            break
+
+    lmsg = []
     if update.callback_query:
-        context.bot.edit_message_text(message_id=update.callback_query.message.message_id, **kwargs)
-    elif context.user_data.get('msg'):
-        context.bot.edit_message_text(message_id=context.user_data['msg'].message_id, **kwargs)
+        lmsg.append(context.bot.edit_message_text(message_id=update.callback_query.message.message_id, **lkwargs[0]))
+        for kwargs in lkwargs[1:]:
+            lmsg.append(context.bot.send_message(**kwargs))
     else:
-        context.bot.send_message(**kwargs)
+        for kwargs in lkwargs:
+            lmsg.append(context.bot.send_message(**kwargs))
+    context.chat_data['lmsg'] = lmsg
+
 
 @forw
 def get_chapter(update: Update, context: CallbackContext) -> None:
@@ -249,28 +272,53 @@ def show_verses(update: Update, context: CallbackContext, p: BiblePassage) -> No
         fetch.videomarkers_by_ffmpeg(p.chapter)
         m.delete()
         p.refresh()
-    buttons = list_of_lists(
-        [InlineKeyboardButton(
-            str(video_marker.versenum),
-            callback_data=f'{SELECT_VERSE}|{p.language.code}|{p.book.number}'
-                          f'|{p.chapternumber}|{video_marker.versenum}',
-        ) for video_marker in p.chapter.video_markers],
-        columns=8
-    )
+
+    buttons = []
+    available_versenumbers = [vm.versenum for vm in get.videomarkers(p.chapter)]
+    for versenumber in range(1, get.last_versenum(p.book.number, p.chapternumber) + 1):
+        if versenumber in available_versenumbers:
+            buttons.append(InlineKeyboardButton(
+                str(versenumber),
+                callback_data=f'{SELECT_VERSE}|{p.language.code}|{p.book.number}|{p.chapternumber}|{versenumber}',
+            ))
+        else:
+            buttons.append(InlineKeyboardButton('-', callback_data='-'))
+    if len(buttons) % COLUMNS:
+        buttons += [InlineKeyboardButton(' ', callback_data=' ') for _ in range(COLUMNS - len(buttons) % COLUMNS)]
+
     sign_language = p.language
     p.set_language(tt.language_code)
-    kwargs = {
-        'chat_id': update.effective_chat.id,
-        'text': f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name} {p.chapternumber}</b>\n{tt.choose_verse}',
-        'reply_markup': InlineKeyboardMarkup(buttons),
-        'parse_mode': HTML,
-    }
+    text = f'👋🏼 {sign_language.meps_symbol}\n📖 <b>{p.book.name} {p.chapternumber}</b>\n{tt.choose_verse}'
+    lkwargs = []
+    while True:
+        keyboard = list_of_lists(buttons[:MAX_BUTTONS], COLUMNS)
+
+        lkwargs.append({
+            'chat_id': update.effective_chat.id,
+            'text': text,
+            'reply_markup': InlineKeyboardMarkup(keyboard),
+            'parse_mode': HTML,
+        })
+        if len(buttons) > MAX_BUTTONS:
+            buttons = buttons[MAX_BUTTONS:]
+            text = chr(12644) # empty space
+        else:
+            break
+
+    for msg in context.chat_data.get('lmsg', []):
+        msg: Message
+        if update.callback_query and update.callback_query.message.message_id != msg.message_id:
+            msg.delete()
+    lmsg = []
     if update.callback_query:
-        context.bot.edit_message_text(message_id=update.callback_query.message.message_id, **kwargs)
-    elif context.user_data.get('msg'):
-        context.bot.edit_message_text(message_id=context.user_data['msg'].message_id, **kwargs)
+        lmsg.append(context.bot.edit_message_text(message_id=update.callback_query.message.message_id, **lkwargs[0]))
+        for kwargs in lkwargs[1:]:
+            lmsg.append(context.bot.send_message(**kwargs))
     else:
-        context.bot.send_message(**kwargs)
+        for kwargs in lkwargs:
+            lmsg.append(context.bot.send_message(**kwargs))
+    context.chat_data['lmsg'] = lmsg
+
 
 
 @forw
@@ -278,7 +326,7 @@ def get_verse(update: Update, context: CallbackContext) -> None:
     update.callback_query.answer()
     _, sign_lang_code, booknum, chapternum, verse = update.callback_query.data.split('|')
     p = BiblePassage.from_num(sign_lang_code, booknum, chapternum, verse)
-    context.user_data['msg'] = update.callback_query.message
+    context.chat_data['msgverse'] = update.callback_query.message
     manage_verses(update, context, p)
 
 
@@ -306,8 +354,8 @@ def manage_verses(update: Update, context: CallbackContext, p: BiblePassage) -> 
 
 
 def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub, file: File) -> None:
-    if context.user_data.get('msg'):
-        context.user_data.get('msg').delete()
+    if context.chat_data.get('msgverse'):
+        context.chat_data['msgverse'].delete()
     try:
         msgvideo = context.bot.send_video(
             chat_id=update.effective_chat.id,
@@ -324,7 +372,6 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
             disable_web_page_preview=True
         )
     except TelegramError as e:
-        # Nunca ha pasado
         logger.critical('Al parecer se ha eliminado de los servidores de Telegram file_id=%s', file.telegram_file_id)
         context.bot.send_message(
             LOG_GROUP_ID,
@@ -341,7 +388,7 @@ def send_by_fileid(update: Update, context: CallbackContext, p: BiblePassage, ep
 
 
 def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage, epub: BibleEpub) -> None:
-    msg: Message = context.user_data.get('msg')
+    msg: Message | None = context.chat_data.get('msgverse')
     user = get.user(update.effective_user.id)
     tt: TextTranslator = context.user_data['tt']
     overlay: BiblePassage | None = context.user_data['overlay']
@@ -355,7 +402,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
     if msg:
         msg.edit_text(text, parse_mode=HTML)
     else:
-        msg = update.effective_message.reply_text(text, disable_notification=True, parse_mode=HTML)
+        msg = update.effective_message.reply_html(text, disable_notification=True)
     context.bot.send_chat_action(update.effective_chat.id, ChatAction.RECORD_VIDEO_NOTE)
     videopath = video.split(p, overlay, delogo)
     update.effective_message.reply_chat_action(ChatAction.UPLOAD_VIDEO)
@@ -372,7 +419,7 @@ def send_single_verse(update: Update, context: CallbackContext, p: BiblePassage,
         height=streams['height'],
         duration=round(float(streams['duration'])),
         timeout=120,
-        # thumb=thumbnail.read_bytes(),
+        thumb=thumbnail.read_bytes(),
         parse_mode=HTML
     )
 
@@ -402,7 +449,7 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
     user = get.user(update.effective_user.id)
     overlay: BiblePassage | None = context.user_data['overlay']
     delogo: bool = context.user_data['delogo']
-    msg: Message = context.user_data.get('msg')
+    msg: Message | None = context.chat_data.get('msgverse')
     tt: TextTranslator = context.user_data['tt']
 
     paths_to_concatenate, new, title_markers = [], [], []
@@ -442,7 +489,6 @@ def send_concatenate_verses(update: Update, context: CallbackContext, p: BiblePa
             new.append((verse, videopath))
     epub.verses = verses
     p.verses = verses
-    overlay
     logger.info('Concatenating video %s', epub.citation)
 
     finalpath = video.concatenate(
@@ -525,7 +571,7 @@ def fallback_query(update: Update, context: CallbackContext):
     tt: TextTranslator = context.user_data['tt']
     match update.callback_query.data:
         case ' ':
-            update.callback_query.answer('😀')
+            update.callback_query.answer(choice('😀😃😄😁😆🙂🙃😉🧐😝😏🤔'))
         case '-':
             update.callback_query.answer(tt.not_available)
 

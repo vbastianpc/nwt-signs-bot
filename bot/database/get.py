@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from bot.logs import get_logger
 from bot.database import session
@@ -11,6 +11,7 @@ from bot.database.schema import Chapter
 from bot.database.schema import VideoMarker
 from bot.database.schema import File
 from bot.database.schema import User
+from bot.database.schema import Bible
 from bot import exc
 
 
@@ -194,6 +195,14 @@ def files(
         q = q.limit(limit)
     return q.all()
 
+
+def last_chapternum(booknumber: int) -> int:
+    return select(func.max(Bible.chapter)).where(Bible.book == booknumber).scalar()
+
+def last_versenum(booknumber: int, chapternumber: int) -> int:
+    return select(func.max(Bible.verse)).where(Bible.book == booknumber,
+                                               Bible.chapter == chapternumber,
+                                               Bible.is_omitted == False).scalar()
 
 if __name__ == '__main__':
     my_markers = session.query(VideoMarker).filter(
