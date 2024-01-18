@@ -185,13 +185,13 @@ def show_books(update: Update, context: CallbackContext, p: BiblePassage = None)
             callback_data=f'{SELECT_BOOK}|{p.language.code}|{num}' if num in p.available_booknums else '-'
         ))
     buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
-    buttons = list_of_lists(buttons, columns=6)
+    buttons = list_of_lists(buttons[:42], columns=6) + \
+            [[InlineKeyboardButton(' ', callback_data=' ')]] + \
+            list_of_lists(buttons[42:], columns=6)
 
-    sign_language = p.language
-    p.set_language(user.bot_language.code)
     update.message.reply_html(
-        f' <a href="{p.url_wol_binav}"><b>📖 NWT</b></a> '
-        f'<a href="{p.url_wol_libraries}"><b>{sign_language.meps_symbol}</b></a>\n'
+        f'👋 {p.language.meps_symbol}\n'
+        f'📖 <a href="{p.url_wol_binav}"><b>{p.book.edition.name}</b></a>\n\n'
         f'{tt.choose_book}',
         reply_markup=InlineKeyboardMarkup(buttons),
         disable_web_page_preview=True
