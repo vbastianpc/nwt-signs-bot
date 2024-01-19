@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 from requests.models import Response
+import pytz
 
 import mechanicalsoup
 
@@ -23,14 +24,16 @@ class LazyBrowser(mechanicalsoup.StatefulBrowser):
         if url in self.tabs:
             try:
                 header_expires = self.tabs[url].headers.get('Expires')
-                dt_expires = datetime.strptime(header_expires, "%a, %d %b %Y %H:%M:%S %Z")
+                dt_expires = datetime.strptime(header_expires, "%a, %d %b %Y %H:%M:%S %Z").replace(tzinfo=pytz.UTC)
+                now = datetime.now(tz=pytz.UTC)
+                logger.info(f'expires={dt_expires.isoformat()!r}, now={now.isoformat()!r}')
             except:
                 logger.info("Expiration datetime not found. Return cache tab")
                 return self.tabs[url]
-            if header_expires and dt_expires > datetime.now():
-                logger.info(f'Not expired yet {dt_expires.isoformat()}')
+            if header_expires and dt_expires > now:
+                logger.info(f'Lazy tab. Not expired')
                 return self.tabs[url]
-            logger.info('Expired')
+            logger.info(f'Expired {dt_expires.isoformat()}')
 
         if len(self.tabs) >= 10:
             old_tab = list(self.tabs)[0]

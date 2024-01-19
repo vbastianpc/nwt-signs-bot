@@ -177,13 +177,15 @@ def show_books(update: Update, context: CallbackContext, p: BiblePassage = None)
         p = BiblePassage(book=get.books(user.sign_language_code)[0])
 
     buttons = []
+    ps = BiblePassage(book=get.book(user.bot_language_code, booknum=1))
+    available_booknums = p.available_booknums
     for num in range(1, 67):
         if num == 40:
             buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
-        ps = BiblePassage(book=get.book(user.bot_language_code, booknum=num))
+        ps.set_booknum(num)
         buttons.append(InlineKeyboardButton(
-            text=ps.book.official_abbreviation if num in p.available_booknums else '-',
-            callback_data=f'{SELECT_BOOK}|{p.language.code}|{num}' if num in p.available_booknums else '-'
+            text=ps.book.official_abbreviation if num in available_booknums else '-',
+            callback_data=f'{SELECT_BOOK}|{p.language.code}|{num}' if num in available_booknums else '-'
         ))
     buttons += [InlineKeyboardButton(text=' ', callback_data=' ')]*3
     buttons = [[InlineKeyboardButton(ps.edition.hebrew, callback_data=' ')]] + \
