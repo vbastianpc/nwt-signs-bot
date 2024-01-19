@@ -73,6 +73,8 @@ class Edition(Base):
     name = Column('Name', String)
     symbol = Column('SymbolEdition', String)
     url = Column('URL', String)
+    hebrew = Column('Hebrew', String)
+    greek = Column('Greek', String)
 
     language: Language = relationship('Language', back_populates='edition', foreign_keys=[language_code])
     books: 'Book' = relationship('Book', back_populates='edition', foreign_keys='[Book.edition_id]')
@@ -195,13 +197,14 @@ class File(Base):
     raw_verses = Column('RawVerseNumbers', String)
     count_verses = Column('CountVerses', Integer)
     added_datetime = Column('AddedDatetime', DateTime)
-    overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode'))
+    overlay_language_code = Column('OverlayLanguageCode', Integer, ForeignKey('Language.LanguageCode')) # deprecated
+    overlay_text = Column('OverlayText', String)
     is_deprecated = Column('IsDeprecated', Boolean, default=False)
     delogo = Column('Delogo', Boolean)
 
     chapter: Chapter = relationship('Chapter', back_populates='files', foreign_keys=[chapter_id])
     overlay_language: Language = relationship('Language', back_populates='overlay_files',
-                                    foreign_keys=[overlay_language_code])
+                                    foreign_keys=[overlay_language_code]) # deprecated
     users: list['User'] = relationship('User', back_populates='files', secondary='File2User')
 
     @property

@@ -5,11 +5,7 @@ from datetime import datetime
 from datetime import timedelta
 from subprocess import run
 
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy import select
-from sqlalchemy import func
-from bs4 import BeautifulSoup
 
 from bot.logs import get_logger
 from bot.utils import dt_now
@@ -89,6 +85,17 @@ def editions(language_code: str = None):
     session.add_all(edts)
     session.commit()
     logger.info(f'There are {report.count(Edition)} bible editions stored in the database')
+
+
+def hebrew_greek(language_code: str):
+    if (edition := get.edition(language_code)) and edition.hebrew and edition.greek:
+        return
+    lang = get.language(language_code)
+    data = browser.open(f'https://wol.jw.org/{lang.code}/wol/binav/{lang.rsconf}/{lang.lib}/{edition.symbol}')
+    div = data.soup.find_all('div', class_='group grid')
+    edition.hebrew = div[0].text
+    edition.greek = div[1].text
+    session.commit()
 
 
 def books(language_code: str, lazy=True):
@@ -298,3 +305,7 @@ def _ffprobe_markers(videopath: str):
             endTransitionDuration='0',
         ))
     return markers
+
+if __name__ == '__main__':
+    """Testing"""
+    hebrew_greek('es')
