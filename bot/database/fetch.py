@@ -88,8 +88,9 @@ def editions(language_code: str = None):
 
 
 def hebrew_greek(language_code: str):
-    if (edition := get.edition(language_code)) and edition.hebrew and edition.greek:
-        return
+    if (edition := get.edition(language_code)):
+        if edition.hebrew and edition.hebrew != ' ' and edition.greek and edition.greek != ' ':
+            return
     lang = get.language(language_code)
     data = browser.open(f'https://wol.jw.org/{lang.code}/wol/binav/{lang.rsconf}/{lang.lib}/{edition.symbol}')
     div = data.soup.find_all('div', class_='group grid')

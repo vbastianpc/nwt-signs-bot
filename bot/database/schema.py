@@ -73,8 +73,8 @@ class Edition(Base):
     name = Column('Name', String)
     symbol = Column('SymbolEdition', String)
     url = Column('URL', String)
-    hebrew = Column('Hebrew', String)
-    greek = Column('Greek', String)
+    hebrew = Column('Hebrew', String, default=' ')
+    greek = Column('Greek', String, default=' ')
 
     language: Language = relationship('Language', back_populates='edition', foreign_keys=[language_code])
     books: 'Book' = relationship('Book', back_populates='edition', foreign_keys='[Book.edition_id]')
