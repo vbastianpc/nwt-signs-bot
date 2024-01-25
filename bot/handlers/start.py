@@ -1,9 +1,8 @@
 from html import escape
 
-from telegram import Update, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler
-from telegram.ext import ConversationHandler
 from telegram.ext import MessageHandler
 from telegram.ext import Filters
 import telegram.error
@@ -15,7 +14,6 @@ from bot.secret import LOG_GROUP_ID
 from bot.secret import TOPIC_WAITING
 from bot.logs import get_logger
 from bot.utils.decorators import forw, vip
-from bot.utils import how_to_say
 from bot.database import get
 from bot.database import add
 from bot.database import fetch
@@ -65,7 +63,7 @@ def add_user(update: Update, context: CallbackContext):
         fetch.books(new_user.bot_language.code)
     tt_new = TextTranslator(new_user.bot_language_code)
     context.bot.send_message(chat_id=new_telegram_id,
-                             text=tt.hi(update.effective_user.first_name) + ' ' + tt.start(MyCommand.HELP))
+                             text=tt_new.hi(new_user.first_name) + ' ' + tt.start(MyCommand.HELP))
     if not new_user.sign_language:
         context.bot.send_message(chat_id=new_telegram_id,
                                  text=tt_new.select_sl(MyCommand.SIGNLANGUAGE), parse_mode=ParseMode.HTML)

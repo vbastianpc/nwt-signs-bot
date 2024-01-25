@@ -45,18 +45,29 @@ def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
             update.effective_message.reply_html(tt.hi(escape(tuser.first_name or tuser.full_name)) + ' ' + tt.barrier_to_entry,
                                       disable_web_page_preview=True)
             tt_admin = TextTranslator(get.user(ADMIN).bot_language_code)
-            context.bot.send_message(
-                chat_id=LOG_GROUP_ID,
-                message_thread_id=TOPIC_WAITING,
-                text=(f'<pre><code class="language-python">'
+            buttons = [
+                [InlineKeyboardButton(f'Add {tuser.full_name}', url=f'{context.bot.link}?start={tuser.id}')],
+                [InlineKeyboardButton(f'View {tuser.full_name}', url=f'tg://user?id={tuser.id}')],
+            ]
+            text = (f'<pre><code class="language-python">'
                     f'full_name: {tuser.full_name}\nlanguage_code: {tuser.language_code}\nusername: {tuser.username}'
-                    f'</code></pre>\n{tt_admin.waiting_list}'),
-                parse_mode=ParseMode.HTML,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton(f'Add {tuser.full_name}', url=f'{context.bot.link}?start={tuser.id}')],
-                    [InlineKeyboardButton(f'View {tuser.full_name}', url=f'tg://user?id={tuser.id}')],
-                ])
-            )
+                    f'</code></pre>\n{tt_admin.waiting_list}')
+            try:
+                context.bot.send_message(
+                    chat_id=LOG_GROUP_ID,
+                    message_thread_id=TOPIC_WAITING,
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=InlineKeyboardMarkup(buttons)
+                )
+            except telegram.error.BadRequest:
+                context.bot.send_message(
+                    chat_id=LOG_GROUP_ID,
+                    message_thread_id=TOPIC_WAITING,
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=InlineKeyboardMarkup([buttons[0]])
+                )
 
         user = add.or_update_user(
             tuser.id,
