@@ -8,6 +8,7 @@
 *.mp4
 bible-epub/
 bot/utils/fonts/
+bot/migration/
 *.db
 *.db-journal
 *.jwpub
