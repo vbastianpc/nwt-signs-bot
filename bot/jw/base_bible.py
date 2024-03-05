@@ -320,8 +320,7 @@ class BibleObject:
         if not book:
             if not get.language(code=language_code):
                 raise exc.LanguageNotFound(language_code)
-            else:
-                raise exc.BookNotFound
+            raise exc.BookNotFound
         return cls(book, chapternumber, verses)
 
 

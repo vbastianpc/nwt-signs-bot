@@ -38,17 +38,20 @@ def strike(text: str | int) -> str:
     return result
 
 
-def dt_now(naive: bool = False) -> datetime:
-    """Server datetime.now()"""
-    tzinfo = pytz.timezone('UTC')
-    dt = tzinfo.localize(datetime.now()).astimezone(tz=pytz.timezone('America/Santiago'))
-    if naive is False:
-        return dt.astimezone(tz=pytz.timezone('America/Santiago')) # server datetime but shown as America/Santiago
-    else:
-        return dt.replace(tzinfo=None)
+def dt_now(naive: bool = False, timezone: pytz.tzinfo.BaseTzInfo | str = 'America/Santiago') -> datetime:
+    """Real datetime.now(), location independent"""
+    now = datetime.now()
+    if isinstance(timezone, pytz.tzinfo.BaseTzInfo):
+        now = now.astimezone(tz=timezone)
+    elif isinstance(timezone, str):
+        now = now.astimezone(tz=pytz.timezone(timezone))
 
-def now() -> str:
-    return dt_now().isoformat(sep=' ', timespec="seconds")
+    if naive is True:
+        now = now.replace(tzinfo=None)
+    elif naive is False and not timezone:
+        now = now.astimezone()
+    return now
+
 
 def how_to_say(this_language_code: str, in_this_language_code: str) -> str:
     try:

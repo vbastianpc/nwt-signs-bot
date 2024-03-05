@@ -123,6 +123,8 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
+    if isinstance(context.error, telegram.error.NetworkError):
+        return
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
 

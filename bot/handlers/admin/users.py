@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 
 from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
@@ -7,7 +8,6 @@ from telegram.utils.helpers import mention_html
 from telegram.error import Unauthorized
 
 from bot import MyCommand
-from bot.utils import now
 from bot.utils.decorators import vip, admin
 from bot.database import get
 from bot.database import add
@@ -105,7 +105,7 @@ def sending_users(update: Update, _: CallbackContext):
 def backup(update: Update, context: CallbackContext):
     context.bot.send_document(chat_id=update.effective_chat.id,
                               document=open(PATH_DB, 'rb'),
-                              filename= f'{now()} {PATH_DB}')
+                              filename= f'{datetime.now().isoformat(sep=" ", timespec="seconds")} {PATH_DB}')
 
 
 delete_user_handler = CommandHandler(AdminCommand.BAN, delete_user)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from telegram import Update
 from telegram import ParseMode
 from telegram import InlineKeyboardButton
@@ -13,7 +15,6 @@ from telegram.ext import Filters
 from bot import MyCommand
 from bot.secret import ADMIN
 from bot.utils.decorators import vip, admin
-from bot.utils import now
 from bot.database import report as rdb
 from bot.database.report import count
 from bot.database.schema import File, File2User, VideoMarker, Chapter, Book, Edition, Language, User
@@ -78,7 +79,10 @@ def document(update: Update, context: CallbackContext):
 def overwrite_db(update: Update, context: CallbackContext):
     update.effective_message.edit_reply_markup()
     try:
-        update.effective_message.reply_document(document=open(PATH_DB, 'rb'), filename= f'{now()} {PATH_DB}')
+        update.effective_message.reply_document(
+            document=open(PATH_DB, 'rb'),
+            filename=f'{datetime.now().isoformat(sep=" ", timespec="seconds")} {PATH_DB}'
+        )
     except:
         pass
     db_doc: Document = context.user_data['db']
