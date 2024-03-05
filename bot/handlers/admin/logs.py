@@ -3,7 +3,6 @@ import traceback
 import html
 import sys
 import io
-from pathlib import Path
 import os
 
 from telegram import Update
@@ -16,7 +15,7 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 import telegram.error
 
-from bot.database import get
+import bot.jw # pylint: disable=unused-import
 from bot.utils.decorators import vip, admin
 from bot import AdminCommand, MyCommand, PATH_ROOT
 from bot.secret import LOG_GROUP_ID
@@ -31,25 +30,29 @@ logger = get_logger(__name__)
 @vip
 @admin
 def test_data(update: Update, context: CallbackContext) -> None:
-    update.message.reply_html(
-        f'<pre>{sys.executable=}\n\n{sys.argv=}\n\n{os.getcwd()=}\n\n{os.environ=}'
-        f'\n\n{PATH_ROOT=}\n\n{TOKEN=}\n\n{context.bot.name=}</pre>'
-    )
-    if not context.args:
-        data = sorted(context.user_data.keys())
+    if context.args:
+        try:
+            data = eval(' '.join(context.args))
+        except Exception as e:
+            data = e
+        update.message.reply_html(f'<pre>{html.escape(str(data))}</pre>')
     else:
-        varname = context.args[0].split('.')[0]
-        attr_keys = '.'.join(context.args[0].split('.')[1:])
-        e = f'context.user_data.get("{varname}")' + (('.' + attr_keys) if attr_keys else '')
-        data = eval(e)
-
-    try:
-        json_data = json.dumps(data, indent=2, ensure_ascii=False)
-    except TypeError:
-        json_data = str(data)
-    except:
-        json_data = json.dumps(data, indent=2, ensure_ascii=False, default=lambda x: x.__dict__)
-    update.message.reply_markdown_v2(f'```\n{json_data[:MAX_MESSAGE_LENGTH]}```')
+        update.message.reply_html(
+            f'<pre>{sys.executable=}\n\n'
+            f'{sys.argv=}\n\n'
+            f'{os.getcwd()=}\n\n'
+            # f'{os.environ=}\n\n'
+            f'{PATH_ROOT=}\n\n'
+            f'{TOKEN=}\n\n'
+            f'{context.bot.name=}\n\n</pre>'
+        )
+        update.message.reply_html(
+            '<pre>'
+            f"context.bot_data = {html_json(context.bot_data)}\n\n"
+            f"context.chat_data = {html_json(context.chat_data)}\n\n"
+            f"context.user_data = {html_json(context.user_data)}\n\n"
+            '</pre>'
+        )
 
 
 @vip
@@ -108,6 +111,10 @@ def flushlogs(update: Update, context: CallbackContext):
             pass
 
 
+def html_json(s: dict | list | str):
+    return html.escape(json.dumps(s, indent=2, ensure_ascii=False, default=lambda x: x.__dict__))
+
+
 def error_handler(update: Update, context: CallbackContext) -> None:
     """Log the error and send a telegram message to notify the developer."""
     # Log the error before we do anything else, so we can see it even if something breaks.
@@ -120,8 +127,6 @@ def error_handler(update: Update, context: CallbackContext) -> None:
 
     # Build the message with some markup and additional information about what happened.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    def html_json(s: dict | list | str):
-        return html.escape(json.dumps(s, indent=2, ensure_ascii=False))
     text = (
         f"An exception was raised while handling an update\n\n<pre><code class='language-python'>"
         f"update = {html_json(update_str)}\n\n"
