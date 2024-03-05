@@ -4,6 +4,7 @@ import html
 import sys
 import io
 import os
+from datetime import datetime, time # pylint: disable=unused-import
 
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -15,7 +16,7 @@ from telegram.constants import MAX_MESSAGE_LENGTH
 from telegram.parsemode import ParseMode
 import telegram.error
 
-import bot.jw # pylint: disable=unused-import
+from bot import jw, utils, database, strings, exc, handlers # pylint: disable=unused-import
 from bot.utils.decorators import vip, admin
 from bot import AdminCommand, MyCommand, PATH_ROOT
 from bot.secret import LOG_GROUP_ID
