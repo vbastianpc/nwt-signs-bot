@@ -4,7 +4,7 @@ import html
 import sys
 import io
 import os
-from datetime import datetime, time # pylint: disable=unused-import
+from datetime import datetime, time, timedelta # pylint: disable=unused-import
 
 from telegram import Update
 from telegram.ext import CallbackContext
