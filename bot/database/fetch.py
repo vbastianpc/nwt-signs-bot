@@ -172,7 +172,7 @@ def _fetch_books_wol(edition: Edition) -> None:
 
 
 def need_chapter_and_videomarks(book: Book) -> bool:
-    _time_ago = dt_now(naive=True) - timedelta(seconds=10) # TODO change minutes=30
+    _time_ago = dt_now(naive=True) - timedelta(hours=1)
     if not book.refreshed or _time_ago > book.refreshed:
         return True
     logger.info(f'Too soon to request {book.name} {book.id=}')
@@ -199,7 +199,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')
             continue
         if chapter:
-            logger.info(f'Updating {chapter.id=}')
+            logger.info(f'Updating {book.name} {chapternumber} {chapter.id=}')
             chapter.checksum = doc['file']['checksum']
             chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
             chapter.url = doc['file']['url']
