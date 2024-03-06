@@ -172,8 +172,8 @@ def _fetch_books_wol(edition: Edition) -> None:
 
 
 def need_chapter_and_videomarks(book: Book) -> bool:
-    _time_ago = dt_now(naive=True) - timedelta(hours=1) # TODO change hours=24
-    if book.refreshed and _time_ago > book.refreshed:
+    _time_ago = dt_now(naive=True) - timedelta(seconds=10) # TODO change minutes=30
+    if not book.refreshed or _time_ago > book.refreshed:
         return True
     logger.info(f'Too soon to request {book.name} {book.id=}')
     return False
