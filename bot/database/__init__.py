@@ -7,7 +7,7 @@ from sqlalchemy.orm import scoped_session
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
-from bot.database.schema import Base
+from bot.database.schema import Base, Bible, Language, Edition, Book, Chapter, VideoMarker, File, User, File2User
 from bot.database.views import views
 
 
