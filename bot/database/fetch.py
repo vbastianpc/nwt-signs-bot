@@ -180,6 +180,7 @@ def need_chapter_and_videomarks(book: Book) -> bool:
 
 
 def chapters_and_videomarkers(book: Book, all_chapters=True):
+    logger.info(f'Fetching chapters and videomarkers from book {book.name} {book.language.code}')
     url = BiblePassage(book).url_pubmedia(all_chapters)
     res = browser.open(url)
     if res.status_code != 200:
@@ -195,16 +196,19 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             continue
         chapter = get.chapter(chapternumber, book)
         if chapter and chapter.checksum == doc['file']['checksum']:
+            logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')
             continue
         if chapter:
             logger.info(f'Updating {chapter.id=}')
             chapter.checksum = doc['file']['checksum']
             chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
             chapter.url = doc['file']['url']
+            logger.info(f'Deleting existing videomarkers')
             session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
             for file in chapter.files:
                 file.is_deprecated = True
         else:
+            logger.info(f'New chapter found. {book.name} {chapternumber}')
             chapter = Chapter(
                 book_id=book.id,
                 number=chapternumber,
@@ -215,6 +219,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
             session.add(chapter)
         if doc['markers']:
             # Some sign languages not stored videomarkers in json data api. Must be obtained by ffmpeg url video
+            logger.info(f'Adding markers {[m["verseNumber"] for m in doc["markers"]["markers"]]}')
             for m in doc['markers']['markers']:
                 chapter.video_markers.append(
                     VideoMarker(
@@ -233,6 +238,7 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
         session.commit()
     book.refreshed = dt_now()
     session.commit()
+    logger.info("Commit and finish fetching chapters and videomarkers")
 
 
 def need_ffmpeg(chapter: Chapter) -> bool:
