@@ -8,9 +8,7 @@ PATH_LOG = Path('./log.log')
 
 class Formatter(logging.Formatter):
     def converter(self, timestamp):
-        dt = datetime.fromtimestamp(timestamp)
-        tzinfo = pytz.timezone('UTC')
-        return tzinfo.localize(dt)
+        return datetime.fromtimestamp(timestamp).astimezone()
 
     def formatTime(self, record, datefmt=None):
         dt = self.converter(record.created).astimezone(tz=pytz.timezone('America/Santiago'))

@@ -195,31 +195,10 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
         if doc['file']['url'].endswith('.zip'):
             continue
         chapter = get.chapter(chapternumber, book)
-        if chapter and chapter.checksum == doc['file']['checksum']:
-            logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')
-            continue
-        if chapter:
-            logger.info(f'Updating {book.name} {chapternumber} {chapter.id=}')
-            chapter.checksum = doc['file']['checksum']
-            chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
-            chapter.url = doc['file']['url']
-            logger.info(f'Deleting existing videomarkers')
-            session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
-            for file in chapter.files:
-                file.is_deprecated = True
-        else:
-            logger.info(f'New chapter found. {book.name} {chapternumber}')
-            chapter = Chapter(
-                book_id=book.id,
-                number=chapternumber,
-                checksum=doc['file']['checksum'],
-                modified_datetime=datetime.fromisoformat(doc['file']['modifiedDatetime']),
-                url=doc['file']['url'],
-            )
-            session.add(chapter)
-        if doc['markers']:
+        if chapter and doc['markers']:
             # Some sign languages not stored videomarkers in json data api. Must be obtained by ffmpeg url video
-            logger.info(f'Adding markers {[m["verseNumber"] for m in doc["markers"]["markers"]]}')
+            logger.info(f'Replacing markers {[m["verseNumber"] for m in doc["markers"]["markers"]]}')
+            session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
             for m in doc['markers']['markers']:
                 chapter.video_markers.append(
                     VideoMarker(
@@ -235,6 +214,27 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
                 )
         else:
             logger.warning(f'{book.name} {chapter.number} no videomarkers on datajson api {book.edition.language.code}')
+
+        if chapter and chapter.checksum == doc['file']['checksum']:
+            logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')
+            chapter.url = doc['file']['url']
+        elif chapter:
+            logger.info(f'Updating {book.name} {chapternumber} {chapter.id=}')
+            chapter.checksum = doc['file']['checksum']
+            chapter.modified_datetime = datetime.fromisoformat(doc['file']['modifiedDatetime'])
+            chapter.url = doc['file']['url']
+            for file in chapter.files:
+                file.is_deprecated = True
+        else:
+            logger.info(f'New chapter found. {book.name} {chapternumber}')
+            chapter = Chapter(
+                book_id=book.id,
+                number=chapternumber,
+                checksum=doc['file']['checksum'],
+                modified_datetime=datetime.fromisoformat(doc['file']['modifiedDatetime']),
+                url=doc['file']['url'],
+            )
+            session.add(chapter)
         session.commit()
     book.refreshed = dt_now()
     session.commit()
