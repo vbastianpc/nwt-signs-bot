@@ -212,8 +212,10 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
                         end_transition_duration=m['endTransitionDuration'],
                     )
                 )
+        elif not chapter:
+            pass
         else:
-            logger.warning(f'{book.name} {chapter.number} no videomarkers on datajson api {book.edition.language.code}')
+            logger.warning(f'{book.name} {chapter} no videomarkers on datajson api {book.edition.language.code}')
 
         if chapter and chapter.checksum == doc['file']['checksum']:
             logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')

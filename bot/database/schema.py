@@ -154,10 +154,14 @@ class Chapter(Base):
     def get_videomarker(self, verse: int) -> Type['VideoMarker'] | None:
         videomarkers = [videomarker for videomarker in self.video_markers if videomarker.versenum == verse]
         return videomarkers[0] if videomarkers else None
+    
+    def __str__(self) -> str:
+        return str(self.number)
 
 
 class VideoMarker(Base):
     __tablename__ = 'VideoMarker'
+    __table_args__ = (UniqueConstraint('ChapterId', 'VerseNumber'), )
 
     id = Column('VideoMarkerId', Integer, primary_key=True)
     chapter_id = Column('ChapterId', Integer, ForeignKey('Chapter.ChapterId'), nullable=False)
