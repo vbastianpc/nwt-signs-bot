@@ -227,19 +227,45 @@ class BibleObject:
         book_like = BibleObject.parse_citation_regex(from_citation)[0] if from_citation else book_like
         book_like = re.sub(' *', '', book_like).lower().replace('.', '')
         books = get.books(language_code=language_code)
-        for book in books:
-            bn, sa, oa, ssb = map(
-                lambda x: re.sub(' *', '', x).lower(),
-                [book.name, book.standard_abbreviation, book.official_abbreviation, book.standard_singular_bookname]
-            )
-            if any(map(lambda x: x.startswith(book_like), (bn, sa, oa, ssb))) or \
-                any(map(lambda x: ud(x).lower().startswith(ud(book_like)), (bn, sa, oa, ssb))):
+        columns = ([
+                book.number,
+                book.edition.language_code,
+                re.sub(' *', '', book.official_abbreviation).lower().replace('.', ''),
+                re.sub(' *', '', book.name).lower().replace('.', ''),
+                re.sub(' *', '', book.standard_abbreviation).lower().replace('.', ''),
+                re.sub(' *', '', ud(book.official_abbreviation).lower().replace('.', '')),
+                re.sub(' *', '', ud(book.name.lower()).replace('.', '')),
+                re.sub(' *', '', ud(book.standard_abbreviation).lower().replace('.', '')),
+                ]
+            for book in books
+        )
+        columns = list(zip(*columns))
+
+        def getbook(i: int | None) -> Book | None:
+            if i is not None:
+                booknum = columns[0][i]
+                language_code = columns[1][i]
+                return get.book(language_code, booknum)
+            return None
+
+        def equal(column: list[str]) -> Book | None:
+            return getbook(next((i for i, x in enumerate(column) if x == book_like), None))
+
+        def startswith(column: list[str]) -> int | None:
+            return getbook(next((i for i, x in enumerate(column) if x.startswith(book_like)), None))
+
+
+        for column in columns[2:]:
+            if (book := equal(column)) is not None:
                 return book
-        else:
-            if language_code is None:
-                raise exc.BookNameNotFound(book_like)
-            else:
-                return BibleObject.search_book(book_like, language_code=None)
+        for column in columns[2:]:
+            if (book := startswith(column)) is not None:
+                return book
+
+        if language_code is None:
+            raise exc.BookNameNotFound(book_like)
+        return BibleObject.search_book(book_like, language_code=None)
+
 
     @staticmethod
     def parse_citation_regex(citation: str) -> tuple[str, int | None, list[int | None]]:
@@ -325,7 +351,7 @@ class BibleObject:
 
 
 if __name__ == '__main__':
-    passage = BibleObject.from_human('Mat', 'es')
-
+    book = BibleObject.search_book_v2('dan', 'vi')
+    print(book.language.code, book.name)
 
     print('end')
