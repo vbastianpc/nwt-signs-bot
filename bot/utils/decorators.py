@@ -1,6 +1,6 @@
 from functools import wraps
 from html import escape
-from typing import TypeVar, ParamSpec
+from typing import TypeVar, ParamSpec, Any
 from collections.abc import Callable
 
 import telegram
@@ -32,12 +32,11 @@ P = ParamSpec('P')
 
 def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
     @wraps(func)
-    def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> T | None:
+    def restricted_func(update: Update, context: CallbackContext, *args: P.args, **kwargs: P.kwargs) -> Any:
         tuser = update.effective_user
         if not isinstance(tuser, telegram.User):
             return None
-        if log:
-            logger.info(f'{update.effective_user.mention_html()}: {update.effective_message.text}')
+
         user = get.user(tuser.id)
         bot_language_code = user.bot_language_code if user else tuser.language_code if get.language(code=tuser.language_code) else 'en'
         context.user_data['tt'] = tt = TextTranslator(bot_language_code)
@@ -103,14 +102,12 @@ def vip(func: Callable[P, T], log=True) -> Callable[P, T]:
 
         if user.is_authorized() and not user.sign_language:
             from bot.handlers.settings import set_language, manage_sign_languages
-            if update.message.text.startswith('/'):
-                command = update.message.text[1:]
-                if command == MyCommand.SIGNLANGUAGE:
-                    manage_sign_languages(update, context)
-                elif command in list(MyCommand) + list(AdminCommand):
-                    update.message.reply_html(tt.select_sl(MyCommand.SIGNLANGUAGE))
-                else:
-                    set_language(update, context)
+            if update.message.text[1:] == MyCommand.SIGNLANGUAGE:
+                manage_sign_languages(update, context)
+            elif update.message.text[1:] in list(MyCommand) + list(AdminCommand):
+                update.message.reply_html(tt.select_sl(MyCommand.SIGNLANGUAGE))
+            elif update.message.text.startswith('/'):
+                set_language(update, context)
             else:
                 update.message.reply_html(tt.select_sl(MyCommand.SIGNLANGUAGE))
             return None
@@ -174,3 +171,12 @@ def log(func):
         logger.info(f'{tuser.id} {tuser.first_name} {payload}')
         return func(update, context, *args, **kwargs)
     return log_function
+
+
+# falta probar y decorar todas las funcioines que requieran tt
+def inject_tt(func):
+    @wraps(func)
+    def wrapper_tt(update: Update, context: CallbackContext, *args, **kwargs):
+        user = get.user(update.message.from_user.id)
+        return func(update, context, *args, tt=TextTranslator(user.bot_language_code), **kwargs)
+    return wrapper_tt

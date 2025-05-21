@@ -124,13 +124,12 @@ def videomarkers(chapter: Chapter, verses: list[int] | None = None) -> list[Vide
     q = session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id)
     if verses is None:
         return q.all()
+    vms = q.filter(VideoMarker.versenum.in_(verses)).all()
+    available_versenums = [vm.versenum for vm in vms]
+    if set(verses) == set(available_versenums):
+        return vms
     else:
-        vms = q.filter(VideoMarker.versenum.in_(verses)).all()
-        available_versenums = [vm.versenum for vm in vms]
-        if set(verses) == set(available_versenums):
-            return vms
-        else:
-            raise exc.IncompleteVideoMarkers(set(verses) == set(available_versenums))
+        raise exc.IncompleteVideoMarkers(set(verses) == set(available_versenums))
 
 
 def unavailable_verses(chapter: Chapter, verses: list[int]) -> list[int]:

@@ -2,7 +2,7 @@
 https://dbdiagram.io/d/61417a16825b5b0146029d49
 """
 from datetime import datetime, timedelta
-from typing import Type
+from typing import Type, Any
 
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -151,10 +151,10 @@ class Chapter(Base):
             return file
         return None
 
-    def get_videomarker(self, verse: int) -> Type['VideoMarker'] | None:
+    def get_videomarker(self, verse: int) -> Any:
         videomarkers = [videomarker for videomarker in self.video_markers if videomarker.versenum == verse]
         return videomarkers[0] if videomarkers else None
-    
+
     def __str__(self) -> str:
         return str(self.number)
 

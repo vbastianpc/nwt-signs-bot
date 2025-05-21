@@ -14,6 +14,9 @@ bot/migration/
 *.jwpub
 /test
 **/*.zip
+.python-version
+*.afdesign
+*.json
 
 .DS_Store
 .vscode/

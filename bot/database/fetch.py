@@ -195,27 +195,6 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
         if doc['file']['url'].endswith('.zip'):
             continue
         chapter = get.chapter(chapternumber, book)
-        if chapter and doc['markers']:
-            # Some sign languages not stored videomarkers in json data api. Must be obtained by ffmpeg url video
-            logger.info(f'Replacing markers {[m["verseNumber"] for m in doc["markers"]["markers"]]}')
-            session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
-            for m in doc['markers']['markers']:
-                chapter.video_markers.append(
-                    VideoMarker(
-                        verse_id=select(Bible.id).where(Bible.book == book.number,
-                                                        Bible.chapter == chapternumber,
-                                                        Bible.verse == int(m['verseNumber'])).scalar() or 0,
-                        versenum=int(m['verseNumber']),
-                        label=m['label'],
-                        duration=m['duration'],
-                        start_time=m['startTime'],
-                        end_transition_duration=m['endTransitionDuration'],
-                    )
-                )
-        elif not chapter:
-            pass
-        else:
-            logger.warning(f'{book.name} {chapter} no videomarkers on datajson api {book.edition.language.code}')
 
         if chapter and chapter.checksum == doc['file']['checksum']:
             logger.info(f'Skip because {book.name} {chapternumber} same checksum {chapter.checksum}')
@@ -237,6 +216,31 @@ def chapters_and_videomarkers(book: Book, all_chapters=True):
                 url=doc['file']['url'],
             )
             session.add(chapter)
+
+        if doc['markers']:
+            # Some sign languages not stored videomarkers in json data api. Must be obtained by ffmpeg url video
+            logger.info(f'Replacing markers {[m["verseNumber"] for m in doc["markers"]["markers"]]}')
+            if len(chapter.video_markers) == len(doc['markers']['markers']):
+                pass
+            else:
+                session.query(VideoMarker).filter(VideoMarker.chapter_id == chapter.id).delete()
+                for m in doc['markers']['markers']:
+                    chapter.video_markers.append(
+                        VideoMarker(
+                            verse_id=select(Bible.id).where(Bible.book == book.number,
+                                                            Bible.chapter == chapternumber,
+                                                            Bible.verse == int(m['verseNumber'])).scalar() or 0,
+                            versenum=int(m['verseNumber']),
+                            label=m['label'],
+                            duration=m['duration'],
+                            start_time=m['startTime'],
+                            end_transition_duration=m['endTransitionDuration'],
+                        )
+                    ) # update or insert
+                for file in chapter.files:
+                    file.is_deprecated = True
+        else:
+            logger.warning(f'{book.name} {chapter} no videomarkers on datajson api {book.edition.language.code}')
         session.commit()
     book.refreshed = dt_now()
     session.commit()
