@@ -60,18 +60,18 @@ def build_signlangs(update: Update, _: CallbackContext):
     res = browser.open(f'https://www.jw.org/{user.bot_language.code}/languages/')
     return list_of_lists(
         [{
-            'text': f'{sl["symbol"]} - {sl["name"]}',
-            'callback_data': f'{SELECT_LANGUAGE}|{sl["symbol"]}' # symbol == language_code
+            'text': f'{sl["langcode"]} - {sl["name"]}',
+            'callback_data': f'{SELECT_LANGUAGE}|{sl["langcode"]}' # langcode == ASL
         } for sl in sorted(
             filter(lambda l: l['isSignLanguage'], res.json()['languages']),
-            key=lambda x: x['symbol']
+            key=lambda x: x['langcode']
         )
         ],
         columns=1
     )
 
 
-@forw
+@vip
 def manage_sign_languages(update: Update, context: CallbackContext):
     if not context.args:
         show_sign_languages(update, context)

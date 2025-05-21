@@ -22,7 +22,6 @@ class MyCommand(StrEnum):
     
 
 class AdminCommand(StrEnum):
-    ADD = 'add'
     BAN = 'ban'
     USERS = 'users'
     SETCOMMANDS = 'setcommands'
