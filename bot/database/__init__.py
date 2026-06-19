@@ -3,7 +3,6 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import scoped_session
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import text
 
@@ -20,14 +19,23 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-def start_database(db: Path | str = PATH_DB) -> scoped_session:
+def start_database(db: Path | str = PATH_DB):
     engine = create_engine(rf'sqlite:///{db}', echo=False)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
     with engine.connect() as con:
         for view in views:
             con.execute(text(view))
-    return scoped_session(sessionmaker(bind=engine))()
+    session_factory = sessionmaker(bind=engine)
+    return session_factory()
 
 
 session = start_database()
+
+
+def rollback_session():
+    """Recover from a broken session state (e.g. after IntegrityError)."""
+    try:
+        session.rollback()
+    except Exception:
+        pass

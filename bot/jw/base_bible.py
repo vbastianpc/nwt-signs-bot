@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from bot.database import session
 from bot.database import get
+from bot.database import rollback_session
 from bot.database.schema import Bible
 from bot.database.schema import Book
 from bot.database.schema import Edition
@@ -216,6 +217,9 @@ class BibleObject:
             if raise_error:
                 raise e
             return False
+        except Exception:
+            rollback_session()
+            raise
         else:
             return True
 

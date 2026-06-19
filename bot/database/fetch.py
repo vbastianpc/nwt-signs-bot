@@ -39,8 +39,9 @@ def languages():
                 a = e
             else:
                 a = {}
-            exists = session.query(select(Language).where(Language.code == lang['symbol']).exists()).scalar()
-            if (insert is True and not exists) or (update is True and exists):
+            exists_by_code = session.query(select(Language).where(Language.code == lang['symbol']).exists()).scalar()
+            exists_by_meps = session.query(select(Language).where(Language.meps_symbol == lang['langcode']).exists()).scalar()
+            if (insert is True and not exists_by_code and not exists_by_meps) or (update is True and exists_by_code):
                 yield dict(
                     code=lang['symbol'], # other names: symbol, locale
                     meps_symbol=lang['langcode'], # other names: code, langcode, wtlocale, data-meps-symbol
@@ -54,9 +55,13 @@ def languages():
                     is_counted=lang['isCounted'],
                     has_web_content=lang['hasWebContent']
                 )
-    session.bulk_insert_mappings(Language, map_language(insert=True))
-    session.bulk_update_mappings(Language, map_language(update=True))
-    session.commit()
+    try:
+        session.bulk_insert_mappings(Language, map_language(insert=True))
+        session.bulk_update_mappings(Language, map_language(update=True))
+        session.commit()
+    except Exception:
+        session.rollback()
+        logger.exception('Error fetching languages, rolled back')
     logger.info(f'There are {report.count(Language)} languages stored in the database')
 
 
